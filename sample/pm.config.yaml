@@ -1,0 +1,12 @@
+---
+# Copyright (c) 2020 Veritas Technologies LLC. All rights reserved. IP63-2828-7171-04-15-9
+pluginmanager:
+  # `library` is the location where plugins directories containing plugins are expected to be present
+  library: "../sample/library"
+  log dir: "./"
+  # `log file` indicates the name of the log file.
+  #   The timestamp and '.log' extension would be appended to this name.
+  #   I.e., The format of the log file generated would be: "<log file>.<timestamp>.log"
+  #   Example: The below value results in following log file: pm.2020-01-13T16:11:58.6006565-08:00.log
+  log file: "pm"
+...

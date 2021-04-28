@@ -1,0 +1,8 @@
+# Copyright (c) 2021 Veritas Technologies LLC. All rights reserved. IP63-2828-7171-04-15-9
+Description=Checking for "D" settings...
+# Don't hardcode absolute path if it's inside plugin dir, instead use $PM_LIBRARY as shown below:
+ExecStart=$PM_LIBRARY/D/preupgrade.sh
+# OR
+# ExecStart=/bin/sh $PM_LIBRARY/D/preupgrade.sh
+# Is equivalent to: 
+# ExecStart=/system/upgrade/repository/plugin/D/preupgrade.sh

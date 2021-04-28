@@ -1,0 +1,8 @@
+---
+# Copyright (c) 2020 Veritas Technologies LLC. All rights reserved. IP63-2828-7171-04-15-9
+pluginmanager:
+  # `plugin dir` is the location where plugins library is expected to be present
+  plugin dir: "../sample/library"
+  log dir: "./"
+  log file: "pm"
+...
