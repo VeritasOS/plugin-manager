@@ -18,14 +18,18 @@ jobs:
       with:
         go-version: 1.15
 
-    - name: All
-      run: make all
-
     - name: Analyze
       run: make analyze
 
     - name: Build
       run: make build
 
+#     - name: Test
+#       run: make test
+ 
+#     - name: Build
+#       run: go build -v ./...
+
     - name: Test
-      run: make test
+      run: go test -v ./...
+      
