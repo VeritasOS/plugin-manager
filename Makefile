@@ -73,10 +73,10 @@ govet:	## Run go vet
 
 .PHONY: test
 test:  	## Run all tests
-	echo "Running Plugin Manager Go Unit Tests..."; \
+	echo "Running Plugin Manager Go Unit Tests...";
 	mkdir -p $(GOCOVER);
 	export INTEG_TEST_BIN=$(GOSRC); \
-	export PM_CONF_FILE=$(GOSRC)/docs/sample/pm.config.yaml; \
+	export PM_CONF_FILE=$(GOSRC)/sample/pm.config.yaml; \
 	export INTEGRATION_TEST=START; \
 	cd $(GOSRC); \
 	test_failed=0; \
@@ -101,13 +101,13 @@ test:  	## Run all tests
 .PHONY: go-race
 go-race: 	## Run Go tests with race detector enabled
 	echo "Checking Go code for race conditions...";
-	# NOTE: SUMCOVER directory should be present, along with INTEGRATION_TEST
+	# NOTE: COVER directory should be present, along with INTEGRATION_TEST
 	# 	value being set to "START" for integ_test.go to succeed.
 	mkdir -p $(GOCOVER);
 	export INTEGRATION_TEST=START; \
 	export INTEG_TEST_BIN=$(GOSRC); \
 	cd $(GOSRC); \
-	export PM_CONF_FILE=$(GOSRC)/docs/sample/pm.config.yaml; \
+	export PM_CONF_FILE=$(GOSRC)/sample/pm.config.yaml; \
 	go test -mod=vendor -v -race ./...;
 
 .NOTPARALLEL:
