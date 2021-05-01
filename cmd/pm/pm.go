@@ -28,7 +28,7 @@ func init() {
 	// DefaultConfigPath is default path for config file used when EnvConfFile is not set.
 	config.DefaultConfigPath = "/etc/pm.config.yaml"
 	// DefaultLogPath is default path for log file.
-	config.DefaultLogPath = "/var/log/pm"
+	config.DefaultLogPath = "./"
 
 	// INFO: Use DefaultLogPath when it's available (until the config file is read).
 	// 	If not, use basename of file.
