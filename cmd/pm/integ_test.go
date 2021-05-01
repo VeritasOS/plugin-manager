@@ -9,11 +9,12 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"plugin-manager/config"
 	"reflect"
 	"strconv"
 	"strings"
 	"testing"
+
+	"github.com/VeritasOS/plugin-manager/config"
 
 	yaml "gopkg.in/yaml.v2"
 )

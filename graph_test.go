@@ -3,10 +3,11 @@ package pm
 
 import (
 	"os"
-	"plugin-manager/config"
 	"reflect"
 	"sort"
 	"testing"
+
+	"github.com/VeritasOS/plugin-manager/config"
 )
 
 func Test_getStatusColor(t *testing.T) {

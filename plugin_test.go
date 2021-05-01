@@ -6,9 +6,10 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"plugin-manager/config"
 	"reflect"
 	"testing"
+
+	"github.com/VeritasOS/plugin-manager/config"
 )
 
 func Test_getPluginFiles(t *testing.T) {

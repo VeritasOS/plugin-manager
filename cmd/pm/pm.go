@@ -8,9 +8,10 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	pm "plugin-manager"
-	"plugin-manager/config"
-	logutil "plugin-manager/utils/log"
+
+	pm "github.com/VeritasOS/plugin-manager"
+	"github.com/VeritasOS/plugin-manager/config"
+	logutil "github.com/VeritasOS/plugin-manager/utils/log"
 )
 
 var (
@@ -25,9 +26,9 @@ func init() {
 	// EnvConfFile is environment variable containing PluginManager config file path.
 	config.EnvConfFile = "PM_CONF_FILE"
 	// DefaultConfigPath is default path for config file used when EnvConfFile is not set.
-	config.DefaultConfigPath = "/etc/asum/pm.config.yaml"
+	config.DefaultConfigPath = "/etc/pm.config.yaml"
 	// DefaultLogPath is default path for log file.
-	config.DefaultLogPath = "/log/asum/pm"
+	config.DefaultLogPath = "/var/log/pm"
 
 	// INFO: Use DefaultLogPath when it's available (until the config file is read).
 	// 	If not, use basename of file.

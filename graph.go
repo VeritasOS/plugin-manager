@@ -13,8 +13,8 @@ import (
 	"sync"
 	"time"
 
-	"plugin-manager/config"
-	osutils "plugin-manager/utils/os"
+	"github.com/VeritasOS/plugin-manager/config"
+	osutils "github.com/VeritasOS/plugin-manager/utils/os"
 )
 
 // graph of plugin and its dependencies.

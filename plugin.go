@@ -14,14 +14,15 @@ import (
 	"os/exec"
 	"path"
 	"path/filepath"
-	"plugin-manager/config"
-	logutil "plugin-manager/utils/log"
-	osutils "plugin-manager/utils/os"
-	"plugin-manager/utils/output"
 	"regexp"
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/VeritasOS/plugin-manager/config"
+	logutil "github.com/VeritasOS/plugin-manager/utils/log"
+	osutils "github.com/VeritasOS/plugin-manager/utils/os"
+	"github.com/VeritasOS/plugin-manager/utils/output"
 )
 
 var (

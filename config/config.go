@@ -10,7 +10,7 @@ import (
 
 	"gopkg.in/yaml.v2"
 
-	logutil "plugin-manager/utils/log"
+	logutil "github.com/VeritasOS/plugin-manager/utils/log"
 )
 
 // Config is Plugin Manager's configuration information.
