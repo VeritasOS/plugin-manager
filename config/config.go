@@ -1,4 +1,4 @@
-// Copyright (c) 2021 Veritas Technologies LLC. All rights reserved. IP63-2828-7171-04-15-9
+// Copyright (c) 2023 Veritas Technologies LLC. All rights reserved. IP63-2828-7171-04-15-9
 
 package config
 
@@ -8,7 +8,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 
 	logutil "github.com/VeritasOS/plugin-manager/utils/log"
 )
@@ -59,15 +59,17 @@ func GetPluginsLibrary() string {
 }
 
 // GetPluginsDir gets location of plugins directory.
-//  NOTE: This is deprecated, Use GetPluginsLibrary() instead.
+//
+//	NOTE: This is deprecated, Use GetPluginsLibrary() instead.
 func GetPluginsDir() string {
 	return filepath.FromSlash(filepath.Clean(myConfig.PluginManager.PluginDir) +
 		string(os.PathSeparator))
 }
 
 // GetPMLogDir provides location for storing Plugin Manager logs.
-//  NOTE: The plugin logs would be stored "plugins" directory under the
-//  same path, and use GetPluginsLogDir() to get that path.
+//
+//	NOTE: The plugin logs would be stored "plugins" directory under the
+//	same path, and use GetPluginsLogDir() to get that path.
 func GetPMLogDir() string {
 	return filepath.FromSlash(filepath.Clean(myConfig.PluginManager.LogDir) +
 		string(os.PathSeparator))
@@ -136,9 +138,10 @@ func readConfigFile(confFilePath string) (Config, error) {
 }
 
 // SetLogDir sets the location for storing Plugin Manager logs.
-//  Use GetPMLogDir() to obtain this location from config.
-//  NOTE: The plugin logs would be stored "plugins" directory under the
-//  same path, and use GetPluginsLogDir() to get that path.
+//
+//	Use GetPMLogDir() to obtain this location from config.
+//	NOTE: The plugin logs would be stored "plugins" directory under the
+//	same path, and use GetPluginsLogDir() to get that path.
 func SetLogDir(logDir string) {
 	// TODO: Move log parameters one level up in config as it's common to asum,
 	// and not specific to PM.
@@ -147,9 +150,10 @@ func SetLogDir(logDir string) {
 }
 
 // SetLogFile sets the log file to use.
-//  Use GetLogDir() to obtain this location from config.
-//  NOTE: The plugin logs would be stored "plugins" directory under the
-//  same path, and use Get/SetPluginsLogDir() to get/set that path.
+//
+//	Use GetLogDir() to obtain this location from config.
+//	NOTE: The plugin logs would be stored "plugins" directory under the
+//	same path, and use Get/SetPluginsLogDir() to get/set that path.
 func SetLogFile(logFile string) {
 	// TODO: Move log parameters one level up in config as it's common to asum,
 	// and not specific to PM.
@@ -163,7 +167,8 @@ func SetPluginsLibrary(library string) {
 }
 
 // SetPluginsDir sets location of plugins directory.
-//  NOTE: This is deprecated, Use SetPluginsLibrary() instead.
+//
+//	NOTE: This is deprecated, Use SetPluginsLibrary() instead.
 func SetPluginsDir(library string) {
 	myConfig.PluginManager.PluginDir = filepath.FromSlash(filepath.Clean(library) +
 		string(os.PathSeparator))
@@ -175,9 +180,10 @@ func SetPMLogFile(logfile string) {
 }
 
 // SetPMLogDir sets the location for storing Plugin Manager logs.
-//  Use GetPMLogDir() to obtain this location from config.
-//  NOTE: The plugin logs would be stored "plugins" directory under the
-//  same path, and use GetPluginsLogDir() to get that path.
+//
+//	Use GetPMLogDir() to obtain this location from config.
+//	NOTE: The plugin logs would be stored "plugins" directory under the
+//	same path, and use GetPluginsLogDir() to get that path.
 func SetPMLogDir(logDir string) {
 	myConfig.PluginManager.LogDir = filepath.FromSlash(
 		filepath.Clean(logDir) + string(os.PathSeparator))

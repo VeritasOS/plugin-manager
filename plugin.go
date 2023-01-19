@@ -1,4 +1,4 @@
-// Copyright (c) 2021 Veritas Technologies LLC. All rights reserved. IP63-2828-7171-04-15-9
+// Copyright (c) 2023 Veritas Technologies LLC. All rights reserved. IP63-2828-7171-04-15-9
 
 // Package pm defines Plugin Manager (PM) functions like executing
 // all plugins of a particular plugin type.
@@ -684,10 +684,10 @@ func Run(result *RunStatus, pluginType string) error {
 // ScanCommandOptions scans for the command line options and makes appropriate
 // function call.
 // Input:
-// 	1. map[string]interface{}
-//    where, the options could be following:
-// 		"progname":  Name of the program along with any cmds (ex: asum pm)
-// 		"cmd-index": Index to the cmd (ex: run)
+//  1. map[string]interface{}
+//     where, the options could be following:
+//     "progname":  Name of the program along with any cmds (ex: asum pm)
+//     "cmd-index": Index to the cmd (ex: run)
 func ScanCommandOptions(options map[string]interface{}) error {
 	log.Printf("Entering ScanCommandOptions(%+v)...", options)
 	defer log.Println("Exiting ScanCommandOptions")
