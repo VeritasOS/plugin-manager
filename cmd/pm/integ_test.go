@@ -1,4 +1,4 @@
-// Copyright (c) 2021 Veritas Technologies LLC. All rights reserved. IP63-2828-7171-04-15-9
+// Copyright (c) 2023 Veritas Technologies LLC. All rights reserved. IP63-2828-7171-04-15-9
 
 package main
 
@@ -16,7 +16,7 @@ import (
 
 	"github.com/VeritasOS/plugin-manager/config"
 
-	yaml "gopkg.in/yaml.v2"
+	yaml "gopkg.in/yaml.v3"
 )
 
 // Config is Plugin Manager's configuration information.

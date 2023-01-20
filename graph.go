@@ -1,4 +1,4 @@
-// Copyright (c) 2021 Veritas Technologies LLC. All rights reserved. IP63-2828-7171-04-15-9
+// Copyright (c) 2023 Veritas Technologies LLC. All rights reserved. IP63-2828-7171-04-15-9
 
 // Package pm graph is used for generating the graph image.
 package pm
@@ -108,7 +108,7 @@ func initGraph(pluginType string, pluginsInfo map[string]*PluginAttributes) erro
 }
 
 // generateGraph generates an input `.dot` file based on the fileNoExt name,
-// 	and then generates an `.svg` image output file as fileNoExt.svg.
+// and then generates an `.svg` image output file as fileNoExt.svg.
 func generateGraph() error {
 	dotFile := getDotFilePath()
 	svgFile := getImagePath()

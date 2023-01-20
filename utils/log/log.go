@@ -1,4 +1,4 @@
-// Copyright (c) 2021 Veritas Technologies LLC. All rights reserved. IP63-2828-7171-04-15-9
+// Copyright (c) 2023 Veritas Technologies LLC. All rights reserved. IP63-2828-7171-04-15-9
 
 package log
 
@@ -17,7 +17,7 @@ func PrintNLog(format string, a ...interface{}) {
 }
 
 // PrintNLogError prints to console and log file along with returning the
-//  message in error format.
+// message in error format.
 func PrintNLogError(format string, a ...interface{}) error {
 	err := fmt.Errorf(format, a...)
 	log.Printf("ERROR: %v", err.Error())
@@ -26,7 +26,7 @@ func PrintNLogError(format string, a ...interface{}) error {
 }
 
 // PrintNLogWarning prints warning message to console and log file along with
-//  returning the message in error format.
+// returning the message in error format.
 func PrintNLogWarning(format string, a ...interface{}) error {
 	err := fmt.Errorf(format, a...)
 	log.Printf("WARNING: %v", err.Error())
@@ -35,10 +35,10 @@ func PrintNLogWarning(format string, a ...interface{}) error {
 }
 
 // SetLogging sets the logfile for this program.
-// 	To handle log rotation, the specified myLogFile would be suffixed with
-//  the current date before the log file extension.
-// 	Ex: If myLogFile := "/log/asum/pm", then the logfile used for
-// 		logging would be "/log/asum/pm.20181212235500.0000.log".
+// To handle log rotation, the specified myLogFile would be suffixed with
+// the current date before the log file extension.
+// Ex: If myLogFile := "/log/asum/pm", then the logfile used for
+// logging would be "/log/asum/pm.20181212235500.0000.log".
 func SetLogging(myLogFile string) error {
 	ts := time.Now().Format(time.RFC3339Nano)
 	myLogFile = filepath.Clean(myLogFile)
