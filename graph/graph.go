@@ -1,7 +1,7 @@
 // Copyright (c) 2023 Veritas Technologies LLC. All rights reserved. IP63-2828-7171-04-15-9
 
-// Package pm graph is used for generating the graph image.
-package pm
+// Package pg plugin-graph is used for generating the graph image.
+package plugin_graph
 
 import (
 	"log"
@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/VeritasOS/plugin-manager/config"
+	proto "github.com/VeritasOS/plugin-manager/proto"
 	osutils "github.com/VeritasOS/plugin-manager/utils/os"
 )
 
@@ -32,6 +33,7 @@ type graph struct {
 var g graph
 var dotCmdPresent = true
 
+// initGraphConfig: Initialize graph configurations
 func initGraphConfig(imgNamePrefix string) {
 	// Initialization should be done only once.
 	if g.fileNoExt == "" {
@@ -39,17 +41,18 @@ func initGraphConfig(imgNamePrefix string) {
 	}
 }
 
-func getImagePath() string {
-	return config.GetPMLogDir() + g.fileNoExt + ".svg"
+// GetImagePath returns the SVG image location.
+func GetImagePath() string {
+	return g.fileNoExt + ".svg"
 }
 
 func getDotFilePath() string {
-	return config.GetPMLogDir() + g.fileNoExt + ".dot"
+	return g.fileNoExt + ".dot"
 }
 
-// initGraph initliazes the graph data structure and invokes generateGraph.
-func initGraph(pluginType string, pluginsInfo map[string]*PluginAttributes) error {
-	initGraphConfig(config.GetPMLogFile())
+// InitGraph initliazes the graph data structure and invokes generateGraph.
+func InitGraph(pluginType string, pluginsInfo map[string]*proto.PluginAttributes) error {
+	initGraphConfig(config.GetPMLogDir() + config.GetPMLogFile())
 
 	// DOT guide: https://graphviz.gitlab.io/_pages/pdf/dotguide.pdf
 
@@ -104,14 +107,14 @@ func initGraph(pluginType string, pluginsInfo map[string]*PluginAttributes) erro
 		g.subgraph.Store(pluginType, rows)
 	}
 
-	return generateGraph()
+	return GenerateGraph()
 }
 
-// generateGraph generates an input `.dot` file based on the fileNoExt name,
+// GenerateGraph generates an input `.dot` file based on the fileNoExt name,
 // and then generates an `.svg` image output file as fileNoExt.svg.
-func generateGraph() error {
+func GenerateGraph( /*dotFile, svgFile string*/ ) error {
 	dotFile := getDotFilePath()
-	svgFile := getImagePath()
+	svgFile := GetImagePath()
 
 	fhDigraph, openerr := osutils.OsOpenFile(dotFile, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0666)
 	if openerr != nil {
@@ -163,21 +166,7 @@ func generateGraph() error {
 	return err
 }
 
-// getStatusColor returns the color for a given result status.
-func getStatusColor(status string) string {
-	// Node color
-	ncolor := "blue" // dStatusStart by default
-	if status == dStatusFail {
-		ncolor = "red"
-	} else if status == dStatusOk {
-		ncolor = "green"
-	} else if status == dStatusSkip {
-		ncolor = "yellow"
-	}
-	return ncolor
-}
-
-func updateGraph(subgraphName, plugin, status, url string) error {
+func UpdateGraph(subgraphName, plugin, status, url string) error {
 	ncolor := getStatusColor(status)
 	gContents := []string{}
 	gContentsInterface, ok := g.subgraph.Load(subgraphName)
@@ -188,5 +177,19 @@ func updateGraph(subgraphName, plugin, status, url string) error {
 		"\""+plugin+"\" [style=filled,fillcolor="+ncolor+",URL=\""+url+"\"]")
 	g.subgraph.Store(subgraphName, gContents)
 
-	return generateGraph()
+	return GenerateGraph()
+}
+
+// getStatusColor returns the color for a given result status.
+func getStatusColor(status string) string {
+	// Node color
+	ncolor := "blue" // dStatusStart by default
+	if status == proto.DStatusFail {
+		ncolor = "red"
+	} else if status == proto.DStatusOk {
+		ncolor = "green"
+	} else if status == proto.DStatusSkip {
+		ncolor = "yellow"
+	}
+	return ncolor
 }
