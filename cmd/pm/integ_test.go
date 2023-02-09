@@ -15,6 +15,7 @@ import (
 	"testing"
 
 	"github.com/VeritasOS/plugin-manager/config"
+	proto "github.com/VeritasOS/plugin-manager/proto"
 
 	yaml "gopkg.in/yaml.v3"
 )
@@ -34,10 +35,10 @@ type Config struct {
 
 // Status of plugin execution used for displaying to user on console.
 const (
-	dStatusFail  = "Failed"
-	dStatusOk    = "Succeeded"
-	dStatusSkip  = "Skipped"
-	dStatusStart = "Starting"
+	proto.DStatusFail  = "Failed"
+	proto.DStatusOk    = "Succeeded"
+	proto.DStatusSkip  = "Skipped"
+	proto.DStatusStart = "Starting"
 )
 
 func saveConfig(newConfig Config, configFile string) error {
@@ -171,12 +172,12 @@ func integTest(t *testing.T, pmBinary, tDir, deprecated string) {
 			},
 			want: []string{
 				"",
-				"Checking for \"D\" settings...: " + dStatusStart,
-				"Checking for \"D\" settings...: " + dStatusOk,
+				"Checking for \"D\" settings...: " + proto.DStatusStart,
+				"Checking for \"D\" settings...: " + proto.DStatusOk,
 				"",
-				"Checking for \"A\" settings: " + dStatusStart,
-				"Checking for \"A\" settings: " + dStatusOk,
-				"Running preupgrade plugins: " + dStatusOk,
+				"Checking for \"A\" settings: " + proto.DStatusStart,
+				"Checking for \"A\" settings: " + proto.DStatusOk,
+				"Running preupgrade plugins: " + proto.DStatusOk,
 			},
 			wantErr: false,
 		},
@@ -188,12 +189,12 @@ func integTest(t *testing.T, pmBinary, tDir, deprecated string) {
 			},
 			want: []string{
 				"",
-				"Checking for \"D\" settings...: " + dStatusStart,
-				"Checking for \"D\" settings...: " + dStatusFail,
+				"Checking for \"D\" settings...: " + proto.DStatusStart,
+				"Checking for \"D\" settings...: " + proto.DStatusFail,
 				"",
-				"Checking for \"A\" settings: " + dStatusStart,
-				"Checking for \"A\" settings: " + dStatusSkip,
-				"Running preupgrade plugins: " + dStatusFail,
+				"Checking for \"A\" settings: " + proto.DStatusStart,
+				"Checking for \"A\" settings: " + proto.DStatusSkip,
+				"Running preupgrade plugins: " + proto.DStatusFail,
 				"",
 			},
 			wantErr: true,
