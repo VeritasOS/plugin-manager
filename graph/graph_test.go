@@ -1,5 +1,5 @@
-// Copyright (c) 2021 Veritas Technologies LLC. All rights reserved. IP63-2828-7171-04-15-9
-package plugin_graph
+// Copyright (c) 2023 Veritas Technologies LLC. All rights reserved. IP63-2828-7171-04-15-9
+package pg
 
 import (
 	"os"
@@ -10,7 +10,7 @@ import (
 	"testing"
 
 	"github.com/VeritasOS/plugin-manager/config"
-	proto "github.com/VeritasOS/plugin-manager/proto"
+	"github.com/VeritasOS/plugin-manager/pluginmanager"
 )
 
 func Test_getStatusColor(t *testing.T) {
@@ -29,22 +29,22 @@ func Test_getStatusColor(t *testing.T) {
 	}{
 		{
 			name: "Start",
-			args: args{status: proto.DStatusStart},
+			args: args{status: pluginmanager.DStatusStart},
 			want: "blue",
 		},
 		{
 			name: "Ok/Pass",
-			args: args{status: proto.DStatusOk},
+			args: args{status: pluginmanager.DStatusOk},
 			want: "green",
 		},
 		{
 			name: "Fail",
-			args: args{status: proto.DStatusFail},
+			args: args{status: pluginmanager.DStatusFail},
 			want: "red",
 		},
 		{
 			name: "Skip",
-			args: args{status: proto.DStatusSkip},
+			args: args{status: pluginmanager.DStatusSkip},
 			want: "yellow",
 		},
 	}
@@ -87,7 +87,7 @@ func Test_UpdateGraph(t *testing.T) {
 			name: "Append a row",
 			args: args{
 				plugin: "A/a.test",
-				status: proto.DStatusOk,
+				status: pluginmanager.DStatusOk,
 				url:    "url/A/a.test",
 			},
 			wantErr: false,
@@ -113,7 +113,7 @@ func Test_UpdateGraph(t *testing.T) {
 func Test_initGraph(t *testing.T) {
 	type args struct {
 		pluginType  string
-		pluginsInfo proto.Plugins
+		pluginsInfo pluginmanager.Plugins
 	}
 	tests := []struct {
 		name     string
@@ -125,7 +125,7 @@ func Test_initGraph(t *testing.T) {
 			name: "No plugins",
 			args: args{
 				pluginType:  "prereboot",
-				pluginsInfo: proto.Plugins{},
+				pluginsInfo: pluginmanager.Plugins{},
 			},
 			wantrows: []string{},
 			wantErr:  false,
@@ -134,7 +134,7 @@ func Test_initGraph(t *testing.T) {
 			name: "One plugin",
 			args: args{
 				pluginType: "test1",
-				pluginsInfo: proto.Plugins{
+				pluginsInfo: pluginmanager.Plugins{
 					"A/a.test1": {
 						Description: "A's description",
 						Requires:    []string{},
@@ -152,7 +152,7 @@ func Test_initGraph(t *testing.T) {
 			name: "Two independent plugins",
 			args: args{
 				pluginType: "test2",
-				pluginsInfo: proto.Plugins{
+				pluginsInfo: pluginmanager.Plugins{
 					"A/a.test2": {
 						Description: "A's description",
 						Requires:    []string{},
@@ -178,7 +178,7 @@ func Test_initGraph(t *testing.T) {
 		// 	name: "Dependent plugin",
 		// 	args: args{
 		// 		pluginType: "test3",
-		// 		pluginsInfo: proto.Plugins{
+		// 		pluginsInfo: pluginmanager.Plugins{
 		// 			"A/a.test3": {
 		// 				Description: "A's description",
 		// 				Requires:    []string{},

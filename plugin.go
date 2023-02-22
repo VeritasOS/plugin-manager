@@ -20,8 +20,8 @@ import (
 	"time"
 
 	"github.com/VeritasOS/plugin-manager/config"
-	"github.com/VeritasOS/plugin-manager/graph"
-	proto "github.com/VeritasOS/plugin-manager/proto"
+	graph "github.com/VeritasOS/plugin-manager/graph"
+	"github.com/VeritasOS/plugin-manager/pluginmanager"
 	logutil "github.com/VeritasOS/plugin-manager/utils/log"
 	osutils "github.com/VeritasOS/plugin-manager/utils/os"
 	"github.com/VeritasOS/plugin-manager/utils/output"
@@ -93,8 +93,8 @@ func getPluginType(file string) string {
 	return strings.Replace(path.Ext(file), ".", ``, -1)
 }
 
-func getPluginsInfo(pluginType string) (proto.Plugins, error) {
-	var pluginsInfo = make(proto.Plugins)
+func getPluginsInfo(pluginType string) (pluginmanager.Plugins, error) {
+	var pluginsInfo = make(pluginmanager.Plugins)
 	pluginFiles, err := getPluginFiles(pluginType)
 	if err != nil {
 		return pluginsInfo, err
@@ -116,13 +116,13 @@ func getPluginsInfo(pluginType string) (proto.Plugins, error) {
 	return pluginsInfo, nil
 }
 
-func normalizePluginsInfo(pluginsInfo proto.Plugins) proto.Plugins {
+func normalizePluginsInfo(pluginsInfo pluginmanager.Plugins) pluginmanager.Plugins {
 	log.Println("Entering normalizePluginsInfo")
 	defer log.Println("Exiting normalizePluginsInfo")
 
-	nPInfo := proto.Plugins{}
+	nPInfo := pluginmanager.Plugins{}
 	for pFile, pFContents := range pluginsInfo {
-		nPInfo[pFile] = &proto.PluginAttributes{
+		nPInfo[pFile] = &pluginmanager.PluginAttributes{
 			Description: pFContents.Description,
 			ExecStart:   pFContents.ExecStart,
 			FileName:    pFile,
@@ -187,11 +187,11 @@ func normalizePluginsInfo(pluginsInfo proto.Plugins) proto.Plugins {
 }
 
 // parseUnitFile parses the plugin file contents.
-func parseUnitFile(fileContents string) (proto.PluginAttributes, error) {
+func parseUnitFile(fileContents string) (pluginmanager.PluginAttributes, error) {
 	log.Println("Entering parseUnitFile")
 	defer log.Println("Exiting parseUnitFile")
 
-	pluginInfo := proto.PluginAttributes{}
+	pluginInfo := pluginmanager.PluginAttributes{}
 	if len(fileContents) == 0 {
 		return pluginInfo, nil
 	}
@@ -240,7 +240,7 @@ func parseUnitFile(fileContents string) (proto.PluginAttributes, error) {
 	return pluginInfo, nil
 }
 
-func validateDependencies(nPInfo proto.Plugins) ([]string, error) {
+func validateDependencies(nPInfo pluginmanager.Plugins) ([]string, error) {
 	log.Println("Entering validateDependencies")
 	defer log.Println("Exiting validateDependencies")
 
@@ -326,11 +326,11 @@ func validateDependencies(nPInfo proto.Plugins) ([]string, error) {
 	return pluginOrder, nil
 }
 
-func executePluginCmd(statusCh chan<- map[string]*proto.PluginStatus, p string, pluginsInfo proto.Plugins, failedDependency bool) {
+func executePluginCmd(statusCh chan<- map[string]*pluginmanager.RunStatus, p string, pluginsInfo pluginmanager.Plugins, failedDependency bool) {
 	pInfo := pluginsInfo[p]
 	log.Printf("\nChannel: Plugin %s info: \n%+v\n", p, pInfo)
-	graph.UpdateGraph(getPluginType(p), p, proto.DStatusStart, "")
-	logutil.PrintNLog("\n%s: %s\n", pInfo.Description, proto.DStatusStart)
+	graph.UpdateGraph(getPluginType(p), p, pluginmanager.DStatusStart, "")
+	logutil.PrintNLog("\n%s: %s\n", pInfo.Description, pluginmanager.DStatusStart)
 	// Get relative path to plugins log file from PM log dir, so that linking
 	// in plugin graph works even when the logs are copied to another system.
 	pluginLogFile := strings.Replace(config.GetPluginsLogDir(),
@@ -355,10 +355,10 @@ func executePluginCmd(statusCh chan<- map[string]*proto.PluginStatus, p string, 
 	myStatusMsg := ""
 	if failedDependency {
 		myStatusMsg = "Skipping as its dependency failed."
-		myStatus = proto.DStatusSkip
+		myStatus = pluginmanager.DStatusSkip
 	} else if pInfo.ExecStart == "" {
 		myStatusMsg = "Passing as ExecStart value is empty!"
-		myStatus = proto.DStatusOk
+		myStatus = pluginmanager.DStatusOk
 	}
 
 	if myStatus != "" {
@@ -366,7 +366,7 @@ func executePluginCmd(statusCh chan<- map[string]*proto.PluginStatus, p string, 
 		chLog.Println(myStatusMsg)
 		graph.UpdateGraph(getPluginType(p), p, myStatus, "")
 		logutil.PrintNLog("%s: %s\n", pInfo.Description, myStatus)
-		statusCh <- map[string]*proto.PluginStatus{p: {Status: myStatus}}
+		statusCh <- map[string]*pluginmanager.RunStatus{p: {Status: myStatus}}
 		return
 	}
 
@@ -383,28 +383,28 @@ func executePluginCmd(statusCh chan<- map[string]*proto.PluginStatus, p string, 
 		chLog.Println("Executing command:", pInfo.ExecStart)
 		if err != nil {
 			chLog.Println("Error:", err.Error())
-			graph.UpdateGraph(getPluginType(p), p, proto.DStatusFail, pluginLogFile)
+			graph.UpdateGraph(getPluginType(p), p, pluginmanager.DStatusFail, pluginLogFile)
 		} else {
 			chLog.Println("Stdout & Stderr:", string(stdOutErr))
-			graph.UpdateGraph(getPluginType(p), p, proto.DStatusOk, pluginLogFile)
+			graph.UpdateGraph(getPluginType(p), p, pluginmanager.DStatusOk, pluginLogFile)
 		}
 	}()
 
 	log.Println("Stdout & Stderr:", string(stdOutErr))
-	pStatus := proto.PluginStatus{StdOutErr: string(stdOutErr)}
+	pStatus := pluginmanager.RunStatus{StdOutErr: string(stdOutErr)}
 	if err != nil {
-		pStatus.Status = proto.DStatusFail
+		pStatus.Status = pluginmanager.DStatusFail
 		log.Printf("Failed to execute plugin %s. Error: %s\n", p, err.Error())
-		logutil.PrintNLog("%s: %s\n", pInfo.Description, proto.DStatusFail)
-		statusCh <- map[string]*proto.PluginStatus{p: &pStatus}
+		logutil.PrintNLog("%s: %s\n", pInfo.Description, pluginmanager.DStatusFail)
+		statusCh <- map[string]*pluginmanager.RunStatus{p: &pStatus}
 		return
 	}
-	pStatus.Status = proto.DStatusOk
-	logutil.PrintNLog("%s: %s\n", pInfo.Description, proto.DStatusOk)
-	statusCh <- map[string]*proto.PluginStatus{p: &pStatus}
+	pStatus.Status = pluginmanager.DStatusOk
+	logutil.PrintNLog("%s: %s\n", pInfo.Description, pluginmanager.DStatusOk)
+	statusCh <- map[string]*pluginmanager.RunStatus{p: &pStatus}
 }
 
-func executePlugins(psStatus *proto.PluginsStatus, nPInfo proto.Plugins, sequential bool) bool {
+func executePlugins(psStatus *pluginmanager.PluginsStatus, nPInfo pluginmanager.Plugins, sequential bool) bool {
 	log.Println("Entering executePlugins")
 	defer log.Println("Exiting executePlugins")
 
@@ -434,7 +434,7 @@ func executePlugins(psStatus *proto.PluginsStatus, nPInfo proto.Plugins, sequent
 	}
 
 	executingCnt := 0
-	exeCh := make(chan map[string]*proto.PluginStatus)
+	exeCh := make(chan map[string]*pluginmanager.RunStatus)
 	pluginIndexes := make(map[string]int)
 	failedDependency := make(map[string]bool)
 	for len(nPInfo) > 0 || executingCnt != 0 {
@@ -449,7 +449,7 @@ func executePlugins(psStatus *proto.PluginsStatus, nPInfo proto.Plugins, sequent
 				log.Printf("Plugin %s is ready for execution: %v.", p, nPInfo[p])
 				waitCount[p]--
 
-				ps := proto.PluginStatus{}
+				ps := pluginmanager.RunStatus{}
 				ps.PluginAttributes = *nPInfo[p]
 				*psStatus = append(*psStatus, ps)
 				pluginIndexes[p] = len(*psStatus) - 1
@@ -467,13 +467,13 @@ func executePlugins(psStatus *proto.PluginsStatus, nPInfo proto.Plugins, sequent
 			ps := *psStatus
 			ps[pIdx].Status = pStatus.Status
 			ps[pIdx].StdOutErr = pStatus.StdOutErr
-			if pStatus.Status == proto.DStatusFail {
+			if pStatus.Status == pluginmanager.DStatusFail {
 				retStatus = false
 			}
 
 			for _, rby := range nPInfo[plugin].RequiredBy {
-				if pStatus.Status == proto.DStatusFail ||
-					pStatus.Status == proto.DStatusSkip {
+				if pStatus.Status == pluginmanager.DStatusFail ||
+					pStatus.Status == pluginmanager.DStatusSkip {
 					// TODO: When "Wants" and "WantedBy" options are supported similar to
 					// 	"Requires" and "RequiredBy", the failedDependency flag should be
 					// 	checked in conjunction with if its required dependency is failed,
@@ -609,7 +609,7 @@ func RegisterCommandOptions(progname string) {
 }
 
 // Run the specified plugin type plugins.
-func Run(result *proto.RunStatus, pluginType string) error {
+func Run(result *pluginmanager.RunAllStatus, pluginType string) error {
 	result.Type = pluginType
 	status := true
 
@@ -617,14 +617,14 @@ func Run(result *proto.RunStatus, pluginType string) error {
 		err = logutil.PrintNLogError(
 			"Failed to create the plugins logs directory: %s. "+
 				"Error: %s", config.GetPluginsLogDir(), err.Error())
-		result.Status = proto.DStatusFail
+		result.Status = pluginmanager.DStatusFail
 		result.StdOutErr = err.Error()
 		return err
 	}
 
 	var pluginsInfo, err = getPluginsInfo(pluginType)
 	if err != nil {
-		result.Status = proto.DStatusFail
+		result.Status = pluginmanager.DStatusFail
 		result.StdOutErr = err.Error()
 		return err
 	}
@@ -633,14 +633,14 @@ func Run(result *proto.RunStatus, pluginType string) error {
 
 	status = executePlugins(&result.Plugins, nPInfo, *CmdOptions.sequential)
 	if status != true {
-		result.Status = proto.DStatusFail
-		err = fmt.Errorf("Running %s plugins: %s", pluginType, proto.DStatusFail)
+		result.Status = pluginmanager.DStatusFail
+		err = fmt.Errorf("Running %s plugins: %s", pluginType, pluginmanager.DStatusFail)
 		result.StdOutErr = err.Error()
 		logutil.PrintNLog("%s\n", err.Error())
 		return err
 	}
-	result.Status = proto.DStatusOk
-	logutil.PrintNLog("Running %s plugins: %s\n", pluginType, proto.DStatusOk)
+	result.Status = pluginmanager.DStatusOk
+	logutil.PrintNLog("Running %s plugins: %s\n", pluginType, pluginmanager.DStatusOk)
 	return nil
 }
 
@@ -728,7 +728,7 @@ func ScanCommandOptions(options map[string]interface{}) error {
 			err = List(pluginType)
 
 		case "run":
-			pmstatus := proto.RunStatus{}
+			pmstatus := pluginmanager.RunAllStatus{}
 			err = Run(&pmstatus, pluginType)
 			output.Write(pmstatus)
 		}

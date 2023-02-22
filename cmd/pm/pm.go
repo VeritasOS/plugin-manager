@@ -17,7 +17,7 @@ import (
 var (
 	buildDate string
 	// Version of the Plugin Manager (PM) command.
-	version = "4.2"
+	version = "4.4"
 	// progname is name of my binary/program/executable.
 	progname = filepath.Base(os.Args[0])
 )
