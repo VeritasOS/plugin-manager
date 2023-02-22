@@ -15,7 +15,7 @@ import (
 	"testing"
 
 	"github.com/VeritasOS/plugin-manager/config"
-	proto "github.com/VeritasOS/plugin-manager/proto"
+	"github.com/VeritasOS/plugin-manager/pluginmanager"
 
 	yaml "gopkg.in/yaml.v3"
 )
@@ -32,14 +32,6 @@ type Config struct {
 		PluginDir string `yaml:"plugin dir"`
 	}
 }
-
-// Status of plugin execution used for displaying to user on console.
-const (
-	proto.DStatusFail  = "Failed"
-	proto.DStatusOk    = "Succeeded"
-	proto.DStatusSkip  = "Skipped"
-	proto.DStatusStart = "Starting"
-)
 
 func saveConfig(newConfig Config, configFile string) error {
 	log.Println("Entering saveConfig")
@@ -172,12 +164,12 @@ func integTest(t *testing.T, pmBinary, tDir, deprecated string) {
 			},
 			want: []string{
 				"",
-				"Checking for \"D\" settings...: " + proto.DStatusStart,
-				"Checking for \"D\" settings...: " + proto.DStatusOk,
+				"Checking for \"D\" settings...: " + pluginmanager.DStatusStart,
+				"Checking for \"D\" settings...: " + pluginmanager.DStatusOk,
 				"",
-				"Checking for \"A\" settings: " + proto.DStatusStart,
-				"Checking for \"A\" settings: " + proto.DStatusOk,
-				"Running preupgrade plugins: " + proto.DStatusOk,
+				"Checking for \"A\" settings: " + pluginmanager.DStatusStart,
+				"Checking for \"A\" settings: " + pluginmanager.DStatusOk,
+				"Running preupgrade plugins: " + pluginmanager.DStatusOk,
 			},
 			wantErr: false,
 		},
@@ -189,12 +181,12 @@ func integTest(t *testing.T, pmBinary, tDir, deprecated string) {
 			},
 			want: []string{
 				"",
-				"Checking for \"D\" settings...: " + proto.DStatusStart,
-				"Checking for \"D\" settings...: " + proto.DStatusFail,
+				"Checking for \"D\" settings...: " + pluginmanager.DStatusStart,
+				"Checking for \"D\" settings...: " + pluginmanager.DStatusFail,
 				"",
-				"Checking for \"A\" settings: " + proto.DStatusStart,
-				"Checking for \"A\" settings: " + proto.DStatusSkip,
-				"Running preupgrade plugins: " + proto.DStatusFail,
+				"Checking for \"A\" settings: " + pluginmanager.DStatusStart,
+				"Checking for \"A\" settings: " + pluginmanager.DStatusSkip,
+				"Running preupgrade plugins: " + pluginmanager.DStatusFail,
 				"",
 			},
 			wantErr: true,

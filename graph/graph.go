@@ -1,7 +1,7 @@
 // Copyright (c) 2023 Veritas Technologies LLC. All rights reserved. IP63-2828-7171-04-15-9
 
-// Package pg plugin-graph is used for generating the graph image.
-package plugin_graph
+// Package pg (plugin graph) is used for generating the graph image.
+package pg
 
 import (
 	"log"
@@ -14,7 +14,7 @@ import (
 	"time"
 
 	"github.com/VeritasOS/plugin-manager/config"
-	proto "github.com/VeritasOS/plugin-manager/proto"
+	"github.com/VeritasOS/plugin-manager/pluginmanager"
 	osutils "github.com/VeritasOS/plugin-manager/utils/os"
 )
 
@@ -51,7 +51,7 @@ func getDotFilePath() string {
 }
 
 // InitGraph initliazes the graph data structure and invokes generateGraph.
-func InitGraph(pluginType string, pluginsInfo map[string]*proto.PluginAttributes) error {
+func InitGraph(pluginType string, pluginsInfo map[string]*pluginmanager.PluginAttributes) error {
 	initGraphConfig(config.GetPMLogDir() + config.GetPMLogFile())
 
 	// DOT guide: https://graphviz.gitlab.io/_pages/pdf/dotguide.pdf
@@ -166,6 +166,7 @@ func GenerateGraph( /*dotFile, svgFile string*/ ) error {
 	return err
 }
 
+// UpdateGraph updates the plugin node with the status and url.
 func UpdateGraph(subgraphName, plugin, status, url string) error {
 	ncolor := getStatusColor(status)
 	gContents := []string{}
@@ -184,11 +185,11 @@ func UpdateGraph(subgraphName, plugin, status, url string) error {
 func getStatusColor(status string) string {
 	// Node color
 	ncolor := "blue" // dStatusStart by default
-	if status == proto.DStatusFail {
+	if status == pluginmanager.DStatusFail {
 		ncolor = "red"
-	} else if status == proto.DStatusOk {
+	} else if status == pluginmanager.DStatusOk {
 		ncolor = "green"
-	} else if status == proto.DStatusSkip {
+	} else if status == pluginmanager.DStatusSkip {
 		ncolor = "yellow"
 	}
 	return ncolor

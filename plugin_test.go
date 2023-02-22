@@ -1,4 +1,4 @@
-// Copyright (c) 2021 Veritas Technologies LLC. All rights reserved. IP63-2828-7171-04-15-9
+// Copyright (c) 2023 Veritas Technologies LLC. All rights reserved. IP63-2828-7171-04-15-9
 
 package pm
 
@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/VeritasOS/plugin-manager/config"
+	"github.com/VeritasOS/plugin-manager/pluginmanager"
 )
 
 func Test_getPluginFiles(t *testing.T) {
@@ -77,7 +78,7 @@ func Test_getPluginFiles(t *testing.T) {
 			},
 		},
 		// {
-		// 	name:       "Not a plugins library",
+		// 	name:       "Not a pluginmanager.plugins library",
 		// 	pluginType: "test",
 		// 	output: struct {
 		// 		pluginFiles []string
@@ -173,7 +174,7 @@ func Test_validateDependencies(t *testing.T) {
 	}
 
 	type args struct {
-		pluginsInfo Plugins
+		pluginsInfo pluginmanager.Plugins
 	}
 	tests := []struct {
 		name    string
@@ -184,7 +185,7 @@ func Test_validateDependencies(t *testing.T) {
 		{
 			name: "No dependencies",
 			args: args{
-				pluginsInfo: Plugins{
+				pluginsInfo: pluginmanager.Plugins{
 					"A/a.test": {
 						Description: "Applying \"A\" settings",
 						Requires:    []string{},
@@ -206,7 +207,7 @@ func Test_validateDependencies(t *testing.T) {
 		{
 			name: "Single dependency",
 			args: args{
-				pluginsInfo: Plugins{
+				pluginsInfo: pluginmanager.Plugins{
 					"A/a.test": {
 						Description: "Applying \"A\" settings",
 						Requires:    []string{},
@@ -230,7 +231,7 @@ func Test_validateDependencies(t *testing.T) {
 		{
 			name: "Multiple dependencies",
 			args: args{
-				pluginsInfo: Plugins{
+				pluginsInfo: pluginmanager.Plugins{
 					"A/a.test": {
 						Description: "Applying \"A\" settings",
 						Requires:    []string{},
@@ -261,7 +262,7 @@ func Test_validateDependencies(t *testing.T) {
 		{
 			name: "Multi-level dependencies",
 			args: args{
-				pluginsInfo: Plugins{
+				pluginsInfo: pluginmanager.Plugins{
 					"A/a.test": {
 						Description: "Applying \"A\" settings",
 						Requires: []string{
@@ -300,7 +301,7 @@ func Test_validateDependencies(t *testing.T) {
 		{
 			name: "Direct circular dependency",
 			args: args{
-				pluginsInfo: Plugins{
+				pluginsInfo: pluginmanager.Plugins{
 					"A/a.test": {
 						Description: "Applying \"A\" settings",
 						Requires: []string{
@@ -323,7 +324,7 @@ func Test_validateDependencies(t *testing.T) {
 		{
 			name: "Requires & Required-by circular dependency",
 			args: args{
-				pluginsInfo: Plugins{
+				pluginsInfo: pluginmanager.Plugins{
 					"A/a.circular": {
 						Description: "Applying \"A\" settings",
 						Requires: []string{
@@ -346,7 +347,7 @@ func Test_validateDependencies(t *testing.T) {
 		{
 			name: "Indirect circular dependency",
 			args: args{
-				pluginsInfo: Plugins{
+				pluginsInfo: pluginmanager.Plugins{
 					"A/a.test": {
 						Description: "Applying \"A\" settings",
 						Requires: []string{
@@ -376,7 +377,7 @@ func Test_validateDependencies(t *testing.T) {
 		{
 			name: "Dependency not met",
 			args: args{
-				pluginsInfo: Plugins{
+				pluginsInfo: pluginmanager.Plugins{
 					"A/a.test": {
 						Description: "Applying \"A\" settings",
 						Requires: []string{
@@ -392,7 +393,7 @@ func Test_validateDependencies(t *testing.T) {
 		{
 			name: "Dependencies not met",
 			args: args{
-				pluginsInfo: Plugins{
+				pluginsInfo: pluginmanager.Plugins{
 					"A/a.test": {
 						Description: "Applying \"A\" settings",
 						Requires: []string{
@@ -415,11 +416,11 @@ func Test_validateDependencies(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// INFO: Validating dependencies requires pluginsInfo to be in
+			// INFO: Validating dependencies requires pluginmanager.pluginsInfo to be in
 			// 	normalized form, so first call normalizePluginsInfo() before
 			//  calling validateDependencies().
 			nPInfo := normalizePluginsInfo(tt.args.pluginsInfo)
-			t.Logf("Normalized plugins info: %v", nPInfo)
+			t.Logf("Normalized pluginmanager.plugins info: %v", nPInfo)
 			got, err := validateDependencies(nPInfo)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("validateDependencies() error = %v, wantErr %v", err, tt.wantErr)
@@ -440,12 +441,12 @@ func Test_parseUnitFile(t *testing.T) {
 	tests := []struct {
 		name         string
 		fileContents string
-		pluginInfo   PluginAttributes
+		pluginInfo   pluginmanager.PluginAttributes
 	}{
 		{
 			name:         "Plugin file with no contents",
 			fileContents: "",
-			pluginInfo:   PluginAttributes{},
+			pluginInfo:   pluginmanager.PluginAttributes{},
 		},
 		{
 			name: "Plugin file with desc & exec",
@@ -453,7 +454,7 @@ func Test_parseUnitFile(t *testing.T) {
 Description=Applying "A" settings
 ExecStart=/bin/echo "Running A...!"
 `,
-			pluginInfo: PluginAttributes{
+			pluginInfo: pluginmanager.PluginAttributes{
 				Description: "Applying \"A\" settings",
 				ExecStart:   "/bin/echo \"Running A...!\"",
 			},
@@ -464,7 +465,7 @@ Description=Applying "A" settings
 # Requires= 
 ExecStart=/bin/echo "Running A...!"
 `,
-			pluginInfo: PluginAttributes{
+			pluginInfo: pluginmanager.PluginAttributes{
 				Description: "Applying \"A\" settings",
 				ExecStart:   "/bin/echo \"Running A...!\"",
 			},
@@ -476,7 +477,7 @@ Description=Applying "D" settings
 Requires=a.test
 ExecStart=/bin/echo "Running D...!"
 `,
-			pluginInfo: PluginAttributes{
+			pluginInfo: pluginmanager.PluginAttributes{
 				Description: "Applying \"D\" settings",
 				Requires:    []string{"a.test"},
 				ExecStart:   "/bin/echo \"Running D...!\"",
@@ -489,7 +490,7 @@ Description=Applying "D" settings
 Requires=a.test b.test c.test
 ExecStart=/bin/echo "Running D...!"
 `,
-			pluginInfo: PluginAttributes{
+			pluginInfo: pluginmanager.PluginAttributes{
 				Description: "Applying \"D\" settings",
 				Requires: []string{
 					"a.test",
@@ -505,7 +506,7 @@ ExecStart=/bin/echo "Running D...!"
 Description=Applying "A:B" settings
 ExecStart=/bin/echo "Running A & B...!"
 `,
-			pluginInfo: PluginAttributes{
+			pluginInfo: pluginmanager.PluginAttributes{
 				Description: "Applying \"A:B\" settings",
 				ExecStart:   "/bin/echo \"Running A & B...!\"",
 			},
@@ -529,34 +530,34 @@ func Test_executePlugins(t *testing.T) {
 	}
 	type want struct {
 		returnStatus bool
-		psStatus     PluginsStatus
+		psStatus     pluginmanager.PluginsStatus
 	}
 
 	tests := []struct {
 		name       string
-		pluginInfo Plugins
+		pluginInfo pluginmanager.Plugins
 		sequential bool
 		want       want
 	}{
 		{
-			name:       "No plugins",
-			pluginInfo: Plugins{},
+			name:       "No pluginmanager.plugins",
+			pluginInfo: pluginmanager.Plugins{},
 			want: want{
 				returnStatus: true,
-				// psStatus:     PluginsStatus{},
+				// psStatus:     pluginmanager.PluginsStatus{},
 			},
 		},
 		{
 			name: "One plugin only with multiple arguments to ExecStart",
-			pluginInfo: Plugins{"A/a.test": {
+			pluginInfo: pluginmanager.Plugins{"A/a.test": {
 				Description: "Applying \"A\" settings",
 				ExecStart:   "/usr/bin/top -b -n 1",
 			}},
 			want: want{
 				returnStatus: true,
-				psStatus: PluginsStatus{
-					PluginStatus{
-						PluginAttributes: PluginAttributes{
+				psStatus: pluginmanager.PluginsStatus{
+					pluginmanager.RunStatus{
+						PluginAttributes: pluginmanager.PluginAttributes{
 							Description: "Applying \"A\" settings",
 							FileName:    "A/a.test",
 							ExecStart:   "/usr/bin/top -b -n 1",
@@ -570,7 +571,7 @@ func Test_executePlugins(t *testing.T) {
 		},
 		{
 			name: "One plugin without ExecStart value",
-			pluginInfo: Plugins{
+			pluginInfo: pluginmanager.Plugins{
 				"A/a.test": {
 					Description: "Applying \"A\" settings",
 					ExecStart:   "",
@@ -578,9 +579,9 @@ func Test_executePlugins(t *testing.T) {
 			},
 			want: want{
 				returnStatus: true,
-				psStatus: PluginsStatus{
-					PluginStatus{
-						PluginAttributes: PluginAttributes{
+				psStatus: pluginmanager.PluginsStatus{
+					pluginmanager.RunStatus{
+						PluginAttributes: pluginmanager.PluginAttributes{
 							Description: "Applying \"A\" settings",
 							FileName:    "A/a.test",
 							ExecStart:   "",
@@ -594,7 +595,7 @@ func Test_executePlugins(t *testing.T) {
 		},
 		{
 			name: "Only one failing plugin",
-			pluginInfo: Plugins{
+			pluginInfo: pluginmanager.Plugins{
 				"A/a.test": {
 					Description: "Applying \"A\" settings",
 					ExecStart:   "exit 1",
@@ -602,9 +603,9 @@ func Test_executePlugins(t *testing.T) {
 			},
 			want: want{
 				returnStatus: false,
-				psStatus: PluginsStatus{
-					PluginStatus{
-						PluginAttributes: PluginAttributes{
+				psStatus: pluginmanager.PluginsStatus{
+					pluginmanager.RunStatus{
+						PluginAttributes: pluginmanager.PluginAttributes{
 							Description: "Applying \"A\" settings",
 							FileName:    "A/a.test",
 							ExecStart:   "exit 1",
@@ -618,7 +619,7 @@ func Test_executePlugins(t *testing.T) {
 		},
 		{
 			name: "Plugin with dependency",
-			pluginInfo: Plugins{
+			pluginInfo: pluginmanager.Plugins{
 				"D/d.test": {
 					Description: "Applying \"D\" settings",
 					Requires:    []string{"A/a.test"},
@@ -631,9 +632,9 @@ func Test_executePlugins(t *testing.T) {
 			},
 			want: want{
 				returnStatus: true,
-				psStatus: PluginsStatus{
-					PluginStatus{
-						PluginAttributes: PluginAttributes{
+				psStatus: pluginmanager.PluginsStatus{
+					pluginmanager.RunStatus{
+						PluginAttributes: pluginmanager.PluginAttributes{
 							Description: "Applying \"A\" settings",
 							FileName:    "A/a.test",
 							ExecStart:   `/bin/echo "Running A..."`,
@@ -643,8 +644,8 @@ func Test_executePlugins(t *testing.T) {
 						Status:    "Succeeded",
 						StdOutErr: `Running A...`,
 					},
-					PluginStatus{
-						PluginAttributes: PluginAttributes{
+					pluginmanager.RunStatus{
+						PluginAttributes: pluginmanager.PluginAttributes{
 							Description: "Applying \"D\" settings",
 							FileName:    "D/d.test",
 							ExecStart:   `/bin/echo "Running D..."`,
@@ -659,7 +660,7 @@ func Test_executePlugins(t *testing.T) {
 		},
 		{
 			name: "Plugin with RequiredBy & Requires circular dependency",
-			pluginInfo: Plugins{
+			pluginInfo: pluginmanager.Plugins{
 				"D/d.test": {
 					Description: "Applying \"D\" settings",
 					Requires:    []string{"A/a.test"},
@@ -671,11 +672,11 @@ func Test_executePlugins(t *testing.T) {
 					ExecStart:   "/bin/echo \"Running A...!\"",
 				},
 			},
-			want: want{returnStatus: false, psStatus: PluginsStatus{}},
+			want: want{returnStatus: false, psStatus: pluginmanager.PluginsStatus{}},
 		},
 		{
 			name: "Plugin with RequiredBy & Requires dependency",
-			pluginInfo: Plugins{
+			pluginInfo: pluginmanager.Plugins{
 				"D/d.test": {
 					Description: "Applying \"D\" settings",
 					Requires:    []string{"A/a.test"},
@@ -689,9 +690,9 @@ func Test_executePlugins(t *testing.T) {
 			},
 			want: want{
 				returnStatus: true,
-				psStatus: PluginsStatus{
-					PluginStatus{
-						PluginAttributes: PluginAttributes{
+				psStatus: pluginmanager.PluginsStatus{
+					pluginmanager.RunStatus{
+						PluginAttributes: pluginmanager.PluginAttributes{
 							Description: "Applying \"A\" settings",
 							FileName:    "A/a.test",
 							ExecStart:   "/bin/echo \"Running A...!\"",
@@ -701,8 +702,8 @@ func Test_executePlugins(t *testing.T) {
 						Status:    "Succeeded",
 						StdOutErr: "Running A...!\"\"",
 					},
-					PluginStatus{
-						PluginAttributes: PluginAttributes{
+					pluginmanager.RunStatus{
+						PluginAttributes: pluginmanager.PluginAttributes{
 							Description: "Applying \"D\" settings",
 							FileName:    "D/d.test",
 							ExecStart:   "/bin/echo \"Running D...!\"",
@@ -717,7 +718,7 @@ func Test_executePlugins(t *testing.T) {
 		},
 		{
 			name: "Plugin with RequiredBy dependency",
-			pluginInfo: Plugins{
+			pluginInfo: pluginmanager.Plugins{
 				"D/d.test": {
 					Description: "Applying \"D\" settings",
 					ExecStart:   "/bin/echo \"Running D...!\"",
@@ -730,9 +731,9 @@ func Test_executePlugins(t *testing.T) {
 			},
 			want: want{
 				returnStatus: true,
-				psStatus: PluginsStatus{
-					PluginStatus{
-						PluginAttributes: PluginAttributes{
+				psStatus: pluginmanager.PluginsStatus{
+					pluginmanager.RunStatus{
+						PluginAttributes: pluginmanager.PluginAttributes{
 							Description: "Applying \"A\" settings", FileName: "A/a.test",
 							ExecStart:  "/bin/echo \"Running A...!\"",
 							RequiredBy: []string{"D/d.test"},
@@ -742,7 +743,7 @@ func Test_executePlugins(t *testing.T) {
 						StdOutErr: "\"Running A...!\"",
 					},
 					{
-						PluginAttributes: PluginAttributes{
+						PluginAttributes: pluginmanager.PluginAttributes{
 							Description: "Applying \"D\" settings",
 							FileName:    "D/d.test",
 							ExecStart:   "/bin/echo \"Running D...!\"",
@@ -757,7 +758,7 @@ func Test_executePlugins(t *testing.T) {
 		},
 		{
 			name: "Skip when dependency fails and mark overall status as Failed",
-			pluginInfo: Plugins{
+			pluginInfo: pluginmanager.Plugins{
 				"D/d.test": {
 					Description: "Applying \"D\" settings",
 					Requires:    []string{"A/a.test"},
@@ -770,9 +771,9 @@ func Test_executePlugins(t *testing.T) {
 			},
 			want: want{
 				returnStatus: false,
-				psStatus: PluginsStatus{
-					PluginStatus{
-						PluginAttributes: PluginAttributes{
+				psStatus: pluginmanager.PluginsStatus{
+					pluginmanager.RunStatus{
+						PluginAttributes: pluginmanager.PluginAttributes{
 							Description: "Applying \"A\" settings",
 							FileName:    "A/a.test",
 							ExecStart:   "exit 1",
@@ -780,8 +781,8 @@ func Test_executePlugins(t *testing.T) {
 						},
 						Status: "Failed",
 					},
-					PluginStatus{
-						PluginAttributes: PluginAttributes{
+					pluginmanager.RunStatus{
+						PluginAttributes: pluginmanager.PluginAttributes{
 							Description: "Applying \"D\" settings",
 							Requires:    []string{"A/a.test"},
 							ExecStart:   "/bin/echo \"Running D...!\"",
@@ -795,14 +796,14 @@ func Test_executePlugins(t *testing.T) {
 		},
 	}
 
-	initGraphConfig(config.GetPMLogFile())
+	// graph.InitGraphConfig(config.GetPMLogFile())
 	for _, tt := range tests {
 		// Test Sequential as well as sequential execution
 		for _, tt.sequential = range []bool{false, true} {
 			t.Run(tt.name+fmt.Sprintf("(sequential=%v)", tt.sequential),
 				func(t *testing.T) {
 					npInfo := normalizePluginsInfo(tt.pluginInfo)
-					var result PluginsStatus
+					var result pluginmanager.PluginsStatus
 					res := executePlugins(&result, npInfo, tt.sequential)
 					// t.Logf("res: %+v, expected: %v", res, tt.want.returnStatus)
 					if res != tt.want.returnStatus {
@@ -811,17 +812,17 @@ func Test_executePlugins(t *testing.T) {
 						return
 					}
 					// if len(result) != 0 {
-					t.Logf("result of all plugins: %+v", result)
+					t.Logf("result of all pluginmanager.plugins: %+v", result)
 					for i := range result {
 						// TODO: Currently even though the expected and
 						// 	obtained values are same, it's still failing.
 						// 	Explore more on why that's the case for below
 						// 	commented ones.
-						// if reflect.DeepEqual(result[i].PluginAttributes,
-						// 	tt.want.psStatus[i].PluginAttributes) == false {
+						// if reflect.DeepEqual(result[i].pluginmanager.PluginAttributes,
+						// 	tt.want.psStatus[i].pluginmanager.PluginAttributes) == false {
 						// 	t.Errorf("Plugins PluginAttributes: got %+v, want %+v",
-						// 		result[i].PluginAttributes,
-						// 		tt.want.psStatus[i].PluginAttributes)
+						// 		result[i].pluginmanager.PluginAttributes,
+						// 		tt.want.psStatus[i].pluginmanager.PluginAttributes)
 						// }
 						if reflect.DeepEqual(result[i].Status,
 							tt.want.psStatus[i].Status) == false {
