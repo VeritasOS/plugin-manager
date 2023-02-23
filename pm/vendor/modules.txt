@@ -1,0 +1,11 @@
+# github.com/VeritasOS/plugin-manager v1.0.3
+## explicit; go 1.19
+github.com/VeritasOS/plugin-manager/config
+github.com/VeritasOS/plugin-manager/graph
+github.com/VeritasOS/plugin-manager/pluginmanager
+github.com/VeritasOS/plugin-manager/utils/log
+github.com/VeritasOS/plugin-manager/utils/os
+github.com/VeritasOS/plugin-manager/utils/output
+# gopkg.in/yaml.v3 v3.0.1
+## explicit
+gopkg.in/yaml.v3

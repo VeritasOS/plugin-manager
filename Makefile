@@ -10,7 +10,7 @@ TOP=$(CURDIR)
 include $(TOP)/Makefile.conf
 
 # Go build related variables
-GOSRC=$(TOP)
+GOSRC=$(TOP)/pm
 
 # Set GOBIN to where binaries get picked up while creating RPM/ISO.
 GOBIN?=$(TOP)/bin
@@ -27,7 +27,7 @@ clean: 	## Clean Plugin Manager go build & test artifacts
 	@echo "Cleaning Plugin Manager Go binaries...";
 	export GOBIN=$(GOBIN); \
 	cd $(GOSRC); \
-	go clean -i -mod=vendor ./...;
+	go clean -i ./...;
 	@echo "Cleaning Go test artifacts... ";
 	-@rm $(GOSRC)/{,.}*{dot,html,log,svg,xml};
 	-@rm $(GOSRC)/cmd/pm/{,.}*{dot,log,svg};
@@ -40,7 +40,7 @@ build: 	## Build source code
 	@echo "Building Plugin Manager Go binaries...";
 	export GOBIN=$(GOBIN); \
 	cd $(GOSRC); \
-	go install -ldflags "-X main.buildDate=`date -u +%Y%m%d.%H%M%S`" -mod=vendor -v ./...; \
+	go install -ldflags "-X main.buildDate=`date -u +%Y%m%d.%H%M%S`" -v ./...; \
 	ret=$$?; \
 	if [ $${ret} -ne 0 ]; then \
 		@echo "Failed to build Plugin Manager Go binaries."; \
@@ -54,7 +54,7 @@ analyze: gofmt golint govet go-race  ## Analyze source code for different errors
 .PHONY: golint
 golint:	## Run golint
 	@echo Checking Plugin Manager Go code for lint errors...
-	$(GOTOOLSBIN)/golint -set_exit_status `cd $(GOSRC); go list -mod=vendor  -f '{{.Dir}}' ./...`
+	$(GOTOOLSBIN)/golint -set_exit_status `cd $(GOSRC); go list  -f '{{.Dir}}' ./...`
 
 .PHONY: gofmt
 gofmt:	## Run gofmt
@@ -70,7 +70,7 @@ gofmt:	## Run gofmt
 govet:	## Run go vet
 	@echo Vetting Plugin Manager Go code for errors...
 	cd $(GOSRC); \
-	go vet -mod=vendor -all ./...
+	go vet -all ./...
 
 .PHONY: test
 test:  	## Run all tests
@@ -82,7 +82,7 @@ test:  	## Run all tests
 	cd $(GOSRC); \
 	test_failed=0; \
 	d=pm; \
-	go test -mod=vendor -v --cover -covermode=count -coverprofile=$(GOCOVER)/$${d}.out ./... | \
+	go test -v --cover -covermode=count -coverprofile=$(GOCOVER)/$${d}.out ./... | \
 		$(GOTOOLSBIN)/go-junit-report > TEST-$${d}.xml; \
 	ret=$${PIPESTATUS[0]}; \
 	if [ $${ret} -ne 0 ]; then \
@@ -109,6 +109,6 @@ go-race: 	## Run Go tests with race detector enabled
 	export INTEG_TEST_BIN=$(GOSRC); \
 	cd $(GOSRC); \
 	export PM_CONF_FILE=$(GOSRC)/sample/pm.config.yaml; \
-	go test -mod=vendor -v -race ./...;
+	go test -v -race ./...;
 
 .NOTPARALLEL:
