@@ -24,7 +24,7 @@ import (
 	logutil "github.com/VeritasOS/plugin-manager/utils/log"
 	osutils "github.com/VeritasOS/plugin-manager/utils/os"
 	"github.com/VeritasOS/plugin-manager/utils/output"
-	graph "github.com/abhijithda/pm-graph/v2"
+	graph "github.com/abhijithda/pm-graph/v3"
 )
 
 var (
