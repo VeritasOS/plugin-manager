@@ -20,11 +20,11 @@ import (
 	"time"
 
 	"github.com/VeritasOS/plugin-manager/config"
-	graph "github.com/VeritasOS/plugin-manager/graph"
 	"github.com/VeritasOS/plugin-manager/pluginmanager"
 	logutil "github.com/VeritasOS/plugin-manager/utils/log"
 	osutils "github.com/VeritasOS/plugin-manager/utils/os"
 	"github.com/VeritasOS/plugin-manager/utils/output"
+	graph "github.com/abhijithda/pm-graph/v2"
 )
 
 var (
