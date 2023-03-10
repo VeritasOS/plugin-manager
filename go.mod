@@ -3,7 +3,7 @@ module github.com/VeritasOS/plugin-manager
 go 1.19
 
 require (
-	github.com/abhijithda/pm-graph/v3 v3.0.2
+	github.com/abhijithda/pm-graph/v3 v3.0.0
 	gopkg.in/yaml.v3 v3.0.1
 )
 

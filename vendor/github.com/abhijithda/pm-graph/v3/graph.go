@@ -41,8 +41,8 @@ func GetImagePath() string {
 var gv = graphviz.New()
 var graph1 *cgraph.Graph
 
-// resetGraph is mainly used for unit testing.
-func resetGraph() {
+// ResetGraph is mainly used for unit testing.
+func ResetGraph() {
 	graph1 = nil
 }
 
