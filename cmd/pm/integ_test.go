@@ -15,6 +15,7 @@ import (
 	"testing"
 
 	"github.com/VeritasOS/plugin-manager/config"
+	"github.com/VeritasOS/plugin-manager/pluginmanager"
 
 	yaml "gopkg.in/yaml.v3"
 )
@@ -31,14 +32,6 @@ type Config struct {
 		PluginDir string `yaml:"plugin dir"`
 	}
 }
-
-// Status of plugin execution used for displaying to user on console.
-const (
-	dStatusFail  = "Failed"
-	dStatusOk    = "Succeeded"
-	dStatusSkip  = "Skipped"
-	dStatusStart = "Starting"
-)
 
 func saveConfig(newConfig Config, configFile string) error {
 	log.Println("Entering saveConfig")
@@ -171,12 +164,12 @@ func integTest(t *testing.T, pmBinary, tDir, deprecated string) {
 			},
 			want: []string{
 				"",
-				"Checking for \"D\" settings...: " + dStatusStart,
-				"Checking for \"D\" settings...: " + dStatusOk,
+				"Checking for \"D\" settings...: " + pluginmanager.DStatusStart,
+				"Checking for \"D\" settings...: " + pluginmanager.DStatusOk,
 				"",
-				"Checking for \"A\" settings: " + dStatusStart,
-				"Checking for \"A\" settings: " + dStatusOk,
-				"Running preupgrade plugins: " + dStatusOk,
+				"Checking for \"A\" settings: " + pluginmanager.DStatusStart,
+				"Checking for \"A\" settings: " + pluginmanager.DStatusOk,
+				"Running preupgrade plugins: " + pluginmanager.DStatusOk,
 			},
 			wantErr: false,
 		},
@@ -188,12 +181,12 @@ func integTest(t *testing.T, pmBinary, tDir, deprecated string) {
 			},
 			want: []string{
 				"",
-				"Checking for \"D\" settings...: " + dStatusStart,
-				"Checking for \"D\" settings...: " + dStatusFail,
+				"Checking for \"D\" settings...: " + pluginmanager.DStatusStart,
+				"Checking for \"D\" settings...: " + pluginmanager.DStatusFail,
 				"",
-				"Checking for \"A\" settings: " + dStatusStart,
-				"Checking for \"A\" settings: " + dStatusSkip,
-				"Running preupgrade plugins: " + dStatusFail,
+				"Checking for \"A\" settings: " + pluginmanager.DStatusStart,
+				"Checking for \"A\" settings: " + pluginmanager.DStatusSkip,
+				"Running preupgrade plugins: " + pluginmanager.DStatusFail,
 				"",
 			},
 			wantErr: true,
