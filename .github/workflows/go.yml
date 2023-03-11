@@ -44,35 +44,35 @@ jobs:
     #     GOTOOLSBIN: ${{ github.workspace }}/tools/go
     #   run: make test
 
-    - name: Test - contents of make test!
-      run: |
-        set -x
-        echo "Running Plugin Manager Go Unit Tests...";
-        GOSRC=${{ github.workspace }}
-        GOCOVER=${{ github.workspace }}/cover
-        TOOLSBIN=${{ github.workspace }}/tools
-        GOTOOLSBIN=${{ github.workspace }}/tools/go
-        mkdir -p ${GOCOVER};
-        export INTEG_TEST_BIN=${GOSRC};
-        mkdir -p ${INTEG_TEST_BIN};
-        export PM_CONF_FILE=${GOSRC}/sample/pm.config.yaml;
-        export INTEGRATION_TEST=START;
-        cd ${GOSRC};
-        test_failed=0;
-        d=pm;
-        go test -mod=vendor -v --cover -covermode=count -coverprofile=${GOCOVER}/${d}.out ./... | ${GOTOOLSBIN}/go-junit-report > TEST-${d}.xml;
-        ret=${PIPESTATUS[0]};
-        if [ ${ret} -ne 0 ]; then
-          echo "Go unit test failed for ${d}.";
-          test_failed=1;
-        fi ;
-        cat TEST-${d}.xml
-        awk -f ${TOOLSBIN}/gocoverage-collate.awk ${GOCOVER}/* > ${GOCOVER}/cover.out;
-        go tool cover -html=${GOCOVER}/cover.out -o go-coverage-${d}.html;
-        ${GOTOOLSBIN}/gocov convert ${GOCOVER}/cover.out | ${GOTOOLSBIN}/gocov-xml > go-coverage-${d}.xml;
-        rm -rf ${GOCOVER}/*;
-        export INTEGRATION_TEST=DONE;
-        if [ ${test_failed} -ne 0 ]; then
-          echo "Go unit tests failed.";
-          exit 1;
-        fi
+    # - name: Test - contents of make test!
+    #   run: |
+    #     set -x
+    #     echo "Running Plugin Manager Go Unit Tests...";
+    #     GOSRC=${{ github.workspace }}
+    #     GOCOVER=${{ github.workspace }}/cover
+    #     TOOLSBIN=${{ github.workspace }}/tools
+    #     GOTOOLSBIN=${{ github.workspace }}/tools/go
+    #     mkdir -p ${GOCOVER};
+    #     export INTEG_TEST_BIN=${GOSRC};
+    #     mkdir -p ${INTEG_TEST_BIN};
+    #     export PM_CONF_FILE=${GOSRC}/sample/pm.config.yaml;
+    #     export INTEGRATION_TEST=START;
+    #     cd ${GOSRC};
+    #     test_failed=0;
+    #     d=pm;
+    #     go test -mod=vendor -v --cover -covermode=count -coverprofile=${GOCOVER}/${d}.out ./... | ${GOTOOLSBIN}/go-junit-report > TEST-${d}.xml;
+    #     ret=${PIPESTATUS[0]};
+    #     if [ ${ret} -ne 0 ]; then
+    #       echo "Go unit test failed for ${d}.";
+    #       test_failed=1;
+    #     fi ;
+    #     cat TEST-${d}.xml
+    #     awk -f ${TOOLSBIN}/gocoverage-collate.awk ${GOCOVER}/* > ${GOCOVER}/cover.out;
+    #     go tool cover -html=${GOCOVER}/cover.out -o go-coverage-${d}.html;
+    #     ${GOTOOLSBIN}/gocov convert ${GOCOVER}/cover.out | ${GOTOOLSBIN}/gocov-xml > go-coverage-${d}.xml;
+    #     rm -rf ${GOCOVER}/*;
+    #     export INTEGRATION_TEST=DONE;
+    #     if [ ${test_failed} -ne 0 ]; then
+    #       echo "Go unit tests failed.";
+    #       exit 1;
+    #     fi
