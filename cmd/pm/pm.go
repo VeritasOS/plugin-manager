@@ -28,18 +28,12 @@ func init() {
 	// DefaultConfigPath is default path for config file used when EnvConfFile is not set.
 	config.DefaultConfigPath = "/etc/pm.config.yaml"
 	// DefaultLogPath is default path for log file.
-	config.DefaultLogPath = "./"
-
+	config.DefaultLogPath = "./" + progname
 	// INFO: Use DefaultLogPath when it's available (until the config file is read).
-	// 	If not, use basename of file.
 	// NOTE: while running tests, the path of binary would be in `/tmp/<go-build*>`,
 	// so, using relative logging path w.r.t. binary wouldn't be accessible on Jenkins.
 	// So, use absolute path which also has write permissions (like current source directory).
-	myLogFile := config.DefaultLogPath
-	if _, err := os.Stat(filepath.Dir(myLogFile)); os.IsNotExist(err) {
-		myLogFile = progname
-	}
-	logutil.SetLogging(myLogFile)
+	logutil.SetLogging(config.DefaultLogPath)
 }
 
 func main() {
