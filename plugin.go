@@ -702,20 +702,22 @@ func ScanCommandOptions(options map[string]interface{}) error {
 	if *CmdOptions.libraryPtr != "" {
 		config.SetPluginsLibrary(*CmdOptions.libraryPtr)
 	}
-	logToNewFile := false
+	myLogFile := "./"
 	if *CmdOptions.logDirPtr != "" {
 		config.SetPMLogDir(*CmdOptions.logDirPtr)
-		logToNewFile = true
+		myLogFile = config.GetPMLogDir()
 	}
 	// Info: Call set PM log-dir to clean extra slashes, and to append path
 	// 	separator at the end.
 	config.SetPMLogDir(config.GetPMLogDir())
 	if *CmdOptions.logFilePtr != "" {
 		config.SetPMLogFile(*CmdOptions.logFilePtr)
-		logToNewFile = true
+		myLogFile += config.GetPMLogFile()
+	} else {
+		myLogFile += progname
 	}
-	if logToNewFile {
-		myLogFile := config.GetPMLogDir() + config.GetPMLogFile()
+	if myLogFile != config.DefaultLogPath {
+		myLogFile = filepath.Clean(myLogFile)
 		log.Println("Logging to specified log file:", myLogFile)
 		logutil.SetLogging(myLogFile)
 	}
