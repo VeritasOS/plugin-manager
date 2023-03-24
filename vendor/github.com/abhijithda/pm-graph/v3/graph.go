@@ -1,6 +1,6 @@
 // Copyright (c) 2023 Veritas Technologies LLC. All rights reserved. IP63-2828-7171-04-15-9
 
-// Package pm graph is used for generating the plugins graph image.
+// Package pm graph is used for generating the graph image.
 package pg
 
 import (

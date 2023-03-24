@@ -1,3 +1,7 @@
+github.com/VeritasOS/plugin-manager v1.0.3 h1:7xEvfz5jky/HsgvqDb8vHxQnbMp6Y4aAQegBc2vLYrg=
+github.com/VeritasOS/plugin-manager v1.0.3/go.mod h1:Fw92eqykT0patTJNxHsfcUcBzzvTaqxUPPhVEcg+Y8o=
+github.com/abhijithda/pm-graph/v3 v3.0.3 h1:gj1QyhISIn2mOd4HlB4kwlHYx8i7e+a4YpFuEG8ZHgE=
+github.com/abhijithda/pm-graph/v3 v3.0.3/go.mod h1:LfnaWcMTcZfy8B5vbSt1Z75tlF6ofuXFYpAcBBb/djs=
 github.com/corona10/goimagehash v1.0.2 h1:pUfB0LnsJASMPGEZLj7tGY251vF+qLGqOgEP4rUs6kA=
 github.com/fogleman/gg v1.3.0 h1:/7zJX8F6AaYQc57WQCyN9cAIz+4bCJGO9B+dyW29am8=
 github.com/fogleman/gg v1.3.0/go.mod h1:R/bRT+9gY/C5z7JzPU0zXsXHKM4/ayA+zqcVNZzPa1k=
