@@ -9,9 +9,9 @@ import (
 	"os"
 	"path/filepath"
 
-	pm "github.com/VeritasOS/plugin-manager"
-	"github.com/VeritasOS/plugin-manager/config"
-	logutil "github.com/VeritasOS/plugin-manager/utils/log"
+	pm "github.com/VeritasOS/plugin-manager/v2"
+	"github.com/VeritasOS/plugin-manager/v2/config"
+	logutil "github.com/VeritasOS/plugin-manager/v2/utils/log"
 )
 
 var (

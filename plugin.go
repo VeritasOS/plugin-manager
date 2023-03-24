@@ -19,12 +19,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/VeritasOS/plugin-manager/config"
-	"github.com/VeritasOS/plugin-manager/pluginmanager"
-	logutil "github.com/VeritasOS/plugin-manager/utils/log"
-	osutils "github.com/VeritasOS/plugin-manager/utils/os"
-	"github.com/VeritasOS/plugin-manager/utils/output"
+	"github.com/VeritasOS/plugin-manager/v2/config"
 	graph "github.com/abhijithda/pm-graph/v3"
+	// graph "github.com/VeritasOS/plugin-manager/v2/graph/v3"
+	"github.com/VeritasOS/plugin-manager/v2/pluginmanager"
+	logutil "github.com/VeritasOS/plugin-manager/v2/utils/log"
+	osutils "github.com/VeritasOS/plugin-manager/v2/utils/os"
+	"github.com/VeritasOS/plugin-manager/v2/utils/output"
 )
 
 var (
