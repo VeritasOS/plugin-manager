@@ -1,11 +1,17 @@
-# github.com/abhijithda/pm-graph/v3 v3.0.1
-## explicit; go 1.20
-github.com/abhijithda/pm-graph/v3
+# github.com/VeritasOS/plugin-manager/v2/config v1.0.0 => ./config
+## explicit; go 1.19
+github.com/VeritasOS/plugin-manager/v2/config
+# github.com/VeritasOS/plugin-manager/v2/pluginmanager v1.0.0 => ./pluginmanager
+## explicit; go 1.19
+github.com/VeritasOS/plugin-manager/v2/pluginmanager
+# github.com/VeritasOS/plugin-manager/v2/utils/log v1.0.0 => ./utils/log
+## explicit; go 1.19
+github.com/VeritasOS/plugin-manager/v2/utils/log
 # github.com/fogleman/gg v1.3.0
 ## explicit
 github.com/fogleman/gg
-# github.com/goccy/go-graphviz v0.1.0
-## explicit; go 1.12
+# github.com/goccy/go-graphviz v0.1.1
+## explicit; go 1.18
 github.com/goccy/go-graphviz
 github.com/goccy/go-graphviz/cdt
 github.com/goccy/go-graphviz/cgraph
@@ -83,3 +89,6 @@ golang.org/x/image/math/fixed
 # gopkg.in/yaml.v3 v3.0.1
 ## explicit
 gopkg.in/yaml.v3
+# github.com/VeritasOS/plugin-manager/v2/config => ./config
+# github.com/VeritasOS/plugin-manager/v2/pluginmanager => ./pluginmanager
+# github.com/VeritasOS/plugin-manager/v2/utils/log => ./utils/log

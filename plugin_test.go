@@ -9,8 +9,9 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/VeritasOS/plugin-manager/config"
-	"github.com/VeritasOS/plugin-manager/pluginmanager"
+	"github.com/VeritasOS/plugin-manager/v2/config"
+	"github.com/VeritasOS/plugin-manager/v2/pluginmanager"
+	// pg "github.com/VeritasOS/plugin-manager/v2/graph/v3"
 	pg "github.com/abhijithda/pm-graph/v3"
 )
 

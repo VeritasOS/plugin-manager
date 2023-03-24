@@ -1,6 +1,6 @@
 // Copyright (c) 2023 Veritas Technologies LLC. All rights reserved. IP63-2828-7171-04-15-9
 
-// Package pm graph is used for generating the graph image.
+// Package pm graph is used for generating the plugins graph image.
 package pg
 
 import (
@@ -10,11 +10,16 @@ import (
 	"sort"
 	"time"
 
-	"github.com/VeritasOS/plugin-manager/config"
-	"github.com/VeritasOS/plugin-manager/pluginmanager"
-	logutil "github.com/VeritasOS/plugin-manager/utils/log"
+	"github.com/VeritasOS/plugin-manager/v2/config"
+	"github.com/VeritasOS/plugin-manager/v2/pluginmanager"
+	logutil "github.com/VeritasOS/plugin-manager/v2/utils/log"
 	graphviz "github.com/goccy/go-graphviz"
 	"github.com/goccy/go-graphviz/cgraph"
+)
+
+const (
+	NodeLabelFontSize float64 = 9.0
+	EdgeLabelFontSize float64 = 2.0
 )
 
 // myGraph of plugin and its dependencies.
@@ -82,6 +87,7 @@ func InitGraph(pluginType string, pluginsInfo map[string]*pluginmanager.PluginAt
 		relPath, _ := filepath.Rel(absLogPath, absLibraryPath)
 		pURL := filepath.FromSlash(relPath + string(os.PathSeparator) + p)
 		pluginNode.SetLabel(pluginsInfo[p].Description)
+		pluginNode.SetFontSize(NodeLabelFontSize)
 		pluginNode.SetURL(pURL)
 		pluginNode.SetStyle(cgraph.FilledNodeStyle)
 		pluginNode.SetFillColor("lightgrey")
@@ -92,7 +98,14 @@ func InitGraph(pluginType string, pluginsInfo map[string]*pluginmanager.PluginAt
 				log.Printf("SubGraph.CreateNode(%s) Error: %s", pluginsInfo[p].RequiredBy[rby], err.Error())
 				continue
 			}
-			sb.CreateEdge("RequiredBy", pluginNode, reqbyNode)
+			rbyEdge, err := sb.CreateEdge("RequiredBy", pluginNode, reqbyNode)
+			if err != nil {
+				log.Printf("SubGraph.CreateEdge(%s, %s) Error: %s",
+					p, pluginsInfo[p].RequiredBy[rby], err.Error())
+				continue
+			}
+			rbyEdge.SetLabel("RequiredBy")
+			rbyEdge.SetFontSize(EdgeLabelFontSize)
 		}
 		for rs := range pluginsInfo[p].Requires {
 			rsNode, err := sb.CreateNode(pluginsInfo[p].Requires[rs])
@@ -100,7 +113,14 @@ func InitGraph(pluginType string, pluginsInfo map[string]*pluginmanager.PluginAt
 				log.Printf("SubGraph.CreateNode(%s) Error: %s", pluginsInfo[p].Requires[rs], err.Error())
 				continue
 			}
-			sb.CreateEdge("Requires", pluginNode, rsNode)
+			rsEdge, err := sb.CreateEdge("Requires", pluginNode, rsNode)
+			if err != nil {
+				log.Printf("SubGraph.CreateEdge(%s, %s) Error: %s",
+					p, pluginsInfo[p].RequiredBy[rs], err.Error())
+				continue
+			}
+			rsEdge.SetLabel("Requires")
+			rsEdge.SetFontSize(EdgeLabelFontSize)
 		}
 	}
 
