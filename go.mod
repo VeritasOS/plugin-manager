@@ -8,6 +8,12 @@ replace github.com/VeritasOS/plugin-manager/v2/pluginmanager => ./pluginmanager
 
 replace github.com/VeritasOS/plugin-manager/v2/utils/log => ./utils/log
 
+replace github.com/VeritasOS/plugin-manager/v2/config => ./config
+
+replace github.com/VeritasOS/plugin-manager/v2/pluginmanager => ./pluginmanager
+
+replace github.com/VeritasOS/plugin-manager/v2/utils/log => ./utils/log
+
 require (
 	github.com/VeritasOS/plugin-manager/v2/config v1.0.0
 	github.com/VeritasOS/plugin-manager/v2/pluginmanager v1.0.0
