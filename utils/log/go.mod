@@ -1,3 +1,3 @@
-module github.com/VeritasOS/plugin-manager/v2/utils/log
+module github.com/VeritasOS/plugin-manager/utils/log
 
 go 1.20
