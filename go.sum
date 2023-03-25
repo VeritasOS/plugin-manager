@@ -1,5 +1,11 @@
 github.com/VeritasOS/plugin-manager v1.0.3 h1:7xEvfz5jky/HsgvqDb8vHxQnbMp6Y4aAQegBc2vLYrg=
 github.com/VeritasOS/plugin-manager v1.0.3/go.mod h1:Fw92eqykT0patTJNxHsfcUcBzzvTaqxUPPhVEcg+Y8o=
+github.com/VeritasOS/plugin-manager/config/v2 v2.0.2 h1:mu4Sg9HFNQOrfsyeHSDPz5E4BY2IBpA6ckbjBRkgd1c=
+github.com/VeritasOS/plugin-manager/config/v2 v2.0.2/go.mod h1:xilIdvdoYz5ANpm6TZtXdlqrvVD54EBNARfImKIfwJc=
+github.com/VeritasOS/plugin-manager/pluginmanager/v2 v2.0.2 h1:41rkCVdk7mkFQ0/PCfhoMOFRJBueCR8FvwVMl6M6qCg=
+github.com/VeritasOS/plugin-manager/pluginmanager/v2 v2.0.2/go.mod h1:3F05NzGhLsBQZblOHe8t2nk5eY+a+xor3sAsK4PNCsI=
+github.com/VeritasOS/plugin-manager/utils/log/v2 v2.0.2 h1:uzn3OdJqm5H8diAQWJ1IJ553456pvB292w2ZyHQFYSw=
+github.com/VeritasOS/plugin-manager/utils/log/v2 v2.0.2/go.mod h1:Y1R3OPPiedKHRQsl2O6hkTZV/DSb73/po5KLQ7UG5YM=
 github.com/abhijithda/pm-graph/v3 v3.0.3 h1:gj1QyhISIn2mOd4HlB4kwlHYx8i7e+a4YpFuEG8ZHgE=
 github.com/abhijithda/pm-graph/v3 v3.0.3/go.mod h1:LfnaWcMTcZfy8B5vbSt1Z75tlF6ofuXFYpAcBBb/djs=
 github.com/corona10/goimagehash v1.0.2 h1:pUfB0LnsJASMPGEZLj7tGY251vF+qLGqOgEP4rUs6kA=

@@ -2,22 +2,16 @@ module github.com/VeritasOS/plugin-manager/v2
 
 go 1.20
 
-replace github.com/VeritasOS/plugin-manager/v2/config => ./config
+replace github.com/VeritasOS/plugin-manager/config/v2 => ./config
 
-replace github.com/VeritasOS/plugin-manager/v2/pluginmanager => ./pluginmanager
+replace github.com/VeritasOS/plugin-manager/pluginmanager/v2 => ./pluginmanager
 
-replace github.com/VeritasOS/plugin-manager/v2/utils/log => ./utils/log
-
-replace github.com/VeritasOS/plugin-manager/v2/config => ./config
-
-replace github.com/VeritasOS/plugin-manager/v2/pluginmanager => ./pluginmanager
-
-replace github.com/VeritasOS/plugin-manager/v2/utils/log => ./utils/log
+replace github.com/VeritasOS/plugin-manager/utils/log/v2 => ./utils/log
 
 require (
-	github.com/VeritasOS/plugin-manager/v2/config v1.0.0
-	github.com/VeritasOS/plugin-manager/v2/pluginmanager v1.0.0
-	github.com/VeritasOS/plugin-manager/v2/utils/log v1.0.0
+	github.com/VeritasOS/plugin-manager/config/v2 v2.0.2
+	github.com/VeritasOS/plugin-manager/pluginmanager/v2 v2.0.2
+	github.com/VeritasOS/plugin-manager/utils/log/v2 v2.0.2
 	github.com/abhijithda/pm-graph/v3 v3.0.3
 	gopkg.in/yaml.v3 v3.0.1
 )

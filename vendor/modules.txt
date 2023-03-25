@@ -3,15 +3,15 @@
 github.com/VeritasOS/plugin-manager/config
 github.com/VeritasOS/plugin-manager/pluginmanager
 github.com/VeritasOS/plugin-manager/utils/log
-# github.com/VeritasOS/plugin-manager/v2/config v1.0.0 => ./config
+# github.com/VeritasOS/plugin-manager/config/v2 v2.0.2 => ./config
 ## explicit; go 1.20
-github.com/VeritasOS/plugin-manager/v2/config
-# github.com/VeritasOS/plugin-manager/v2/pluginmanager v1.0.0 => ./pluginmanager
+github.com/VeritasOS/plugin-manager/config/v2
+# github.com/VeritasOS/plugin-manager/pluginmanager/v2 v2.0.2 => ./pluginmanager
 ## explicit; go 1.20
-github.com/VeritasOS/plugin-manager/v2/pluginmanager
-# github.com/VeritasOS/plugin-manager/v2/utils/log v1.0.0 => ./utils/log
+github.com/VeritasOS/plugin-manager/pluginmanager/v2
+# github.com/VeritasOS/plugin-manager/utils/log/v2 v2.0.2 => ./utils/log
 ## explicit; go 1.20
-github.com/VeritasOS/plugin-manager/v2/utils/log
+github.com/VeritasOS/plugin-manager/utils/log/v2
 # github.com/abhijithda/pm-graph/v3 v3.0.3
 ## explicit; go 1.20
 github.com/abhijithda/pm-graph/v3
@@ -97,6 +97,6 @@ golang.org/x/image/math/fixed
 # gopkg.in/yaml.v3 v3.0.1
 ## explicit
 gopkg.in/yaml.v3
-# github.com/VeritasOS/plugin-manager/v2/config => ./config
-# github.com/VeritasOS/plugin-manager/v2/pluginmanager => ./pluginmanager
-# github.com/VeritasOS/plugin-manager/v2/utils/log => ./utils/log
+# github.com/VeritasOS/plugin-manager/config/v2 => ./config
+# github.com/VeritasOS/plugin-manager/pluginmanager/v2 => ./pluginmanager
+# github.com/VeritasOS/plugin-manager/utils/log/v2 => ./utils/log
