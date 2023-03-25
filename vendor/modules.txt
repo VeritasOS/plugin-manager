@@ -4,13 +4,13 @@ github.com/VeritasOS/plugin-manager/config
 github.com/VeritasOS/plugin-manager/pluginmanager
 github.com/VeritasOS/plugin-manager/utils/log
 # github.com/VeritasOS/plugin-manager/v2/config v1.0.0 => ./config
-## explicit; go 1.19
+## explicit; go 1.20
 github.com/VeritasOS/plugin-manager/v2/config
 # github.com/VeritasOS/plugin-manager/v2/pluginmanager v1.0.0 => ./pluginmanager
-## explicit; go 1.19
+## explicit; go 1.20
 github.com/VeritasOS/plugin-manager/v2/pluginmanager
 # github.com/VeritasOS/plugin-manager/v2/utils/log v1.0.0 => ./utils/log
-## explicit; go 1.19
+## explicit; go 1.20
 github.com/VeritasOS/plugin-manager/v2/utils/log
 # github.com/abhijithda/pm-graph/v3 v3.0.3
 ## explicit; go 1.20
