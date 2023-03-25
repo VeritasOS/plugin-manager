@@ -1,3 +1,3 @@
 module github.com/VeritasOS/plugin-manager/v2/pluginmanager
 
-go 1.19
+go 1.20
