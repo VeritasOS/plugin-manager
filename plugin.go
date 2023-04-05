@@ -710,12 +710,16 @@ func ScanCommandOptions(options map[string]interface{}) error {
 	// Info: Call set PM log-dir to clean extra slashes, and to append path
 	// 	separator at the end.
 	config.SetPMLogDir(config.GetPMLogDir())
+	tLogFile := progname
 	if *CmdOptions.logFilePtr != "" {
-		config.SetPMLogFile(*CmdOptions.logFilePtr)
-		myLogFile += config.GetPMLogFile()
-	} else {
-		myLogFile += progname
+		tLogFile = *CmdOptions.logFilePtr
 	}
+	// NOTE: Even when no log file is specified, and we're using default log
+	//  file name, we still need to call SetPMLogFile() as SVG image file name
+	//  is based on this. Otherwise image and dot files will not have any names
+	//  but only extensions (i.e., they get created as hidden files).
+	config.SetPMLogFile(tLogFile)
+	myLogFile += config.GetPMLogFile()
 	if myLogFile != config.DefaultLogPath {
 		myLogFile = filepath.Clean(myLogFile)
 		log.Println("Logging to specified log file:", myLogFile)
