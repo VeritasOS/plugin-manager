@@ -14,7 +14,7 @@ GOSRC=$(TOP)
 
 # Set GOBIN to where binaries get picked up while creating RPM/ISO.
 GOBIN?=$(TOP)/bin
-GOCOVER=$(GOSRC)/cover
+GOCOVERDIR=$(GOSRC)/cover
 GOTOOLSBIN=$(TOP)/tools/go/
 
 .SILENT:
@@ -32,7 +32,7 @@ clean: 	## Clean Plugin Manager go build & test artifacts
 	-@rm $(GOSRC)/{,.}*{dot,html,log,svg,xml};
 	-@rm $(GOSRC)/cmd/pm/{,.}*{dot,log,svg};
 	-@rm -rf $(GOSRC)/plugins/
-	-@rm -rf $(GOCOVER);
+	-@rm -rf $(GOCOVERDIR);
 
 .PHONY: build
 build: 	## Build source code
@@ -75,24 +75,24 @@ govet:	## Run go vet
 .PHONY: test
 test:  	## Run all tests
 	echo "Running Plugin Manager Go Unit Tests...";
-	mkdir -p $(GOCOVER);
+	mkdir -p $(GOCOVERDIR);
 	export INTEG_TEST_BIN=$(GOSRC); \
 	export PM_CONF_FILE=$(GOSRC)/sample/pm.config.yaml; \
 	export INTEGRATION_TEST=START; \
 	cd $(GOSRC); \
 	test_failed=0; \
 	d=pm; \
-	go test -mod=vendor -v --cover -covermode=count -coverprofile=$(GOCOVER)/$${d}.out ./... | \
+	go test -mod=vendor -v --cover -covermode=count -coverprofile=$(GOCOVERDIR)/$${d}.out ./... | \
 		$(GOTOOLSBIN)/go-junit-report > TEST-$${d}.xml; \
 	ret=$${PIPESTATUS[0]}; \
 	if [ $${ret} -ne 0 ]; then \
 		echo "Go unit test failed for $${d}."; \
 		test_failed=1; \
 	fi ; \
-	awk -f $(TOP)/tools/gocoverage-collate.awk $(GOCOVER)/* > $(GOCOVER)/cover.out; \
-	go tool cover -html=$(GOCOVER)/cover.out -o go-coverage-$${d}.html; \
-	$(GOTOOLSBIN)/gocov convert $(GOCOVER)/cover.out | $(GOTOOLSBIN)/gocov-xml > go-coverage-$${d}.xml; \
-	rm -rf $(GOCOVER)/*; \
+	awk -f $(TOP)/tools/gocoverage-collate.awk $(GOCOVERDIR)/* > $(GOCOVERDIR)/cover.out; \
+	go tool cover -html=$(GOCOVERDIR)/cover.out -o go-coverage-$${d}.html; \
+	$(GOTOOLSBIN)/gocov convert $(GOCOVERDIR)/cover.out | $(GOTOOLSBIN)/gocov-xml > go-coverage-$${d}.xml; \
+	rm -rf $(GOCOVERDIR)/*; \
 	export INTEGRATION_TEST=DONE; \
 	if [ $${test_failed} -ne 0 ]; then \
 		echo "Go unit tests failed."; \
@@ -104,7 +104,7 @@ go-race: 	## Run Go tests with race detector enabled
 	echo "Checking Go code for race conditions...";
 	# NOTE: COVER directory should be present, along with INTEGRATION_TEST
 	# 	value being set to "START" for integ_test.go to succeed.
-	mkdir -p $(GOCOVER);
+	mkdir -p $(GOCOVERDIR);
 	export INTEGRATION_TEST=START; \
 	export INTEG_TEST_BIN=$(GOSRC); \
 	cd $(GOSRC); \

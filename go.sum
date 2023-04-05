@@ -1,5 +1,3 @@
-github.com/abhijithda/pm-graph/v3 v3.0.1 h1:zHMJ0DxK2XMklXwvxjJRvls69dml540RnFFaVMdtdtc=
-github.com/abhijithda/pm-graph/v3 v3.0.1/go.mod h1:RAqXhAHADGbswlI4G2OStnmQHkJEY/z4QFsamuA6m3M=
 github.com/corona10/goimagehash v1.0.2 h1:pUfB0LnsJASMPGEZLj7tGY251vF+qLGqOgEP4rUs6kA=
 github.com/corona10/goimagehash v1.0.2/go.mod h1:/l9umBhvcHQXVtQO1V6Gp1yD20STawkhRnnX0D1bvVI=
 github.com/fogleman/gg v1.3.0 h1:/7zJX8F6AaYQc57WQCyN9cAIz+4bCJGO9B+dyW29am8=

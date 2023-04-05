@@ -10,8 +10,8 @@ import (
 	"testing"
 
 	"github.com/VeritasOS/plugin-manager/config"
+	"github.com/VeritasOS/plugin-manager/graph"
 	"github.com/VeritasOS/plugin-manager/pluginmanager"
-	pg "github.com/abhijithda/pm-graph/v3"
 )
 
 func Test_getPluginFiles(t *testing.T) {
@@ -804,8 +804,8 @@ func Test_executePlugins(t *testing.T) {
 			t.Run(tt.name+fmt.Sprintf("(sequential=%v)", tt.sequential),
 				func(t *testing.T) {
 					npInfo := normalizePluginsInfo(tt.pluginInfo)
-					pg.ResetGraph()
-					pg.InitGraph(pluginType, npInfo)
+					graph.ResetGraph()
+					graph.InitGraph(pluginType, npInfo)
 					var result pluginmanager.PluginsStatus
 					res := executePlugins(&result, npInfo, tt.sequential)
 					// t.Logf("res: %+v, expected: %v", res, tt.want.returnStatus)

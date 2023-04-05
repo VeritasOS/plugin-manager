@@ -1,7 +1,7 @@
 // Copyright (c) 2023 Veritas Technologies LLC. All rights reserved. IP63-2828-7171-04-15-9
 
-// Package pm graph is used for generating the graph image.
-package pg
+// Package graph is used for generating the plugins' graph image.
+package graph
 
 import (
 	"log"
@@ -15,6 +15,13 @@ import (
 	logutil "github.com/VeritasOS/plugin-manager/utils/log"
 	graphviz "github.com/goccy/go-graphviz"
 	"github.com/goccy/go-graphviz/cgraph"
+)
+
+const (
+	// NodeLabelFontSize is font size of node labels.
+	NodeLabelFontSize float64 = 9.0
+	// EdgeLabelFontSize is font size of edge labels.
+	EdgeLabelFontSize float64 = 2.0
 )
 
 // myGraph of plugin and its dependencies.
@@ -34,8 +41,14 @@ func initGraphConfig(imgNamePrefix string) {
 	}
 }
 
+// GetImagePath gets the path of the image file.
 func GetImagePath() string {
 	return config.GetPMLogDir() + mg.fileNoExt + ".svg"
+}
+
+// GetDotFilePath gets the path of the dot file.
+func GetDotFilePath() string {
+	return config.GetPMLogDir() + mg.fileNoExt + ".dot"
 }
 
 var gv = graphviz.New()
@@ -82,6 +95,7 @@ func InitGraph(pluginType string, pluginsInfo map[string]*pluginmanager.PluginAt
 		relPath, _ := filepath.Rel(absLogPath, absLibraryPath)
 		pURL := filepath.FromSlash(relPath + string(os.PathSeparator) + p)
 		pluginNode.SetLabel(pluginsInfo[p].Description)
+		pluginNode.SetFontSize(NodeLabelFontSize)
 		pluginNode.SetURL(pURL)
 		pluginNode.SetStyle(cgraph.FilledNodeStyle)
 		pluginNode.SetFillColor("lightgrey")
@@ -92,7 +106,14 @@ func InitGraph(pluginType string, pluginsInfo map[string]*pluginmanager.PluginAt
 				log.Printf("SubGraph.CreateNode(%s) Error: %s", pluginsInfo[p].RequiredBy[rby], err.Error())
 				continue
 			}
-			sb.CreateEdge("RequiredBy", pluginNode, reqbyNode)
+			rbyEdge, err := sb.CreateEdge("RequiredBy", pluginNode, reqbyNode)
+			if err != nil {
+				log.Printf("SubGraph.CreateEdge(%s, %s) Error: %s",
+					p, pluginsInfo[p].RequiredBy[rby], err.Error())
+				continue
+			}
+			rbyEdge.SetLabel("RequiredBy")
+			rbyEdge.SetFontSize(EdgeLabelFontSize)
 		}
 		for rs := range pluginsInfo[p].Requires {
 			rsNode, err := sb.CreateNode(pluginsInfo[p].Requires[rs])
@@ -100,7 +121,14 @@ func InitGraph(pluginType string, pluginsInfo map[string]*pluginmanager.PluginAt
 				log.Printf("SubGraph.CreateNode(%s) Error: %s", pluginsInfo[p].Requires[rs], err.Error())
 				continue
 			}
-			sb.CreateEdge("Requires", pluginNode, rsNode)
+			rsEdge, err := sb.CreateEdge("Requires", pluginNode, rsNode)
+			if err != nil {
+				log.Printf("SubGraph.CreateEdge(%s, %s) Error: %s",
+					p, pluginsInfo[p].RequiredBy[rs], err.Error())
+				continue
+			}
+			rsEdge.SetLabel("Requires")
+			rsEdge.SetFontSize(EdgeLabelFontSize)
 		}
 	}
 
@@ -112,9 +140,14 @@ func InitGraph(pluginType string, pluginsInfo map[string]*pluginmanager.PluginAt
 func GenerateGraph(g *cgraph.Graph) error {
 	svgFile := GetImagePath()
 
-	rendererr := gv.RenderFilename(g, graphviz.SVG, svgFile)
+	rendererr := gv.RenderFilename(g, graphviz.Format(graphviz.DOT), GetDotFilePath())
 	if rendererr != nil {
-		log.Printf("gv.RenderFilename() Err: %s", rendererr.Error())
+		log.Printf("gv.RenderFilename( , DOT) Err: %s", rendererr.Error())
+		// return rendererr
+	}
+	rendererr = gv.RenderFilename(g, graphviz.SVG, svgFile)
+	if rendererr != nil {
+		log.Printf("gv.RenderFilename( , SVG) Err: %s", rendererr.Error())
 		return rendererr
 	}
 
