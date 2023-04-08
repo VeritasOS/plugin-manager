@@ -79,6 +79,7 @@ test:  	## Run all tests
 	export INTEG_TEST_BIN=$(GOSRC); \
 	export PM_CONF_FILE=$(GOSRC)/sample/pm.config.yaml; \
 	export INTEGRATION_TEST=START; \
+	export GOCOVERDIR=$(GOCOVERDIR); \
 	cd $(GOSRC); \
 	test_failed=0; \
 	d=pm; \
@@ -107,6 +108,7 @@ go-race: 	## Run Go tests with race detector enabled
 	mkdir -p $(GOCOVERDIR);
 	export INTEGRATION_TEST=START; \
 	export INTEG_TEST_BIN=$(GOSRC); \
+	export GOCOVERDIR=$(GOCOVERDIR); \
 	cd $(GOSRC); \
 	export PM_CONF_FILE=$(GOSRC)/sample/pm.config.yaml; \
 	go test -mod=vendor -v -race ./...;

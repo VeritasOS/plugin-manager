@@ -132,20 +132,20 @@ func InitGraph(pluginType string, pluginsInfo map[string]*pluginmanager.PluginAt
 		}
 	}
 
-	return GenerateGraph(graph1)
+	return GenerateGraph()
 }
 
 // GenerateGraph generates an input `.dot` file based on the fileNoExt name,
 // and then generates an `.svg` image output file as fileNoExt.svg.
-func GenerateGraph(g *cgraph.Graph) error {
+func GenerateGraph() error {
 	svgFile := GetImagePath()
 
-	rendererr := gv.RenderFilename(g, graphviz.Format(graphviz.DOT), GetDotFilePath())
+	rendererr := gv.RenderFilename(graph1, graphviz.Format(graphviz.DOT), GetDotFilePath())
 	if rendererr != nil {
 		log.Printf("gv.RenderFilename( , DOT) Err: %s", rendererr.Error())
 		// return rendererr
 	}
-	rendererr = gv.RenderFilename(g, graphviz.SVG, svgFile)
+	rendererr = gv.RenderFilename(graph1, graphviz.SVG, svgFile)
 	if rendererr != nil {
 		log.Printf("gv.RenderFilename( , SVG) Err: %s", rendererr.Error())
 		return rendererr
@@ -186,18 +186,7 @@ func UpdateGraph(subgraphName, plugin, status, url string) error {
 	node.SetFillColor(getStatusColor(status))
 	node.SetURL(url)
 
-	svgFile := GetImagePath()
-
-	// var buf bytes.Buffer
-	// if err := gv.Render(graph1, "dot", &buf); err != nil {
-	// 	log.Fatal(err)
-	// }
-	// fmt.Println(buf.String())
-
-	rendererr := gv.RenderFilename(graph1, graphviz.SVG, svgFile)
-	if rendererr != nil {
-		log.Printf("gv.RenderFilename() Err: %s", rendererr.Error())
-		return rendererr
-	}
+	//  TODO Graph: Commenting until concurrency is supported in RenderFilename() of GenerateGraph().
+	// return GenerateGraph()
 	return nil
 }
