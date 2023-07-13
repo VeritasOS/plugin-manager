@@ -1,6 +1,6 @@
 # Plugin Manager (PM)
 
-[![Go](https://github.com/VeritasOS/plugin-manager/actions/workflows/go.yml/badge.svg?branch=v1)](https://github.com/VeritasOS/plugin-manager/actions/workflows/go.yml)
+[![Go](https://github.com/VeritasOS/plugin-manager/actions/workflows/go.yml/badge.svg?branch=v2)](https://github.com/VeritasOS/plugin-manager/actions/workflows/go.yml)
 
 Plugin Manager (PM) provides a way for components to define actions and
 validations via plugins. PM provides dependency management similar to Red Hat
