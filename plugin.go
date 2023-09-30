@@ -5,6 +5,7 @@
 package pm
 
 import (
+	"bufio"
 	"errors"
 	"flag"
 	"fmt"
@@ -380,21 +381,42 @@ func executePluginCmd(statusCh chan<- map[string]*pluginmanager.RunStatus, p str
 	cmdParamsExpanded := strings.Split(cmdParams, " ")
 
 	cmd := exec.Command(os.ExpandEnv(cmdStr), cmdParamsExpanded...)
-	stdOutErr, err := cmd.CombinedOutput()
+	// INFO: https://stackoverflow.com/questions/69954944/capture-stdout-from-exec-command-line-by-line-and-also-pipe-to-os-stdout
+	iostdout, err := cmd.StdoutPipe()
+	if err != nil {
+		pStatus := pluginmanager.RunStatus{Status: pluginmanager.DStatusFail}
+		log.Printf("Failed to execute plugin %s. Error: %s\n", p, err.Error())
+		logutil.PrintNLog("%s: %s\n", pInfo.Description, pluginmanager.DStatusFail)
+		statusCh <- map[string]*pluginmanager.RunStatus{p: &pStatus}
+		return
+	}
+	cmd.Stderr = cmd.Stdout
+
+	chLog.Println("Executing command:", pInfo.ExecStart)
+	err = cmd.Start()
+	var stdOutErr []string
+	if err == nil {
+		scanner := bufio.NewScanner(iostdout)
+		scanner.Split(bufio.ScanLines)
+		for scanner.Scan() {
+			iobytes := scanner.Text()
+			chLog.Println(string(iobytes))
+			stdOutErr = append(stdOutErr, iobytes)
+		}
+		err = cmd.Wait()
+		// chLog.Printf("command exited with code: %+v", err)
+	}
 
 	func() {
-		chLog.Println("Executing command:", pInfo.ExecStart)
 		if err != nil {
 			chLog.Println("Error:", err.Error())
 			graph.UpdateGraph(getPluginType(p), p, pluginmanager.DStatusFail, pluginLogFile)
 		} else {
-			chLog.Println("Stdout & Stderr:", string(stdOutErr))
 			graph.UpdateGraph(getPluginType(p), p, pluginmanager.DStatusOk, pluginLogFile)
 		}
 	}()
-
-	log.Println("Stdout & Stderr:", string(stdOutErr))
-	pStatus := pluginmanager.RunStatus{StdOutErr: string(stdOutErr)}
+	log.Println("Stdout & Stderr:", stdOutErr)
+	pStatus := pluginmanager.RunStatus{StdOutErr: strings.Join(stdOutErr, "\n")}
 	if err != nil {
 		pStatus.Status = pluginmanager.DStatusFail
 		log.Printf("Failed to execute plugin %s. Error: %s\n", p, err.Error())
