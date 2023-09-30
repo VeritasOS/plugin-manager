@@ -21,11 +21,11 @@ import (
 	"time"
 
 	"github.com/VeritasOS/plugin-manager/config"
+	"github.com/VeritasOS/plugin-manager/graph"
 	"github.com/VeritasOS/plugin-manager/pluginmanager"
 	logutil "github.com/VeritasOS/plugin-manager/utils/log"
 	osutils "github.com/VeritasOS/plugin-manager/utils/os"
 	"github.com/VeritasOS/plugin-manager/utils/output"
-	graph "github.com/abhijithda/pm-graph/v3"
 )
 
 var (
@@ -330,7 +330,10 @@ func validateDependencies(nPInfo pluginmanager.Plugins) ([]string, error) {
 func executePluginCmd(statusCh chan<- map[string]*pluginmanager.RunStatus, p string, pluginsInfo pluginmanager.Plugins, failedDependency bool) {
 	pInfo := pluginsInfo[p]
 	log.Printf("\nChannel: Plugin %s info: \n%+v\n", p, pInfo)
-	graph.UpdateGraph(getPluginType(p), p, pluginmanager.DStatusStart, "")
+	// TODO: Uncomment below UpdateGraph() once concurrency issue is
+	//  taken care, and remove the one from where executePluginCmd().
+	//  is called. Refer "TODO Graph" for more details.
+	// graph.UpdateGraph(getPluginType(p), p, pluginmanager.DStatusStart, "")
 	logutil.PrintNLog("\n%s: %s\n", pInfo.Description, pluginmanager.DStatusStart)
 	// Get relative path to plugins log file from PM log dir, so that linking
 	// in plugin graph works even when the logs are copied to another system.
@@ -483,12 +486,19 @@ func executePlugins(psStatus *pluginmanager.PluginsStatus, nPInfo pluginmanager.
 				*psStatus = append(*psStatus, ps)
 				pluginIndexes[p] = len(*psStatus) - 1
 
+				// TODO: Remove below UpdateGraph() once concurrency issue is
+				//  taken care, and keep the one inside executePluginCmd().
+				//  Refer "TODO Graph" for more details.
+				graph.UpdateGraph(getPluginType(p), p, pluginmanager.DStatusStart, "")
 				go executePluginCmd(exeCh, p, nPInfo, failedDependency[p])
 				executingCnt++
 			}
 		}
 		// start other dependent ones as soon as one of the plugin completes.
 		exeStatus := <-exeCh
+		// TODO: Remove below GenerateGraph() once concurrency issue is taken
+		//  care. Refer "TODO Graph" for more details.
+		graph.GenerateGraph()
 		executingCnt--
 		for plugin, pStatus := range exeStatus {
 			log.Printf("%s status: %v", plugin, pStatus.Status)
@@ -731,20 +741,26 @@ func ScanCommandOptions(options map[string]interface{}) error {
 	if *CmdOptions.libraryPtr != "" {
 		config.SetPluginsLibrary(*CmdOptions.libraryPtr)
 	}
-	logToNewFile := false
+	myLogFile := "./"
 	if *CmdOptions.logDirPtr != "" {
 		config.SetPMLogDir(*CmdOptions.logDirPtr)
-		logToNewFile = true
+		myLogFile = config.GetPMLogDir()
 	}
 	// Info: Call set PM log-dir to clean extra slashes, and to append path
 	// 	separator at the end.
 	config.SetPMLogDir(config.GetPMLogDir())
+	tLogFile := progname
 	if *CmdOptions.logFilePtr != "" {
-		config.SetPMLogFile(*CmdOptions.logFilePtr)
-		logToNewFile = true
+		tLogFile = *CmdOptions.logFilePtr
 	}
-	if logToNewFile {
-		myLogFile := config.GetPMLogDir() + config.GetPMLogFile()
+	// NOTE: Even when no log file is specified, and we're using default log
+	//  file name, we still need to call SetPMLogFile() as SVG image file name
+	//  is based on this. Otherwise image and dot files will not have any names
+	//  but only extensions (i.e., they get created as hidden files).
+	config.SetPMLogFile(tLogFile)
+	myLogFile += config.GetPMLogFile()
+	if myLogFile != config.DefaultLogPath {
+		myLogFile = filepath.Clean(myLogFile)
 		log.Println("Logging to specified log file:", myLogFile)
 		logutil.SetLogging(myLogFile)
 	}
