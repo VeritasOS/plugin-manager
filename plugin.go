@@ -399,7 +399,7 @@ func executePluginCmd(statusCh chan<- map[string]*pluginmanager.RunStatus, p str
 		// TODO: Log it similar to how the stdout appears, and not each word
 		// 	on separate line.
 		scanner := bufio.NewScanner(iostdout)
-		scanner.Split(bufio.ScanWords)
+		scanner.Split(bufio.ScanLines)
 		for scanner.Scan() {
 			iobytes := scanner.Text()
 			chLog.Println(string(iobytes))
