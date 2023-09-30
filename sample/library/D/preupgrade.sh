@@ -8,6 +8,8 @@
 status=${TEST_PLUGIN_EXIT_STATUS:-0};
 
 echo "Running" $(basename $0) "(path: $0) with status($status)...";
+
+# Simulating long running operation printing output - for testing live output.
 max=3
 for i in $(bash -c "echo {1..${max}}"); do
     echo $i;

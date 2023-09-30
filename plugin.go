@@ -396,16 +396,12 @@ func executePluginCmd(statusCh chan<- map[string]*pluginmanager.RunStatus, p str
 	err = cmd.Start()
 	var stdOutErr []string
 	if err == nil {
-		// TODO: Log it similar to how the stdout appears, and not each word
-		// 	on separate line.
 		scanner := bufio.NewScanner(iostdout)
 		scanner.Split(bufio.ScanLines)
 		for scanner.Scan() {
 			iobytes := scanner.Text()
 			chLog.Println(string(iobytes))
-			// log.Println(iobytes)
 			stdOutErr = append(stdOutErr, iobytes)
-			// stdOutErr = append(stdOutErr, ([]byte(iobytes))...)
 		}
 		err = cmd.Wait()
 		// chLog.Printf("command exited with code: %+v", err)
@@ -416,12 +412,9 @@ func executePluginCmd(statusCh chan<- map[string]*pluginmanager.RunStatus, p str
 			chLog.Println("Error:", err.Error())
 			graph.UpdateGraph(getPluginType(p), p, pluginmanager.DStatusFail, pluginLogFile)
 		} else {
-			// chLog.Println("Stdout & Stderr:", string(stdOutErr))
 			graph.UpdateGraph(getPluginType(p), p, pluginmanager.DStatusOk, pluginLogFile)
 		}
 	}()
-	// log.Println("Stdout & Stderr:", string(stdOutErr))
-	// pStatus := pluginmanager.RunStatus{StdOutErr: string(stdOutErr)}
 	log.Println("Stdout & Stderr:", stdOutErr)
 	pStatus := pluginmanager.RunStatus{StdOutErr: strings.Join(stdOutErr, "\n")}
 	if err != nil {
