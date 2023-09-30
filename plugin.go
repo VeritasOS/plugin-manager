@@ -378,7 +378,7 @@ func executePluginCmd(statusCh chan<- map[string]*pluginmanager.RunStatus, p str
 	cmdParamsExpanded := strings.Split(cmdParams, " ")
 
 	cmd := exec.Command(os.ExpandEnv(cmdStr), cmdParamsExpanded...)
-	// TODO: https://stackoverflow.com/questions/69954944/capture-stdout-from-exec-command-line-by-line-and-also-pipe-to-os-stdout
+	// INFO: https://stackoverflow.com/questions/69954944/capture-stdout-from-exec-command-line-by-line-and-also-pipe-to-os-stdout
 	iostdout, err := cmd.StdoutPipe()
 	if err != nil {
 		pStatus := pluginmanager.RunStatus{Status: pluginmanager.DStatusFail}
@@ -393,7 +393,8 @@ func executePluginCmd(statusCh chan<- map[string]*pluginmanager.RunStatus, p str
 	err = cmd.Start()
 	var stdOutErr []string
 	if err == nil {
-
+		// TODO: Log it similar to how the stdout appears, and not each word
+		// 	on separate line.
 		scanner := bufio.NewScanner(iostdout)
 		scanner.Split(bufio.ScanWords)
 		for scanner.Scan() {
@@ -403,7 +404,8 @@ func executePluginCmd(statusCh chan<- map[string]*pluginmanager.RunStatus, p str
 			stdOutErr = append(stdOutErr, iobytes)
 			// stdOutErr = append(stdOutErr, ([]byte(iobytes))...)
 		}
-		cmd.Wait()
+		err = cmd.Wait()
+		// chLog.Printf("command exited with code: %+v", err)
 	}
 
 	func() {
