@@ -663,15 +663,15 @@ func runHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func listHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "Welcome to the listHandler!")
+	// fmt.Fprintf(w, "Welcome to the listHandler!")
 	fmt.Println("Endpoint Hit: listHandler")
 
 	queryParams := r.URL.Query()
 	fmt.Println("Query Params: ", queryParams)
 	pluginType := queryParams["type"]
 	library := queryParams["library"]
-	fmt.Fprintf(w, "\nType: %s", queryParams["type"])
-	fmt.Fprintf(w, "\nLibrary: %s", queryParams["library"])
+	// fmt.Fprintf(w, "\nType: %s", pluginType[0])
+	// fmt.Fprintf(w, "\nLibrary: %s", library[0])
 	config.SetPluginsLibrary(library[0])
 
 	err := List(pluginType[0])
@@ -679,12 +679,12 @@ func listHandler(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(w, "Error: %s", err.Error())
 	} else {
 		imgPath := graph.GetImagePath()
-		fmt.Fprintf(w, "Image: %v", imgPath)
+		// fmt.Fprintf(w, "Image: %v", imgPath)
 		data, err := readFile(imgPath)
 		if err != nil {
-			fmt.Fprintln(w, data)
+			fmt.Fprintf(w, "Error: \n%v", err.Error())
 		} else {
-			fmt.Fprintln(w, err.Error())
+			fmt.Fprintf(w, "%v", data)
 		}
 	}
 }
