@@ -9,6 +9,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"html/template"
 	"log"
 	"net/http"
 	"os"
@@ -653,28 +654,55 @@ func RegisterCommandOptions(progname string) {
 }
 
 func homePage(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "Welcome to the HomePage!")
 	fmt.Println("Endpoint Hit: homePage")
+
+	tmpl := template.Must(template.ParseFiles("web/pm.html"))
+	tmpl.Execute(w, nil)
 }
 
 func runHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "Welcome to the runHandler!")
 	fmt.Println("Endpoint Hit: runHandler")
+
+	pluginType := r.PostFormValue("type")
+	fmt.Println("Type: ", pluginType)
+	library := r.PostFormValue("library")
+	fmt.Println("Library: ", library)
+
+	config.SetPluginsLibrary(library)
+
+	pmstatus := pluginmanager.RunAllStatus{}
+	err := Run(&pmstatus, pluginType)
+	if err != nil {
+		fmt.Fprintf(w, "Error: %s", err.Error())
+	} else {
+		imgPath := graph.GetImagePath()
+		// fmt.Fprintf(w, "Image: %v", imgPath)
+		data, err := readFile(imgPath)
+		if err != nil {
+			fmt.Fprintf(w, "Error: \n%v", err.Error())
+		} else {
+			fmt.Fprintf(w, "%v", data)
+		}
+	}
 }
 
 func listHandler(w http.ResponseWriter, r *http.Request) {
 	// fmt.Fprintf(w, "Welcome to the listHandler!")
 	fmt.Println("Endpoint Hit: listHandler")
 
-	queryParams := r.URL.Query()
-	fmt.Println("Query Params: ", queryParams)
-	pluginType := queryParams["type"]
-	library := queryParams["library"]
-	// fmt.Fprintf(w, "\nType: %s", pluginType[0])
-	// fmt.Fprintf(w, "\nLibrary: %s", library[0])
-	config.SetPluginsLibrary(library[0])
+	// queryParams := r.URL.Query()
+	// fmt.Println("Query Params: ", queryParams)
+	// pluginType := queryParams["type"]
+	// library := queryParams["library"]
 
-	err := List(pluginType[0])
+	pluginType := r.PostFormValue("type")
+	fmt.Println("Type: ", pluginType)
+	library := r.PostFormValue("library")
+	fmt.Println("Library: ", library)
+
+	config.SetPluginsLibrary(library)
+
+	err := List(pluginType)
 	if err != nil {
 		fmt.Fprintf(w, "Error: %s", err.Error())
 	} else {
