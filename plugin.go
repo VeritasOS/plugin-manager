@@ -11,12 +11,14 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"net/http"
 	"os"
 	"os/exec"
 	"path"
 	"path/filepath"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -522,10 +524,14 @@ func executePlugins(psStatus *pluginmanager.PluginsStatus, nPInfo pluginmanager.
 
 // CmdOptions contains subcommands and parameters of the pm command.
 var CmdOptions struct {
+	ServerCmd  *flag.FlagSet
 	RunCmd     *flag.FlagSet
 	ListCmd    *flag.FlagSet
 	versionCmd *flag.FlagSet
 	versionPtr *bool
+
+	// portPtr indicates port number of http server to run on.
+	portPtr *int
 
 	// sequential enforces execution of plugins in sequence mode.
 	// (If sequential is disabled, plugins whose dependencies are met would be executed in parallel).
@@ -567,7 +573,7 @@ func List(pluginType string) error {
 }
 
 func readFile(filePath string) (string, error) {
-	bFileContents, err := ioutil.ReadFile(filePath)
+	bFileContents, err := os.ReadFile(filePath)
 	if err != nil {
 		message := "Failed to read " + filePath + " file."
 		err = errors.New(message)
@@ -584,6 +590,13 @@ func RegisterCommandOptions(progname string) {
 
 	CmdOptions.versionCmd = flag.NewFlagSet(progname+" version", flag.ContinueOnError)
 	CmdOptions.versionPtr = CmdOptions.versionCmd.Bool("version", false, "print Plugin Manager (PM) version.")
+
+	CmdOptions.ServerCmd = flag.NewFlagSet(progname+" server", flag.PanicOnError)
+	CmdOptions.portPtr = CmdOptions.ServerCmd.Int(
+		"port",
+		8080,
+		"Port number",
+	)
 
 	CmdOptions.RunCmd = flag.NewFlagSet(progname+" run", flag.PanicOnError)
 	CmdOptions.pluginTypePtr = CmdOptions.RunCmd.String(
@@ -638,6 +651,52 @@ func RegisterCommandOptions(progname string) {
 		"",
 		"Name of the log file.",
 	)
+}
+
+func homePage(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprintf(w, "Welcome to the HomePage!")
+	fmt.Println("Endpoint Hit: homePage")
+}
+
+func runHandler(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprintf(w, "Welcome to the runHandler!")
+	fmt.Println("Endpoint Hit: runHandler")
+}
+
+func listHandler(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprintf(w, "Welcome to the listHandler!")
+	fmt.Println("Endpoint Hit: listHandler")
+
+	queryParams := r.URL.Query()
+	fmt.Println("Query Params: ", queryParams)
+	pluginType := queryParams["type"]
+	library := queryParams["library"]
+	fmt.Fprintf(w, "\nType: %s", queryParams["type"])
+	fmt.Fprintf(w, "\nLibrary: %s", queryParams["library"])
+	config.SetPluginsLibrary(library[0])
+
+	err := List(pluginType[0])
+	if err != nil {
+		fmt.Fprintf(w, "Error: %s", err.Error())
+	} else {
+		imgPath := graph.GetImagePath()
+		fmt.Fprintf(w, "Image: %v", imgPath)
+		data, err := readFile(imgPath)
+		if err != nil {
+			fmt.Fprintln(w, data)
+		} else {
+			fmt.Fprintln(w, err.Error())
+		}
+	}
+}
+
+// RegisterHandlers defines http handlers.
+func RegisterHandlers(port int) {
+	http.HandleFunc("/", homePage)
+	http.HandleFunc("/run", runHandler)
+	http.HandleFunc("/list", listHandler)
+	fmt.Printf("Starting server on %v", port)
+	log.Fatal(http.ListenAndServe(":"+strconv.Itoa(port), nil))
 }
 
 // Run the specified plugin type plugins.
@@ -714,6 +773,12 @@ func ScanCommandOptions(options map[string]interface{}) error {
 			log.Fatalln(cmd, "command arguments parse error:", err.Error())
 		}
 
+	case "server":
+		err := CmdOptions.ServerCmd.Parse(os.Args[cmdIndex+1:])
+		if err != nil {
+			log.Fatalln(cmd, "command arguments parse error:", err.Error())
+		}
+
 	case "help":
 		subcmd := ""
 		if len(os.Args) == cmdIndex+2 {
@@ -758,6 +823,9 @@ func ScanCommandOptions(options map[string]interface{}) error {
 		logutil.SetLogging(myLogFile)
 	}
 
+	if cmd == "server" {
+		RegisterHandlers(*CmdOptions.portPtr)
+	}
 	if *CmdOptions.pluginTypePtr != "" {
 		pluginType := *CmdOptions.pluginTypePtr
 		var err error
@@ -790,6 +858,7 @@ Usage:
 
 The commands are:
 
+    server 	    Starts server runs Plugin Manager to serve API requests.
 	list 		lists plugins and its dependencies of specified type in an image.
 	run 		run plugins of specified type.
 	version		print Plugin Manager version.
