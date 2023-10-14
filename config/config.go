@@ -3,7 +3,6 @@
 package config
 
 import (
-	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -120,7 +119,7 @@ func readConfigFile(confFilePath string) (Config, error) {
 	defer log.Println("Exiting readConfigFile")
 
 	var conf Config
-	bFileContents, err := ioutil.ReadFile(confFilePath)
+	bFileContents, err := os.ReadFile(confFilePath)
 	if err != nil {
 		return conf, logutil.PrintNLogWarning("Failed to read \"" +
 			confFilePath + "\" file.")

@@ -9,7 +9,6 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -49,9 +48,9 @@ func getPluginFiles(pluginType string) ([]string, error) {
 			"A valid plugins library path must be specified.", library)
 	}
 	var files []string
-	dirs, err := ioutil.ReadDir(library)
+	dirs, err := os.ReadDir(library)
 	if err != nil {
-		log.Printf("ioutil.ReadDir(%s); Error: %s", library, err.Error())
+		log.Printf("os.ReadDir(%s); Error: %s", library, err.Error())
 		return pluginFiles, logutil.PrintNLogError("Failed to get contents of %s plugins library.", library)
 	}
 
@@ -68,7 +67,7 @@ func getPluginFiles(pluginType string) ([]string, error) {
 			continue
 		}
 
-		tfiles, err := ioutil.ReadDir(compPluginDir)
+		tfiles, err := os.ReadDir(compPluginDir)
 		if err != nil {
 			log.Printf("Unable to read contents of %s directory. Error: %s\n",
 				compPluginDir, err.Error())

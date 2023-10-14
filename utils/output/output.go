@@ -6,8 +6,8 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"log"
+	"os"
 	"path/filepath"
 
 	"gopkg.in/yaml.v3"
@@ -106,7 +106,7 @@ func writeToFile(data interface{}, format string, filePath string) error {
 
 	filePath = filepath.FromSlash(filePath)
 	log.Printf("Output file: %s\n", filePath)
-	err = ioutil.WriteFile(filePath, out, 0764)
+	err = os.WriteFile(filePath, out, 0764)
 	if err != nil {
 		log.Printf("Unable to write to specified file %s. Error: %v",
 			filePath, err)
