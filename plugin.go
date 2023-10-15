@@ -597,6 +597,16 @@ func RegisterCommandOptions(progname string) {
 		8080,
 		"Port number",
 	)
+	CmdOptions.logDirPtr = CmdOptions.ServerCmd.String(
+		"log-dir",
+		"",
+		"Directory for the log file.",
+	)
+	CmdOptions.logFilePtr = CmdOptions.ServerCmd.String(
+		"log-file",
+		"",
+		"Name of the log file.",
+	)
 
 	CmdOptions.RunCmd = flag.NewFlagSet(progname+" run", flag.PanicOnError)
 	CmdOptions.pluginTypePtr = CmdOptions.RunCmd.String(
@@ -614,12 +624,14 @@ func RegisterCommandOptions(progname string) {
 		false,
 		"Enforce running plugins in sequential.",
 	)
-	CmdOptions.logDirPtr = CmdOptions.RunCmd.String(
+	CmdOptions.RunCmd.StringVar(
+		CmdOptions.logDirPtr,
 		"log-dir",
 		"",
 		"Directory for the log file.",
 	)
-	CmdOptions.logFilePtr = CmdOptions.RunCmd.String(
+	CmdOptions.RunCmd.StringVar(
+		CmdOptions.logFilePtr,
 		"log-file",
 		"",
 		"Name of the log file.",
@@ -663,6 +675,8 @@ func homePage(w http.ResponseWriter, r *http.Request) {
 func runHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("Endpoint Hit: runHandler")
 
+	graph.ResetGraph()
+
 	pluginType := r.PostFormValue("type")
 	fmt.Println("Type: ", pluginType)
 	library := r.PostFormValue("library")
@@ -671,24 +685,50 @@ func runHandler(w http.ResponseWriter, r *http.Request) {
 	config.SetPluginsLibrary(library)
 
 	pmstatus := pluginmanager.RunAllStatus{}
-	err := Run(&pmstatus, pluginType)
-	if err != nil {
-		fmt.Fprintf(w, "Error: %s", err.Error())
-	} else {
-		imgPath := graph.GetImagePath()
-		// fmt.Fprintf(w, "Image: %v", imgPath)
-		data, err := readFile(imgPath)
+
+	runFunc := func() {
+		// fmt.Println("Inside runFunc routine...")
+		err := Run(&pmstatus, pluginType)
 		if err != nil {
-			fmt.Fprintf(w, "Error: \n%v", err.Error())
-		} else {
-			fmt.Fprintf(w, "%v", data)
+			fmt.Fprintf(w, "Error: %s", err.Error())
+			return
 		}
 	}
+	runFunc()
+	//TODO: Display progressive updates
+	//  go runFunc()
+
+	// fmt.Println("After calling runFunc routine...")
+
+	// for i := 5; i > 0; i-- {
+	time.Sleep(time.Second * 2)
+	imgPath := graph.GetImagePath()
+	// fmt.Printf("\nImage: %v", imgPath)
+	// htmlInsertCode := `
+	// <div>
+	// 	<object type="image/svg+xml" data="{{.}}" hx-trigger="every 1s">
+	// 	  <img src="{{.}}" alt="Description of your image">
+	// 	</object>
+	// </div>`
+	// htmlInsertCode := `<img src={{.}} alt="Missing image"> </img>`
+	// t, _ := template.New("resp").Parse(htmlInsertCode)
+	// t.Execute(w, imgPath)
+
+	data, err := readFile(imgPath)
+	if err != nil {
+		fmt.Fprintf(w, "Error: \n%v", err.Error())
+	} else {
+		fmt.Fprintf(w, "%v\n", data)
+	}
+	// }
+
 }
 
 func listHandler(w http.ResponseWriter, r *http.Request) {
 	// fmt.Fprintf(w, "Welcome to the listHandler!")
 	fmt.Println("Endpoint Hit: listHandler")
+
+	graph.ResetGraph()
 
 	// queryParams := r.URL.Query()
 	// fmt.Println("Query Params: ", queryParams)
@@ -722,6 +762,7 @@ func RegisterHandlers(port int) {
 	http.HandleFunc("/", homePage)
 	http.HandleFunc("/run", runHandler)
 	http.HandleFunc("/list", listHandler)
+	// http.Handle("/artifacts/", http.StripPrefix("/artifacts/", http.FileServer(http.Dir("./"+*CmdOptions.logDirPtr))))
 	fmt.Printf("Starting server on %v", port)
 	log.Fatal(http.ListenAndServe(":"+strconv.Itoa(port), nil))
 }
@@ -885,7 +926,7 @@ Usage:
 
 The commands are:
 
-    server 	    Starts server runs Plugin Manager to serve API requests.
+	server 	    Starts server runs Plugin Manager to serve API requests.
 	list 		lists plugins and its dependencies of specified type in an image.
 	run 		run plugins of specified type.
 	version		print Plugin Manager version.
@@ -900,6 +941,8 @@ Use "PROGNAME ` + subcmd + ` help [command]" for more information about a comman
 		CmdOptions.ListCmd.Usage()
 	case "run":
 		CmdOptions.RunCmd.Usage()
+	case "server":
+		CmdOptions.ServerCmd.Usage()
 	default:
 		fmt.Fprintf(os.Stderr, "Unknown help topic `%s`. Run '%s'.", subcmd, progname+" help")
 		fmt.Println()
