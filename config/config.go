@@ -67,7 +67,7 @@ func GetPluginsDir() string {
 
 // GetPMLogDir provides location for storing Plugin Manager logs.
 //
-//	NOTE: The plugin logs would be stored "plugins" directory under the
+//	NOTE: The plugin logs would be stored in "plugins" directory under the
 //	same path, and use GetPluginsLogDir() to get that path.
 func GetPMLogDir() string {
 	return filepath.FromSlash(filepath.Clean(myConfig.PluginManager.LogDir) +

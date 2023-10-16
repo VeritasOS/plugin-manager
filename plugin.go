@@ -760,10 +760,15 @@ func listHandler(w http.ResponseWriter, r *http.Request) {
 // RegisterHandlers defines http handlers.
 func RegisterHandlers(port int) {
 	http.HandleFunc("/", homePage)
-	http.HandleFunc("/run", runHandler)
 	http.HandleFunc("/list", listHandler)
-	// http.Handle("/artifacts/", http.StripPrefix("/artifacts/", http.FileServer(http.Dir("./"+*CmdOptions.logDirPtr))))
-	fmt.Printf("Starting server on %v", port)
+	http.HandleFunc("/run", runHandler)
+	// http.Handle("/log/",
+	// 	http.StripPrefix("/log/",
+	// 		http.FileServer(http.Dir("./"+*CmdOptions.logDirPtr))))
+	http.Handle("/plugins/",
+		http.StripPrefix("/plugins/",
+			http.FileServer(http.Dir("./"+config.GetPluginsLogDir()))))
+	fmt.Println("Starting server on ", port)
 	log.Fatal(http.ListenAndServe(":"+strconv.Itoa(port), nil))
 }
 
