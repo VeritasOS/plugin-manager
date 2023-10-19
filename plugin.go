@@ -35,6 +35,32 @@ var (
 	version = "4.6"
 )
 
+// CmdOptions contains subcommands and parameters of the pm command.
+var CmdOptions struct {
+	ServerCmd  *flag.FlagSet
+	RunCmd     *flag.FlagSet
+	ListCmd    *flag.FlagSet
+	versionCmd *flag.FlagSet
+	versionPtr *bool
+
+	// portPtr indicates port number of http server to run on.
+	portPtr *int
+
+	// sequential enforces execution of plugins in sequence mode.
+	// (If sequential is disabled, plugins whose dependencies are met would be executed in parallel).
+	sequential *bool
+
+	// pluginTypePtr indicates type of the plugin to run.
+	pluginTypePtr *string
+
+	// libraryPtr indicates the path of the plugins library.
+	libraryPtr *string
+
+	// pluginDirPtr indicates the location of the plugins.
+	// 	NOTE: `pluginDir` is deprecated, use `library` instead.
+	pluginDirPtr *string
+}
+
 // getPluginFiles retrieves the plugin files under each component matching
 // the specified pluginType.
 func getPluginFiles(pluginType string) ([]string, error) {
@@ -84,7 +110,7 @@ func getPluginFiles(pluginType string) ([]string, error) {
 			log.Printf("regexp.MatchString(%s, %s); Error: %s", "[.]"+pluginType, file, err.Error())
 			continue
 		}
-		if matched == true {
+		if matched {
 			pluginFiles = append(pluginFiles, file)
 		}
 	}
@@ -292,7 +318,7 @@ func validateDependencies(nPInfo pluginmanager.Plugins) ([]string, error) {
 		dependencyMet[pFile] = true
 		for w := range pDependencies {
 			val := dependencyMet[pDependencies[w]]
-			if false == val {
+			if !val {
 				// If dependency met is false, then process it later again after all dependencies are met.
 				dependencyMet[pFile] = false
 				log.Printf("Adding %s back to list %s to process as %s plugin dependency is not met.\n",
@@ -522,36 +548,12 @@ func executePlugins(psStatus *pluginmanager.PluginsStatus, nPInfo pluginmanager.
 	return retStatus
 }
 
-// CmdOptions contains subcommands and parameters of the pm command.
-var CmdOptions struct {
-	ServerCmd  *flag.FlagSet
-	RunCmd     *flag.FlagSet
-	ListCmd    *flag.FlagSet
-	versionCmd *flag.FlagSet
-	versionPtr *bool
+func homePage(w http.ResponseWriter, r *http.Request) {
+	log.Println("Entering homePage")
+	defer log.Println("Exiting homePage")
 
-	// portPtr indicates port number of http server to run on.
-	portPtr *int
-
-	// sequential enforces execution of plugins in sequence mode.
-	// (If sequential is disabled, plugins whose dependencies are met would be executed in parallel).
-	sequential *bool
-
-	// pluginTypePtr indicates type of the plugin to run.
-	pluginTypePtr *string
-
-	// libraryPtr indicates the path of the plugins library.
-	libraryPtr *string
-
-	// pluginDirPtr indicates the location of the plugins.
-	// 	NOTE: `pluginDir` is deprecated, use `library` instead.
-	pluginDirPtr *string
-
-	// logDirPtr indicates the location for writing log file.
-	logDirPtr *string
-
-	// logFilePtr indicates the log file name to write to in the logDirPtr location.
-	logFilePtr *string
+	tmpl := template.Must(template.ParseFiles("web/pm.html"))
+	tmpl.Execute(w, nil)
 }
 
 // List the plugin and its dependencies.
@@ -570,6 +572,39 @@ func List(pluginType string) error {
 	logutil.PrintNLog("The list of plugins are mapped in %s\n",
 		graph.GetImagePath())
 	return nil
+}
+
+func listHandler(w http.ResponseWriter, r *http.Request) {
+	log.Println("Entering listHandler")
+	defer log.Println("Exiting listHandler")
+
+	graph.ResetGraph()
+
+	// queryParams := r.URL.Query()
+	// fmt.Println("Query Params: ", queryParams)
+	// pluginType := queryParams["type"]
+	// library := queryParams["library"]
+
+	pluginType := r.PostFormValue("type")
+	fmt.Println("Type: ", pluginType)
+	library := r.PostFormValue("library")
+	fmt.Println("Library: ", library)
+
+	config.SetPluginsLibrary(library)
+
+	err := List(pluginType)
+	if err != nil {
+		fmt.Fprintf(w, "Error: %s", err.Error())
+	} else {
+		imgPath := graph.GetImagePath()
+		// fmt.Fprintf(w, "Image: %v", imgPath)
+		data, err := readFile(imgPath)
+		if err != nil {
+			fmt.Fprintf(w, "Error: \n%v", err.Error())
+		} else {
+			fmt.Fprintf(w, "%v", data)
+		}
+	}
 }
 
 func readFile(filePath string) (string, error) {
@@ -597,16 +632,7 @@ func RegisterCommandOptions(progname string) {
 		8080,
 		"Port number",
 	)
-	CmdOptions.logDirPtr = CmdOptions.ServerCmd.String(
-		"log-dir",
-		"",
-		"Directory for the log file.",
-	)
-	CmdOptions.logFilePtr = CmdOptions.ServerCmd.String(
-		"log-file",
-		"",
-		"Name of the log file.",
-	)
+	logutil.RegisterCommandOptions(CmdOptions.ServerCmd, map[string]string{})
 
 	CmdOptions.RunCmd = flag.NewFlagSet(progname+" run", flag.PanicOnError)
 	CmdOptions.pluginTypePtr = CmdOptions.RunCmd.String(
@@ -624,18 +650,17 @@ func RegisterCommandOptions(progname string) {
 		false,
 		"Enforce running plugins in sequential.",
 	)
-	CmdOptions.RunCmd.StringVar(
-		CmdOptions.logDirPtr,
-		"log-dir",
-		"",
-		"Directory for the log file.",
-	)
-	CmdOptions.RunCmd.StringVar(
-		CmdOptions.logFilePtr,
-		"log-file",
-		"",
-		"Name of the log file.",
-	)
+	// CmdOptions.logDirPtr = CmdOptions.RunCmd.String(
+	// 	"log-dir",
+	// 	"",
+	// 	"Directory for the log file.",
+	// )
+	// CmdOptions.logFilePtr = CmdOptions.RunCmd.String(
+	// 	"log-file",
+	// 	"",
+	// 	"Name of the log file.",
+	// )
+	logutil.RegisterCommandOptions(CmdOptions.RunCmd, map[string]string{})
 	output.RegisterCommandOptions(CmdOptions.RunCmd, map[string]string{})
 
 	CmdOptions.ListCmd = flag.NewFlagSet(progname+" list", flag.PanicOnError)
@@ -651,29 +676,64 @@ func RegisterCommandOptions(progname string) {
 		"",
 		"Path of the plugins library.",
 	)
-	CmdOptions.ListCmd.StringVar(
-		CmdOptions.logDirPtr,
-		"log-dir",
-		"",
-		"Directory for the log file.",
-	)
-	CmdOptions.ListCmd.StringVar(
-		CmdOptions.logFilePtr,
-		"log-file",
-		"",
-		"Name of the log file.",
-	)
+	logutil.RegisterCommandOptions(CmdOptions.ListCmd, map[string]string{})
+
 }
 
-func homePage(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("Endpoint Hit: homePage")
+// RegisterHandlers defines http handlers.
+func RegisterHandlers(port int) {
+	http.HandleFunc("/", homePage)
+	http.HandleFunc("/list", listHandler)
+	http.HandleFunc("/run", runHandler)
+	// http.Handle("/log/",
+	// 	http.StripPrefix("/log/",
+	// 		http.FileServer(http.Dir("./"+*CmdOptions.logDirPtr))))
+	http.Handle("/plugins/",
+		http.StripPrefix("/plugins/",
+			http.FileServer(http.Dir("./"+config.GetPluginsLogDir()))))
+	fmt.Println("Starting server on ", port)
+	log.Fatal(http.ListenAndServe(":"+strconv.Itoa(port), nil))
+}
 
-	tmpl := template.Must(template.ParseFiles("web/pm.html"))
-	tmpl.Execute(w, nil)
+// Run the specified plugin type plugins.
+func Run(result *pluginmanager.RunAllStatus, pluginType string) error {
+	result.Type = pluginType
+	status := true
+
+	if err := osutils.OsMkdirAll(config.GetPluginsLogDir(), 0755); nil != err {
+		err = logutil.PrintNLogError(
+			"Failed to create the plugins logs directory: %s. "+
+				"Error: %s", config.GetPluginsLogDir(), err.Error())
+		result.Status = pluginmanager.DStatusFail
+		result.StdOutErr = err.Error()
+		return err
+	}
+
+	var pluginsInfo, err = getPluginsInfo(pluginType)
+	if err != nil {
+		result.Status = pluginmanager.DStatusFail
+		result.StdOutErr = err.Error()
+		return err
+	}
+	nPInfo := normalizePluginsInfo(pluginsInfo)
+	graph.InitGraph(pluginType, nPInfo)
+
+	status = executePlugins(&result.Plugins, nPInfo, *CmdOptions.sequential)
+	if !status {
+		result.Status = pluginmanager.DStatusFail
+		err = fmt.Errorf("Running %s plugins: %s", pluginType, pluginmanager.DStatusFail)
+		result.StdOutErr = err.Error()
+		logutil.PrintNLog("%s\n", err.Error())
+		return err
+	}
+	result.Status = pluginmanager.DStatusOk
+	logutil.PrintNLog("Running %s plugins: %s\n", pluginType, pluginmanager.DStatusOk)
+	return nil
 }
 
 func runHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("Endpoint Hit: runHandler")
+	log.Println("Entering runHandler")
+	defer log.Println("Exiting runHandler")
 
 	graph.ResetGraph()
 
@@ -722,90 +782,6 @@ func runHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	// }
 
-}
-
-func listHandler(w http.ResponseWriter, r *http.Request) {
-	// fmt.Fprintf(w, "Welcome to the listHandler!")
-	fmt.Println("Endpoint Hit: listHandler")
-
-	graph.ResetGraph()
-
-	// queryParams := r.URL.Query()
-	// fmt.Println("Query Params: ", queryParams)
-	// pluginType := queryParams["type"]
-	// library := queryParams["library"]
-
-	pluginType := r.PostFormValue("type")
-	fmt.Println("Type: ", pluginType)
-	library := r.PostFormValue("library")
-	fmt.Println("Library: ", library)
-
-	config.SetPluginsLibrary(library)
-
-	err := List(pluginType)
-	if err != nil {
-		fmt.Fprintf(w, "Error: %s", err.Error())
-	} else {
-		imgPath := graph.GetImagePath()
-		// fmt.Fprintf(w, "Image: %v", imgPath)
-		data, err := readFile(imgPath)
-		if err != nil {
-			fmt.Fprintf(w, "Error: \n%v", err.Error())
-		} else {
-			fmt.Fprintf(w, "%v", data)
-		}
-	}
-}
-
-// RegisterHandlers defines http handlers.
-func RegisterHandlers(port int) {
-	http.HandleFunc("/", homePage)
-	http.HandleFunc("/list", listHandler)
-	http.HandleFunc("/run", runHandler)
-	// http.Handle("/log/",
-	// 	http.StripPrefix("/log/",
-	// 		http.FileServer(http.Dir("./"+*CmdOptions.logDirPtr))))
-	http.Handle("/plugins/",
-		http.StripPrefix("/plugins/",
-			http.FileServer(http.Dir("./"+config.GetPluginsLogDir()))))
-	fmt.Println("Starting server on ", port)
-	log.Fatal(http.ListenAndServe(":"+strconv.Itoa(port), nil))
-}
-
-// Run the specified plugin type plugins.
-func Run(result *pluginmanager.RunAllStatus, pluginType string) error {
-	result.Type = pluginType
-	status := true
-
-	if err := osutils.OsMkdirAll(config.GetPluginsLogDir(), 0755); nil != err {
-		err = logutil.PrintNLogError(
-			"Failed to create the plugins logs directory: %s. "+
-				"Error: %s", config.GetPluginsLogDir(), err.Error())
-		result.Status = pluginmanager.DStatusFail
-		result.StdOutErr = err.Error()
-		return err
-	}
-
-	var pluginsInfo, err = getPluginsInfo(pluginType)
-	if err != nil {
-		result.Status = pluginmanager.DStatusFail
-		result.StdOutErr = err.Error()
-		return err
-	}
-	nPInfo := normalizePluginsInfo(pluginsInfo)
-	graph.InitGraph(pluginType, nPInfo)
-
-	status = executePlugins(&result.Plugins, nPInfo, *CmdOptions.sequential)
-	if status != true {
-		result.Status = pluginmanager.DStatusFail
-		err = fmt.Errorf("Running %s plugins: %s", pluginType, pluginmanager.DStatusFail)
-		result.StdOutErr = err.Error()
-		logutil.PrintNLog("%s\n", err.Error())
-		return err
-	}
-	result.Status = pluginmanager.DStatusOk
-	logutil.PrintNLog("Running %s plugins: %s\n", pluginType, pluginmanager.DStatusOk)
-	return nil
 }
 
 // ScanCommandOptions scans for the command line options and makes appropriate
@@ -873,16 +849,16 @@ func ScanCommandOptions(options map[string]interface{}) error {
 		config.SetPluginsLibrary(*CmdOptions.libraryPtr)
 	}
 	myLogFile := "./"
-	if *CmdOptions.logDirPtr != "" {
-		config.SetPMLogDir(*CmdOptions.logDirPtr)
+	if logutil.GetLogDir() != "" {
+		config.SetPMLogDir(logutil.GetLogDir())
 		myLogFile = config.GetPMLogDir()
 	}
 	// Info: Call set PM log-dir to clean extra slashes, and to append path
 	// 	separator at the end.
 	config.SetPMLogDir(config.GetPMLogDir())
 	tLogFile := progname
-	if *CmdOptions.logFilePtr != "" {
-		tLogFile = *CmdOptions.logFilePtr
+	if logutil.GetLogFile() != "" {
+		tLogFile = logutil.GetLogFile()
 	}
 	// NOTE: Even when no log file is specified, and we're using default log
 	//  file name, we still need to call SetPMLogFile() as SVG image file name
