@@ -692,7 +692,11 @@ func RegisterHandlers(port int) {
 		http.StripPrefix("/plugins/",
 			http.FileServer(http.Dir("./"+config.GetPluginsLogDir()))))
 	fmt.Println("Starting server on ", port)
-	log.Fatal(http.ListenAndServe(":"+strconv.Itoa(port), nil))
+	err := http.ListenAndServe(":"+strconv.Itoa(port), nil)
+	if err != nil {
+		logutil.PrintNLogError(err.Error())
+		log.Fatalln(err)
+	}
 }
 
 // Run the specified plugin type plugins.
