@@ -690,7 +690,7 @@ func RegisterHandlers(port int) {
 	// 		http.FileServer(http.Dir("./"+*CmdOptions.logDirPtr))))
 	http.Handle("/plugins/",
 		http.StripPrefix("/plugins/",
-			http.FileServer(http.Dir("./"+config.GetPluginsLogDir()))))
+			http.FileServer(http.Dir(config.GetPluginsLogDir()))))
 	fmt.Println("Starting server on ", port)
 	err := http.ListenAndServe(":"+strconv.Itoa(port), nil)
 	if err != nil {
