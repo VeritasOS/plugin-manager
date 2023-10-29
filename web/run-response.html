@@ -1,13 +1,16 @@
-<div>
-    <div>
-        <object type="image/svg+xml" data="{{.}}.svg" hx-trigger="every 5s">
-            <img src="{{.}}.svg" alt="Image will appear after clicking Run.">
-        </object>
+<div hx-boost="true">
+    <br>
+    <h2>Status</h2>
+    <hr>
+    <i>Click on the green or red blocks to view the logs...</i>
+    <div hx-get="{{.}}.svg" hx-trigger="every 5s">
+        Getting status...
     </div>
-    <div id="log-file">
-        <!-- <h2 class="mb-4">Log file</h2> -->
-    </div>
-    <div>
-        <embed src="{{.}}.log">
+    <br>
+
+    <h2>Log</h2>
+    <hr>
+    <div hx-get="{{.}}.log" hx-trigger="every 5s">
+        Gathering logs...
     </div>
 </div>

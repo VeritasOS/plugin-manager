@@ -759,11 +759,7 @@ func runHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	runFunc()
-	// TODO: Display progressive updates
-	// go runFunc()
-	// fmt.Println("After calling runFunc routine...")
-	time.Sleep(time.Second * 2)
+	go runFunc()
 	tmpl := template.Must(template.ParseFiles("web/run-response.html"))
 	tmpl.Execute(w, logutil.GetCurLogFile(true, false))
 
