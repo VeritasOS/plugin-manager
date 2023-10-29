@@ -18,55 +18,41 @@
 
     <h1>Plugin Manager</h1>
     <hr />
-    <!-- <div hx-get="/path/to/data" hx-trigger="every 5s"></div> -->
-    <div class="row mt-4 g-4">
-        <div class="col-4">
-            <!-- <h1 class="mb-4">Params</h1> -->
+    <div>
+        <form>
+            <div class="mb-2">
+                <label for="plugin-type">Type</label>
+                <input type="text" name="type" id="plugin-type" class="form-control" />
+            </div>
+            <div class="mb-3">
+                <label for="library">library</label>
+                <input type="text" name="library" id="library" class="form-control" />
+            </div>
 
-            <!-- 
-                <form hx-post="/list" hx-target="#pm-response" hx-swap="beforeend" hx-indicator="#spinner">
-                </form>
-            -->
-            <form>
-                <div class="mb-2">
-                    <label for="plugin-type">Type</label>
-                    <input type="text" name="type" id="plugin-type" class="form-control" />
-                </div>
-                <div class="mb-3">
-                    <label for="library">library</label>
-                    <input type="text" name="library" id="library" class="form-control" />
-                </div>
-                <!-- <div class="mb-3">
-                    <label for="output-file">output-file</label>
-                    <input type="text" name="output-file" id="output-file" class="form-control" />
-                </div> -->
+            <button type="List" hx-post="/list" hx-target="#pm-response" hx-swap="innerHTML"
+                hx-indicator="#list-spinner" class="btn btn-primary">
+                <span class="spinner-border spinner-border-sm htmx-indicator" id="list-spinner" role="status"
+                    aria-hidden="true"></span>
+                List
+            </button>
 
-                <button type="List" hx-post="/list" hx-target="#pm-response" hx-swap="innerHTML"
-                    hx-indicator="#list-spinner" class="btn btn-primary">
-                    <span class="spinner-border spinner-border-sm htmx-indicator" id="list-spinner" role="status"
-                        aria-hidden="true"></span>
-                    List
-                </button>
-
-                <button type="Run" hx-post="/run" hx-target="#pm-response" hx-swap="innerHTML"
-                    hx-indicator="#run-spinner" class="btn btn-primary">
-                    <span class="spinner-border spinner-border-sm htmx-indicator" id="run-spinner" role="status"
-                        aria-hidden="true"></span>
-                    Run
-                </button>
-            </form>
-        </div>
-
-        <div class="col-8">
-            <!-- <h1 class="mb-4">Response</h1> -->
-
-            <ul class="list-group fs-5 me-5" id="pm-response">
-            </ul>
-        </div>
-
-
-
+            <button type="Run" hx-post="/run" hx-target="#pm-response" hx-swap="innerHTML" hx-indicator="#run-spinner"
+                class="btn btn-primary">
+                <span class="spinner-border spinner-border-sm htmx-indicator" id="run-spinner" role="status"
+                    aria-hidden="true"></span>
+                Run
+            </button>
+        </form>
     </div>
+
+    <div hx-boost="true" hx-target="#log-file" id="pm-response">
+        <!-- <h1 class="mb-4">Response</h1> -->
+    </div>
+
+    <!-- View Log Directory contents -->
+    <!-- <div class="col-12" id="log-dir" hx-boost=true>
+        <div hx-get="/log" hx-trigger="every 10s"></div>
+    </div> -->
 
 </body>
 

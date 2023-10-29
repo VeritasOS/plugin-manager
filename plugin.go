@@ -552,6 +552,10 @@ func homePage(w http.ResponseWriter, r *http.Request) {
 	log.Println("Entering homePage")
 	defer log.Println("Exiting homePage")
 
+	if r.RequestURI != "/" {
+		return
+	}
+
 	tmpl := template.Must(template.ParseFiles("web/pm.html"))
 	tmpl.Execute(w, nil)
 }
@@ -578,6 +582,8 @@ func listHandler(w http.ResponseWriter, r *http.Request) {
 	log.Println("Entering listHandler")
 	defer log.Println("Exiting listHandler")
 
+	// Create new log file with same name but with new timestamp.
+	logutil.SetLogging(logutil.GetCurLogFile(false, false))
 	graph.ResetGraph()
 
 	// queryParams := r.URL.Query()
@@ -632,7 +638,10 @@ func RegisterCommandOptions(progname string) {
 		8080,
 		"Port number",
 	)
-	logutil.RegisterCommandOptions(CmdOptions.ServerCmd, map[string]string{})
+	logutil.RegisterCommandOptions(CmdOptions.ServerCmd, map[string]string{
+		"defaultLogDir":  "./",
+		"defaultLogFile": progname,
+	})
 
 	CmdOptions.RunCmd = flag.NewFlagSet(progname+" run", flag.PanicOnError)
 	CmdOptions.pluginTypePtr = CmdOptions.RunCmd.String(
@@ -650,16 +659,6 @@ func RegisterCommandOptions(progname string) {
 		false,
 		"Enforce running plugins in sequential.",
 	)
-	// CmdOptions.logDirPtr = CmdOptions.RunCmd.String(
-	// 	"log-dir",
-	// 	"",
-	// 	"Directory for the log file.",
-	// )
-	// CmdOptions.logFilePtr = CmdOptions.RunCmd.String(
-	// 	"log-file",
-	// 	"",
-	// 	"Name of the log file.",
-	// )
 	logutil.RegisterCommandOptions(CmdOptions.RunCmd, map[string]string{})
 	output.RegisterCommandOptions(CmdOptions.RunCmd, map[string]string{})
 
@@ -685,9 +684,9 @@ func RegisterHandlers(port int) {
 	http.HandleFunc("/", homePage)
 	http.HandleFunc("/list", listHandler)
 	http.HandleFunc("/run", runHandler)
-	// http.Handle("/log/",
-	// 	http.StripPrefix("/log/",
-	// 		http.FileServer(http.Dir("./"+*CmdOptions.logDirPtr))))
+	http.Handle("/log/",
+		http.StripPrefix("/log/",
+			http.FileServer(http.Dir(logutil.GetLogDir()))))
 	http.Handle("/plugins/",
 		http.StripPrefix("/plugins/",
 			http.FileServer(http.Dir(config.GetPluginsLogDir()))))
@@ -739,6 +738,8 @@ func runHandler(w http.ResponseWriter, r *http.Request) {
 	log.Println("Entering runHandler")
 	defer log.Println("Exiting runHandler")
 
+	// Create new log file with same name but with new timestamp.
+	logutil.SetLogging(logutil.GetCurLogFile(false, false))
 	graph.ResetGraph()
 
 	pluginType := r.PostFormValue("type")
@@ -759,32 +760,12 @@ func runHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	runFunc()
-	//TODO: Display progressive updates
-	//  go runFunc()
-
+	// TODO: Display progressive updates
+	// go runFunc()
 	// fmt.Println("After calling runFunc routine...")
-
-	// for i := 5; i > 0; i-- {
 	time.Sleep(time.Second * 2)
-	imgPath := graph.GetImagePath()
-	// fmt.Printf("\nImage: %v", imgPath)
-	// htmlInsertCode := `
-	// <div>
-	// 	<object type="image/svg+xml" data="{{.}}" hx-trigger="every 1s">
-	// 	  <img src="{{.}}" alt="Description of your image">
-	// 	</object>
-	// </div>`
-	// htmlInsertCode := `<img src={{.}} alt="Missing image"> </img>`
-	// t, _ := template.New("resp").Parse(htmlInsertCode)
-	// t.Execute(w, imgPath)
-
-	data, err := readFile(imgPath)
-	if err != nil {
-		fmt.Fprintf(w, "Error: \n%v", err.Error())
-	} else {
-		fmt.Fprintf(w, "%v\n", data)
-	}
-	// }
+	tmpl := template.Must(template.ParseFiles("web/run-response.html"))
+	tmpl.Execute(w, logutil.GetCurLogFile(true, false))
 
 }
 
