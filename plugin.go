@@ -515,6 +515,12 @@ func executePlugins(psStatus *pluginmanager.PluginsStatus, nPInfo pluginmanager.
 				executingCnt++
 			}
 		}
+		// TODO: Remove below GenerateGraph() once concurrency issue is taken
+		//  care, and keep the one inside executePluginCmd().
+		//  Refer "TODO Graph" for more details.
+		// INFO: Call generate graph before and waiting so as to update and
+		//  display in-progress and done status in graph.
+		graph.GenerateGraph()
 		// start other dependent ones as soon as one of the plugin completes.
 		exeStatus := <-exeCh
 		// TODO: Remove below GenerateGraph() once concurrency issue is taken
