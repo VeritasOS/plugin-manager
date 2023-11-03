@@ -684,12 +684,15 @@ func RegisterHandlers(port int) {
 	http.HandleFunc("/", homePage)
 	http.HandleFunc("/list", listHandler)
 	http.HandleFunc("/run", runHandler)
+
+	// Enable viewing of overall log file and plugin logs.
 	http.Handle("/log/",
 		http.StripPrefix("/log/",
 			http.FileServer(http.Dir(logutil.GetLogDir()))))
 	http.Handle("/plugins/",
 		http.StripPrefix("/plugins/",
 			http.FileServer(http.Dir(config.GetPluginsLogDir()))))
+
 	fmt.Println("Starting server on ", port)
 	err := http.ListenAndServe(":"+strconv.Itoa(port), nil)
 	if err != nil {
@@ -761,7 +764,9 @@ func runHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	go runFunc()
 	tmpl := template.Must(template.ParseFiles("web/run-response.html"))
-	tmpl.Execute(w, logutil.GetCurLogFile(true, false))
+	// Get relative path of log file from log dir, so that the handler can
+	// 	server it under "/log" path.
+	tmpl.Execute(w, "/log/"+filepath.Base(logutil.GetCurLogFile(true, false)))
 
 }
 
