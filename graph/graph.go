@@ -86,14 +86,17 @@ func InitGraph(pluginType string, pluginsInfo map[string]*pluginmanager.PluginAt
 				log.Printf("SubGraph.CreateNode(%s) Error: %s", pluginsInfo[p].RequiredBy[rby], err.Error())
 				continue
 			}
-			rbyEdge, err := sb.CreateEdge("RequiredBy", pluginNode, reqbyNode)
+			// 'A' is RequiredBy 'B' will appear as 'A' --> 'B' to indicate that
+			// 	once 'A' is complete, 'B' will start.
+			_, err = sb.CreateEdge("", pluginNode, reqbyNode)
+			// rbyEdge, err := sb.CreateEdge("RequiredBy", pluginNode, reqbyNode)
 			if err != nil {
 				log.Printf("SubGraph.CreateEdge(%s, %s) Error: %s",
 					p, pluginsInfo[p].RequiredBy[rby], err.Error())
 				continue
 			}
-			rbyEdge.SetLabel("RequiredBy")
-			rbyEdge.SetFontSize(EdgeLabelFontSize)
+			// rbyEdge.SetLabel("RequiredBy")
+			// rbyEdge.SetFontSize(EdgeLabelFontSize)
 		}
 		for rs := range pluginsInfo[p].Requires {
 			rsNode, err := sb.CreateNode(pluginsInfo[p].Requires[rs])
@@ -101,14 +104,17 @@ func InitGraph(pluginType string, pluginsInfo map[string]*pluginmanager.PluginAt
 				log.Printf("SubGraph.CreateNode(%s) Error: %s", pluginsInfo[p].Requires[rs], err.Error())
 				continue
 			}
-			rsEdge, err := sb.CreateEdge("Requires", pluginNode, rsNode)
+			// 'A' Requires 'B' will appear as 'A' <-- 'B' to indicate that
+			// 	once 'B' is complete, 'A' will start.
+			_, err = sb.CreateEdge("", rsNode, pluginNode)
+			// rsEdge, err := sb.CreateEdge("Requires", rsNode, pluginNode)
 			if err != nil {
 				log.Printf("SubGraph.CreateEdge(%s, %s) Error: %s",
 					p, pluginsInfo[p].RequiredBy[rs], err.Error())
 				continue
 			}
-			rsEdge.SetLabel("Requires")
-			rsEdge.SetFontSize(EdgeLabelFontSize)
+			// rsEdge.SetLabel("Requires")
+			// rsEdge.SetFontSize(EdgeLabelFontSize)
 		}
 	}
 
