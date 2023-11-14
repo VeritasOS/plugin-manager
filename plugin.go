@@ -861,7 +861,10 @@ func ScanCommandOptions(options map[string]interface{}) error {
 	if myLogFile != config.DefaultLogPath {
 		myLogFile = filepath.Clean(myLogFile)
 		log.Println("Logging to specified log file:", myLogFile)
-		logutil.SetLogging(myLogFile)
+		err := logutil.SetLogging(myLogFile)
+		if err != nil {
+			log.Fatalln(err)
+		}
 	}
 
 	if cmd == "server" {
