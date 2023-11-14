@@ -396,7 +396,7 @@ func executePluginCmd(statusCh chan<- map[string]*pluginmanager.RunStatus, p str
 	if myStatus != "" {
 		log.Println(myStatusMsg)
 		chLog.Println(myStatusMsg)
-		graph.UpdateGraph(getPluginType(p), p, myStatus, "")
+		// graph.UpdateGraph(getPluginType(p), p, myStatus, "")
 		logutil.PrintNLog("%s: %s\n", pInfo.Description, myStatus)
 		statusCh <- map[string]*pluginmanager.RunStatus{p: {Status: myStatus}}
 		return
@@ -438,9 +438,9 @@ func executePluginCmd(statusCh chan<- map[string]*pluginmanager.RunStatus, p str
 	func() {
 		if err != nil {
 			chLog.Println("Error:", err.Error())
-			graph.UpdateGraph(getPluginType(p), p, pluginmanager.DStatusFail, pluginLogFile)
-		} else {
-			graph.UpdateGraph(getPluginType(p), p, pluginmanager.DStatusOk, pluginLogFile)
+			// graph.UpdateGraph(getPluginType(p), p, pluginmanager.DStatusFail, pluginLogFile)
+			// } else {
+			// graph.UpdateGraph(getPluginType(p), p, pluginmanager.DStatusOk, pluginLogFile)
 		}
 	}()
 	log.Println("Stdout & Stderr:", stdOutErr)
