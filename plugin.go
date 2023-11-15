@@ -333,7 +333,7 @@ func executePluginCmd(statusCh chan<- map[string]*pluginmanager.RunStatus, p str
 	// TODO: Uncomment below UpdateGraph() once concurrency issue is
 	//  taken care, and remove the one from where executePluginCmd().
 	//  is called. Refer "TODO Graph" for more details.
-	// graph.UpdateGraph(getPluginType(p), p, pluginmanager.DStatusStart, "")
+	graph.UpdateGraph(getPluginType(p), p, pluginmanager.DStatusStart, "")
 	logutil.PrintNLog("\n%s: %s\n", pInfo.Description, pluginmanager.DStatusStart)
 	// Get relative path to plugins log file from PM log dir, so that linking
 	// in plugin graph works even when the logs are copied to another system.
@@ -482,7 +482,7 @@ func executePlugins(psStatus *pluginmanager.PluginsStatus, nPInfo pluginmanager.
 				// TODO: Remove below UpdateGraph() once concurrency issue is
 				//  taken care, and keep the one inside executePluginCmd().
 				//  Refer "TODO Graph" for more details.
-				graph.UpdateGraph(getPluginType(p), p, pluginmanager.DStatusStart, "")
+				// graph.UpdateGraph(getPluginType(p), p, pluginmanager.DStatusStart, "")
 				go executePluginCmd(exeCh, p, nPInfo, failedDependency[p])
 				executingCnt++
 			}
@@ -491,7 +491,7 @@ func executePlugins(psStatus *pluginmanager.PluginsStatus, nPInfo pluginmanager.
 		exeStatus := <-exeCh
 		// TODO: Remove below GenerateGraph() once concurrency issue is taken
 		//  care. Refer "TODO Graph" for more details.
-		graph.GenerateGraph()
+		// graph.GenerateGraph()
 		executingCnt--
 		for plugin, pStatus := range exeStatus {
 			log.Printf("%s status: %v", plugin, pStatus.Status)

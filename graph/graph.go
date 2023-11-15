@@ -53,10 +53,18 @@ func GetDotFilePath() string {
 
 var gv = graphviz.New()
 var graph1 *cgraph.Graph
+var graphCh chan int
 
 // ResetGraph is mainly used for unit testing.
 func ResetGraph() {
 	graph1 = nil
+	// 	return
+	// }
+	// graphCh <- 0
+	// status := <-graphCh
+	// if status != -1 {
+	// 	log.Println("Unable to stop graphCh.")
+	// }
 }
 
 // InitGraph initliazes the graph data structure and invokes generateGraph.
@@ -132,26 +140,48 @@ func InitGraph(pluginType string, pluginsInfo map[string]*pluginmanager.PluginAt
 		}
 	}
 
+	if graphCh == nil {
+		graphCh = make(chan int)
+		go generateGraph()
+	}
+
 	return GenerateGraph()
 }
 
 // GenerateGraph generates an input `.dot` file based on the fileNoExt name,
 // and then generates an `.svg` image output file as fileNoExt.svg.
 func GenerateGraph() error {
-	svgFile := GetImagePath()
-
-	rendererr := gv.RenderFilename(graph1, graphviz.Format(graphviz.DOT), GetDotFilePath())
-	if rendererr != nil {
-		log.Printf("gv.RenderFilename( , DOT) Err: %s", rendererr.Error())
-		// return rendererr
-	}
-	rendererr = gv.RenderFilename(graph1, graphviz.SVG, svgFile)
-	if rendererr != nil {
-		log.Printf("gv.RenderFilename( , SVG) Err: %s", rendererr.Error())
-		return rendererr
-	}
-
+	graphCh <- 1
 	return nil
+}
+
+func generateGraph() {
+	log.Println("graphCh is started...")
+	for {
+		time.Sleep(time.Millisecond * 100)
+		cnt := <-graphCh
+		log.Println("graphCh Received:", cnt)
+		if cnt == 0 {
+			log.Println("graphCh is returning/stopping.")
+			graphCh <- -1
+			return
+		}
+
+		svgFile := GetImagePath()
+
+		rendererr := gv.RenderFilename(graph1, graphviz.Format(graphviz.DOT), GetDotFilePath())
+		if rendererr != nil {
+			log.Printf("gv.RenderFilename( , DOT) Err: %s", rendererr.Error())
+			// return rendererr
+		}
+		rendererr = gv.RenderFilename(graph1, graphviz.SVG, svgFile)
+		if rendererr != nil {
+			log.Printf("gv.RenderFilename( , SVG) Err: %s", rendererr.Error())
+			// return rendererr
+		}
+	}
+
+	// return nil
 }
 
 // getStatusColor returns the color for a given result status.
@@ -187,6 +217,6 @@ func UpdateGraph(subgraphName, plugin, status, url string) error {
 	node.SetURL(url)
 
 	//  TODO Graph: Commenting until concurrency is supported in RenderFilename() of GenerateGraph().
-	// return GenerateGraph()
-	return nil
+	return GenerateGraph()
+	// return nil
 }
