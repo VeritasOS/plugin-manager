@@ -438,9 +438,9 @@ func executePluginCmd(statusCh chan<- map[string]*pluginmanager.RunStatus, p str
 	func() {
 		if err != nil {
 			chLog.Println("Error:", err.Error())
-			// graph.UpdateGraph(getPluginType(p), p, pluginmanager.DStatusFail, pluginLogFile)
-			// } else {
-			// graph.UpdateGraph(getPluginType(p), p, pluginmanager.DStatusOk, pluginLogFile)
+			graph.UpdateGraph(getPluginType(p), p, pluginmanager.DStatusFail, pluginLogFile)
+		} else {
+			graph.UpdateGraph(getPluginType(p), p, pluginmanager.DStatusOk, pluginLogFile)
 		}
 	}()
 	log.Println("Stdout & Stderr:", stdOutErr)
