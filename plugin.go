@@ -596,18 +596,22 @@ func listHandler(w http.ResponseWriter, r *http.Request) {
 	// fmt.Println("Query Params: ", queryParams)
 	// pluginType := queryParams["type"]
 	// library := queryParams["library"]
-
-	pluginType := r.PostFormValue("type")
-	fmt.Println("Type: ", pluginType)
+	// pluginType := r.PostFormValue("type")
 	library := r.PostFormValue("library")
 	fmt.Println("Library: ", library)
 
 	config.SetPluginsLibrary(library)
 
-	err := List(pluginType)
-	if err != nil {
-		fmt.Fprintf(w, "Error: %s", err.Error())
-	} else {
+	r.ParseForm()
+	var err error
+	for _, pluginType := range r.PostForm["type"] {
+		fmt.Println("Type: ", pluginType)
+		err = List(pluginType)
+		if err != nil {
+			fmt.Fprintf(w, "Error: %s", err.Error())
+		}
+	}
+	if err == nil {
 		imgPath := graph.GetImagePath()
 		// fmt.Fprintf(w, "Image: %v", imgPath)
 		data, err := readFile(imgPath)
