@@ -584,45 +584,6 @@ func List(pluginType string) error {
 	return nil
 }
 
-func listHandler(w http.ResponseWriter, r *http.Request) {
-	log.Println("Entering listHandler")
-	defer log.Println("Exiting listHandler")
-
-	// Create new log file with same name but with new timestamp.
-	logutil.SetLogging(logutil.GetCurLogFile(false, false))
-	graph.ResetGraph()
-
-	// queryParams := r.URL.Query()
-	// fmt.Println("Query Params: ", queryParams)
-	// pluginType := queryParams["type"]
-	// library := queryParams["library"]
-	// pluginType := r.PostFormValue("type")
-	library := r.PostFormValue("library")
-	fmt.Println("Library: ", library)
-
-	config.SetPluginsLibrary(library)
-
-	r.ParseForm()
-	var err error
-	for _, pluginType := range r.PostForm["type"] {
-		fmt.Println("Type: ", pluginType)
-		err = List(pluginType)
-		if err != nil {
-			fmt.Fprintf(w, "Error: %s", err.Error())
-		}
-	}
-	if err == nil {
-		imgPath := graph.GetImagePath()
-		// fmt.Fprintf(w, "Image: %v", imgPath)
-		data, err := readFile(imgPath)
-		if err != nil {
-			fmt.Fprintf(w, "Error: \n%v", err.Error())
-		} else {
-			fmt.Fprintf(w, "%v", data)
-		}
-	}
-}
-
 func readFile(filePath string) (string, error) {
 	bFileContents, err := os.ReadFile(filePath)
 	if err != nil {
@@ -689,28 +650,6 @@ func RegisterCommandOptions(progname string) {
 
 }
 
-// RegisterHandlers defines http handlers.
-func RegisterHandlers(port int) {
-	http.HandleFunc("/", homePage)
-	http.HandleFunc("/list", listHandler)
-	http.HandleFunc("/run", runHandler)
-
-	// Enable viewing of overall log file and plugin logs.
-	http.Handle("/log/",
-		http.StripPrefix("/log/",
-			http.FileServer(http.Dir(logutil.GetLogDir()))))
-	http.Handle("/plugins/",
-		http.StripPrefix("/plugins/",
-			http.FileServer(http.Dir(config.GetPluginsLogDir()))))
-
-	fmt.Println("Starting server on port", port)
-	err := http.ListenAndServe(":"+strconv.Itoa(port), nil)
-	if err != nil {
-		logutil.PrintNLogError(err.Error())
-		log.Fatalln(err)
-	}
-}
-
 // Run the specified plugin type plugins.
 func Run(result *pluginmanager.RunAllStatus, pluginType string) error {
 	result.Type = pluginType
@@ -745,6 +684,67 @@ func Run(result *pluginmanager.RunAllStatus, pluginType string) error {
 	result.Status = pluginmanager.DStatusOk
 	logutil.PrintNLog("Running %s plugins: %s\n", pluginType, pluginmanager.DStatusOk)
 	return nil
+}
+
+// RegisterHandlers defines http handlers.
+func RegisterHandlers(port int) {
+	http.HandleFunc("/", homePage)
+	http.HandleFunc("/list", listHandler)
+	http.HandleFunc("/run", runHandler)
+
+	// Enable viewing of overall log file and plugin logs.
+	http.Handle("/log/",
+		http.StripPrefix("/log/",
+			http.FileServer(http.Dir(logutil.GetLogDir()))))
+	http.Handle("/plugins/",
+		http.StripPrefix("/plugins/",
+			http.FileServer(http.Dir(config.GetPluginsLogDir()))))
+
+	fmt.Println("Starting server on port", port)
+	err := http.ListenAndServe(":"+strconv.Itoa(port), nil)
+	if err != nil {
+		logutil.PrintNLogError(err.Error())
+		log.Fatalln(err)
+	}
+}
+
+func listHandler(w http.ResponseWriter, r *http.Request) {
+	log.Println("Entering listHandler")
+	defer log.Println("Exiting listHandler")
+
+	// Create new log file with same name but with new timestamp.
+	logutil.SetLogging(logutil.GetCurLogFile(false, false))
+	graph.ResetGraph()
+
+	// queryParams := r.URL.Query()
+	// fmt.Println("Query Params: ", queryParams)
+	// pluginType := queryParams["type"]
+	// library := queryParams["library"]
+	// pluginType := r.PostFormValue("type")
+	library := r.PostFormValue("library")
+	fmt.Println("Library: ", library)
+
+	config.SetPluginsLibrary(library)
+
+	r.ParseForm()
+	var err error
+	for _, pluginType := range r.PostForm["type"] {
+		fmt.Println("Type: ", pluginType)
+		err = List(pluginType)
+		if err != nil {
+			fmt.Fprintf(w, "Error: %s", err.Error())
+		}
+	}
+	if err == nil {
+		imgPath := graph.GetImagePath()
+		// fmt.Fprintf(w, "Image: %v", imgPath)
+		data, err := readFile(imgPath)
+		if err != nil {
+			fmt.Fprintf(w, "Error: \n%v", err.Error())
+		} else {
+			fmt.Fprintf(w, "%v", data)
+		}
+	}
 }
 
 func runHandler(w http.ResponseWriter, r *http.Request) {
