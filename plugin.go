@@ -497,8 +497,8 @@ func executePlugins(psStatus *pluginmanager.PluginsStatus, nPInfo pluginmanager.
 			// 	 to run, make sure that only one plugin is running at time, by
 			// 	 checking executing count is 0.
 			// 	When sequential execution is not enforced, run plugins that are ready.
-			if waitCount[p] == 0 && ((sequential == false) ||
-				(sequential == true && executingCnt == 0)) {
+			if waitCount[p] == 0 && (!sequential ||
+				(sequential && executingCnt == 0)) {
 				log.Printf("Plugin %s is ready for execution: %v.", p, nPInfo[p])
 				waitCount[p]--
 
@@ -727,8 +727,19 @@ func listHandler(w http.ResponseWriter, r *http.Request) {
 	config.SetPluginsLibrary(library)
 
 	r.ParseForm()
+	// INFO: pluginTypes could be either a single element of comma or space separated list, or multiple elements - all in the array.
+	seps := " ,"
+	splitter := func(r rune) bool {
+		return strings.ContainsRune(seps, r)
+	}
+	userPluginTypes := r.PostForm["type"]
+	pluginTypes := []string{}
+	for _, pt := range userPluginTypes {
+		pluginTypes = append(pluginTypes, strings.FieldsFunc(pt, splitter)...)
+	}
+	fmt.Printf("Plugin Types(%d): %+v\n", len(pluginTypes), pluginTypes)
 	var err error
-	for _, pluginType := range r.PostForm["type"] {
+	for _, pluginType := range pluginTypes {
 		fmt.Println("Type: ", pluginType)
 		err = List(pluginType)
 		if err != nil {
@@ -755,8 +766,20 @@ func runHandler(w http.ResponseWriter, r *http.Request) {
 	logutil.SetLogging(logutil.GetCurLogFile(false, false))
 	graph.ResetGraph()
 
-	pluginType := r.PostFormValue("type")
-	fmt.Println("Type: ", pluginType)
+	// pluginType := r.PostFormValue("type")
+	// fmt.Println("Type: ", pluginType)
+	r.ParseForm()
+	// INFO: pluginTypes could be either a single element of comma or space separated list, or multiple elements - all in the array.
+	seps := " ,"
+	splitter := func(r rune) bool {
+		return strings.ContainsRune(seps, r)
+	}
+	userPluginTypes := r.PostForm["type"]
+	pluginTypes := []string{}
+	for _, pt := range userPluginTypes {
+		pluginTypes = append(pluginTypes, strings.FieldsFunc(pt, splitter)...)
+	}
+	fmt.Printf("Plugin Types(%d): %+v\n", len(pluginTypes), pluginTypes)
 	library := r.PostFormValue("library")
 	fmt.Println("Library: ", library)
 
@@ -766,10 +789,13 @@ func runHandler(w http.ResponseWriter, r *http.Request) {
 
 	runFunc := func() {
 		// fmt.Println("Inside runFunc routine...")
-		err := Run(&pmstatus, pluginType)
-		if err != nil {
-			fmt.Fprintf(w, "Error: %s", err.Error())
-			return
+		for _, pluginType := range pluginTypes {
+			fmt.Printf("\nRunning %v plugins...\n", pluginType)
+			err := Run(&pmstatus, pluginType)
+			if err != nil {
+				fmt.Fprintf(w, "Error: %s", err.Error())
+				return
+			}
 		}
 	}
 	go runFunc()
@@ -914,7 +940,7 @@ The commands are:
 Use "PROGNAME ` + subcmd + ` help [command]" for more information about a command.
 		
 `
-		fmt.Fprintf(os.Stderr, strings.Replace(usageStr, "PROGNAME", progname, -1))
+		fmt.Fprint(os.Stderr, strings.Replace(usageStr, "PROGNAME", progname, -1))
 	case "version":
 		CmdOptions.versionCmd.Usage()
 	case "list":
