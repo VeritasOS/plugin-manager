@@ -722,7 +722,7 @@ func listHandler(w http.ResponseWriter, r *http.Request) {
 	// library := queryParams["library"]
 	// pluginType := r.PostFormValue("type")
 	library := r.PostFormValue("library")
-	fmt.Println("Library: ", library)
+	fmt.Println("Library:", library)
 
 	config.SetPluginsLibrary(library)
 
@@ -740,7 +740,7 @@ func listHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Printf("Plugin Types(%d): %+v\n", len(pluginTypes), pluginTypes)
 	var err error
 	for _, pluginType := range pluginTypes {
-		fmt.Println("Type: ", pluginType)
+		fmt.Println("Type:", pluginType)
 		err = List(pluginType)
 		if err != nil {
 			fmt.Fprintf(w, "Error: %s", err.Error())
@@ -767,7 +767,7 @@ func runHandler(w http.ResponseWriter, r *http.Request) {
 	graph.ResetGraph()
 
 	// pluginType := r.PostFormValue("type")
-	// fmt.Println("Type: ", pluginType)
+	// fmt.Println("Type:", pluginType)
 	r.ParseForm()
 	// INFO: pluginTypes could be either a single element of comma or space separated list, or multiple elements - all in the array.
 	seps := " ,"
@@ -781,7 +781,7 @@ func runHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	fmt.Printf("Plugin Types(%d): %+v\n", len(pluginTypes), pluginTypes)
 	library := r.PostFormValue("library")
-	fmt.Println("Library: ", library)
+	fmt.Println("Library:", library)
 
 	config.SetPluginsLibrary(library)
 
