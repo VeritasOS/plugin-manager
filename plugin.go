@@ -561,18 +561,6 @@ func executePlugins(psStatus *pluginmanager.PluginsStatus, nPInfo pluginmanager.
 	return retStatus
 }
 
-func homePage(w http.ResponseWriter, r *http.Request) {
-	log.Println("Entering homePage")
-	defer log.Println("Exiting homePage")
-
-	if r.RequestURI != "/" {
-		return
-	}
-
-	tmpl := template.Must(template.ParseFiles("web/pm.html"))
-	tmpl.Execute(w, nil)
-}
-
 // List the plugin and its dependencies.
 func List(pluginType string) error {
 	var pluginsInfo, err = getPluginsInfo(pluginType)
@@ -715,6 +703,22 @@ func RegisterHandlers(port int) {
 	}
 }
 
+func homePage(w http.ResponseWriter, r *http.Request) {
+	log.Println("Entering homePage")
+	defer log.Println("Exiting homePage")
+
+	if r.RequestURI != "/" {
+		return
+	}
+
+	webPath := os.Getenv("PM_WEB")
+	if webPath == "" {
+		webPath = "web"
+	}
+	tmpl := template.Must(template.ParseFiles(webPath + "/pm.html"))
+	tmpl.Execute(w, nil)
+}
+
 func listHandler(w http.ResponseWriter, r *http.Request) {
 	log.Println("Entering listHandler")
 	defer log.Println("Exiting listHandler")
@@ -806,7 +810,12 @@ func runHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	go runFunc()
-	tmpl := template.Must(template.ParseFiles("web/run-response.html"))
+
+	webPath := os.Getenv("PM_WEB")
+	if webPath == "" {
+		webPath = "web"
+	}
+	tmpl := template.Must(template.ParseFiles(webPath + "/run-response.html"))
 	// Get relative path of log file from log dir, so that the handler can
 	// 	server it under "/log" path.
 	tmpl.Execute(w, "/log/"+filepath.Base(logutil.GetCurLogFile(true, false)))
