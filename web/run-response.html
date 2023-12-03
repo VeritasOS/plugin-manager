@@ -1,0 +1,16 @@
+<div hx-boost="true">
+    <br>
+    <h2>Status</h2>
+    <hr>
+    <i>Click on the green or red blocks to view the logs...</i>
+    <div hx-get="{{.}}.svg" hx-trigger="every 5s">
+        Getting status...
+    </div>
+    <br>
+
+    <h2>Log</h2>
+    <hr>
+    <div hx-get="{{.}}.log" hx-trigger="every 5s">
+        Gathering logs...
+    </div>
+</div>

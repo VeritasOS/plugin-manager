@@ -20,6 +20,10 @@ systemd.
     - [Example: Plugin Manager (PM) with `sequential` flag](#example-plugin-manager-pm-with-sequential-flag)
     - [Example: Overriding Plugin Manager (PM) configuration - `library`, `log-dir` and `log-file`](#example-overriding-plugin-manager-pm-configuration---library-log-dir-and-log-file)
     - [Example: Writing plugins result to a `output-file` in `output-format` {json, yaml} format](#example-writing-plugins-result-to-a-output-file-in-output-format-json-yaml-format)
+  - [Plugin Manager Web Server](#plugin-manager-web-server)
+    - [Start the server](#start-the-server)
+    - [Service to start `pm server`](#service-to-start-pm-server)
+    - [Logs](#logs)
 
 ## Plugins
 
@@ -323,4 +327,48 @@ plugins:
 status: Failed
 stdouterr: 'Running preupgrade plugins: Failed'
 $
+```
+
+## Plugin Manager Web Server
+
+Plugin Manager could be now run as a service. 
+A minimal UI support has been added to list or run the specified list of `Plugin Type`s in the given `Plugin Library`.
+
+### Start the server
+
+```bash
+$ mkdir ./log
+$ ./pm server -port 8080 -log-dir ./log
+```
+
+Open given port in browser
+http://localhost:8080/
+
+### Service to start `pm server`
+
+To start automatically on `pm server`` on say RHEL, you can create a systemd unit file as follows:
+
+```bash
+$ cat /etc/systemd/system/pm-server.service
+[Unit]
+Description=Plugin Manager web server
+After=network.target
+Environment="PM_WEB=/home/abhijith/web"  ## Make sure to update this environment variable appropriately.
+
+[Service]
+ExecStart=/usr/local/bin/pm server -log-dir /var/log/pm-server/ 
+ExecStart=/storage/bin/pm-server
+Type=simple
+
+[Install]
+WantedBy=default.target
+$
+```
+
+### Logs
+
+To tail the `pm-server.service`` logs, run the following command:
+
+```bash
+journalctl -u pm-server -e -f
 ```

@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plugin Manager</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-KK94CHFLLe+nY2dmCWGMq91rCGa5gtU4mk92HdvYe+M/SXH301p5ILy+dN9+nJOZ" crossorigin="anonymous">
+    <script src="https://unpkg.com/htmx.org@1.9.2"
+        integrity="sha384-L6OqL9pRWyyFU3+/bjdSri+iIphTN/bvYyM37tICVyOJkWZLpP2vGn6VUEXgzg6h"
+        crossorigin="anonymous"></script>
+
+</head>
+
+<body class="container">
+
+    <h1>Plugin Manager</h1>
+    <hr />
+    <div>
+        <form>
+            <div class="mb-2">
+                <label for="plugin-type">Type</label>
+                <input type="text" name="type" id="plugin-type" class="form-control" />
+            </div>
+            <div class="mb-3">
+                <label for="library">library</label>
+                <input type="text" name="library" id="library" class="form-control" />
+            </div>
+
+            <button type="List" hx-post="/list" hx-target="#pm-response" hx-swap="innerHTML"
+                hx-indicator="#list-spinner" class="btn btn-primary">
+                <span class="spinner-border spinner-border-sm htmx-indicator" id="list-spinner" role="status"
+                    aria-hidden="true"></span>
+                List
+            </button>
+
+            <button type="Run" hx-post="/run" hx-target="#pm-response" hx-swap="innerHTML" hx-indicator="#run-spinner"
+                class="btn btn-primary">
+                <span class="spinner-border spinner-border-sm htmx-indicator" id="run-spinner" role="status"
+                    aria-hidden="true"></span>
+                Run
+            </button>
+        </form>
+    </div>
+
+    <div id="pm-response">
+        <!-- <h1 class="mb-4">Response</h1> -->
+    </div>
+
+    <!-- View Log Directory contents -->
+    <!-- <div class="col-12" id="log-dir" hx-boost=true>
+        <div hx-get="/log" hx-trigger="every 10s"></div>
+    </div> -->
+
+</body>
+
+</html>

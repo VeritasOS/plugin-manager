@@ -31,7 +31,7 @@ clean: 	## Clean Plugin Manager go build & test artifacts
 	@echo "Cleaning Go test artifacts... ";
 	-@rm $(GOSRC)/{,.}*{dot,html,log,svg,xml};
 	-@rm $(GOSRC)/cmd/pm/{,.}*{dot,log,svg};
-	-@rm -rf $(GOSRC)/plugins/
+	-@rm -rf $(GOSRC)/{,cmd/pm/}plugins/
 	-@rm -rf $(GOCOVERDIR);
 
 .PHONY: build

@@ -8,7 +8,6 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
-	"time"
 
 	"github.com/VeritasOS/plugin-manager/config"
 	"github.com/VeritasOS/plugin-manager/pluginmanager"
@@ -24,31 +23,14 @@ const (
 	EdgeLabelFontSize float64 = 2.0
 )
 
-// myGraph of plugin and its dependencies.
-type myGraph struct {
-	// fileNoExt is the name of the graph artifacts without extension.
-	// 	Extensions could be added to generate input `.dot` file or output
-	// 	`.svg` images.
-	fileNoExt string
-}
-
-var mg myGraph
-
-func initGraphConfig(imgNamePrefix string) {
-	// Initialization should be done only once.
-	if mg.fileNoExt == "" {
-		mg.fileNoExt = imgNamePrefix + "." + time.Now().Format(time.RFC3339Nano)
-	}
-}
-
 // GetImagePath gets the path of the image file.
 func GetImagePath() string {
-	return config.GetPMLogDir() + mg.fileNoExt + ".svg"
+	return logutil.GetCurLogFile(true, false) + ".svg"
 }
 
 // GetDotFilePath gets the path of the dot file.
 func GetDotFilePath() string {
-	return config.GetPMLogDir() + mg.fileNoExt + ".dot"
+	return logutil.GetCurLogFile(true, false) + ".dot"
 }
 
 var gv = graphviz.New()
@@ -61,8 +43,6 @@ func ResetGraph() {
 
 // InitGraph initliazes the graph data structure and invokes generateGraph.
 func InitGraph(pluginType string, pluginsInfo map[string]*pluginmanager.PluginAttributes) error {
-	initGraphConfig(config.GetPMLogFile())
-
 	var err error
 	if graph1 == nil {
 		graph1, err = gv.Graph()
@@ -106,14 +86,17 @@ func InitGraph(pluginType string, pluginsInfo map[string]*pluginmanager.PluginAt
 				log.Printf("SubGraph.CreateNode(%s) Error: %s", pluginsInfo[p].RequiredBy[rby], err.Error())
 				continue
 			}
-			rbyEdge, err := sb.CreateEdge("RequiredBy", pluginNode, reqbyNode)
+			// 'A' is RequiredBy 'B' will appear as 'A' --> 'B' to indicate that
+			// 	once 'A' is complete, 'B' will start.
+			_, err = sb.CreateEdge("", pluginNode, reqbyNode)
+			// rbyEdge, err := sb.CreateEdge("RequiredBy", pluginNode, reqbyNode)
 			if err != nil {
 				log.Printf("SubGraph.CreateEdge(%s, %s) Error: %s",
 					p, pluginsInfo[p].RequiredBy[rby], err.Error())
 				continue
 			}
-			rbyEdge.SetLabel("RequiredBy")
-			rbyEdge.SetFontSize(EdgeLabelFontSize)
+			// rbyEdge.SetLabel("RequiredBy")
+			// rbyEdge.SetFontSize(EdgeLabelFontSize)
 		}
 		for rs := range pluginsInfo[p].Requires {
 			rsNode, err := sb.CreateNode(pluginsInfo[p].Requires[rs])
@@ -121,14 +104,17 @@ func InitGraph(pluginType string, pluginsInfo map[string]*pluginmanager.PluginAt
 				log.Printf("SubGraph.CreateNode(%s) Error: %s", pluginsInfo[p].Requires[rs], err.Error())
 				continue
 			}
-			rsEdge, err := sb.CreateEdge("Requires", pluginNode, rsNode)
+			// 'A' Requires 'B' will appear as 'A' <-- 'B' to indicate that
+			// 	once 'B' is complete, 'A' will start.
+			_, err = sb.CreateEdge("", rsNode, pluginNode)
+			// rsEdge, err := sb.CreateEdge("Requires", rsNode, pluginNode)
 			if err != nil {
 				log.Printf("SubGraph.CreateEdge(%s, %s) Error: %s",
 					p, pluginsInfo[p].RequiredBy[rs], err.Error())
 				continue
 			}
-			rsEdge.SetLabel("Requires")
-			rsEdge.SetFontSize(EdgeLabelFontSize)
+			// rsEdge.SetLabel("Requires")
+			// rsEdge.SetFontSize(EdgeLabelFontSize)
 		}
 	}
 
@@ -184,8 +170,9 @@ func UpdateGraph(subgraphName, plugin, status, url string) error {
 	}
 	node.SetStyle("filled")
 	node.SetFillColor(getStatusColor(status))
-	node.SetURL(url)
-
+	if url != "" {
+		node.SetURL(url)
+	}
 	//  TODO Graph: Commenting until concurrency is supported in RenderFilename() of GenerateGraph().
 	// return GenerateGraph()
 	return nil

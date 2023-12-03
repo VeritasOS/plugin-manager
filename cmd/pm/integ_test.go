@@ -4,7 +4,6 @@ package main
 
 import (
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
@@ -43,7 +42,7 @@ func saveConfig(newConfig Config, configFile string) error {
 		log.Printf("Failed to marshal plugin config: %+v\n", newConfig)
 		return err
 	}
-	ioutil.WriteFile(configFile, out, os.FileMode(0644))
+	os.WriteFile(configFile, out, os.FileMode(0644))
 	if err != nil {
 		log.Printf("Failed to write %s file\n", configFile)
 		return err
@@ -197,7 +196,7 @@ func integTest(t *testing.T, pmBinary, tDir, deprecated string) {
 		for _, tc.args.sequential = range []bool{false, true} {
 			t.Run(tc.name+fmt.Sprintf("(sequential=%v)", tc.args.sequential)+fmt.Sprintf("%v", deprecated), func(t *testing.T) {
 				cmdStr := pmBinary
-				tmpfile, err := ioutil.TempFile(tDir+"/cover/", "cover.out")
+				tmpfile, err := os.CreateTemp(tDir+"/cover/", "cover.out")
 				if err != nil {
 					t.Fatal(err)
 				}

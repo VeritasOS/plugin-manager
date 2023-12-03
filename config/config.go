@@ -3,7 +3,6 @@
 package config
 
 import (
-	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -68,7 +67,7 @@ func GetPluginsDir() string {
 
 // GetPMLogDir provides location for storing Plugin Manager logs.
 //
-//	NOTE: The plugin logs would be stored "plugins" directory under the
+//	NOTE: The plugin logs would be stored in "plugins" directory under the
 //	same path, and use GetPluginsLogDir() to get that path.
 func GetPMLogDir() string {
 	return filepath.FromSlash(filepath.Clean(myConfig.PluginManager.LogDir) +
@@ -120,7 +119,7 @@ func readConfigFile(confFilePath string) (Config, error) {
 	defer log.Println("Exiting readConfigFile")
 
 	var conf Config
-	bFileContents, err := ioutil.ReadFile(confFilePath)
+	bFileContents, err := os.ReadFile(confFilePath)
 	if err != nil {
 		return conf, logutil.PrintNLogWarning("Failed to read \"" +
 			confFilePath + "\" file.")
