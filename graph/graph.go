@@ -170,8 +170,9 @@ func UpdateGraph(subgraphName, plugin, status, url string) error {
 	}
 	node.SetStyle("filled")
 	node.SetFillColor(getStatusColor(status))
-	node.SetURL(url)
-
+	if url != "" {
+		node.SetURL(url)
+	}
 	//  TODO Graph: Commenting until concurrency is supported in RenderFilename() of GenerateGraph().
 	// return GenerateGraph()
 	return nil

@@ -355,7 +355,7 @@ func validateDependencies(nPInfo pluginmanager.Plugins) ([]string, error) {
 	return pluginOrder, nil
 }
 
-func executePluginCmd(statusCh chan<- map[string]*pluginmanager.RunStatus, p string, pluginsInfo pluginmanager.Plugins, failedDependency bool) {
+func executePluginCmd(statusCh chan<- map[string]*pluginmanager.RunStatus, p string, pluginsInfo pluginmanager.Plugins, failedDependency bool, pluginLogFile string) {
 	pInfo := pluginsInfo[p]
 	log.Printf("\nChannel: Plugin %s info: \n%+v\n", p, pInfo)
 	// TODO: Uncomment below UpdateGraph() once concurrency issue is
@@ -363,12 +363,14 @@ func executePluginCmd(statusCh chan<- map[string]*pluginmanager.RunStatus, p str
 	//  is called. Refer "TODO Graph" for more details.
 	// graph.UpdateGraph(getPluginType(p), p, pluginmanager.DStatusStart, "")
 	logutil.PrintNLog("\n%s: %s\n", pInfo.Description, pluginmanager.DStatusStart)
+	// TODO: Uncomment below logFile once UpdateGraph() concurrency issue is
+	//  resolved.
 	// Get relative path to plugins log file from PM log dir, so that linking
 	// in plugin graph works even when the logs are copied to another system.
-	pluginLogFile := strings.Replace(config.GetPluginsLogDir(),
-		config.GetPMLogDir(), "", -1) +
-		strings.Replace(p, string(os.PathSeparator), ":", -1) +
-		"." + time.Now().Format(time.RFC3339Nano) + ".log"
+	// pluginLogFile := strings.Replace(config.GetPluginsLogDir(),
+	// 	config.GetPMLogDir(), "", -1) +
+	// 	strings.Replace(p, string(os.PathSeparator), ":", -1) +
+	// 	"." + time.Now().Format(time.RFC3339Nano) + ".log"
 	logFile := config.GetPMLogDir() + pluginLogFile
 	fh, openerr := os.OpenFile(logFile, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 	if openerr != nil {
@@ -438,9 +440,9 @@ func executePluginCmd(statusCh chan<- map[string]*pluginmanager.RunStatus, p str
 	func() {
 		if err != nil {
 			chLog.Println("Error:", err.Error())
-			graph.UpdateGraph(getPluginType(p), p, pluginmanager.DStatusFail, pluginLogFile)
+			// graph.UpdateGraph(getPluginType(p), p, pluginmanager.DStatusFail, pluginLogFile)
 		} else {
-			graph.UpdateGraph(getPluginType(p), p, pluginmanager.DStatusOk, pluginLogFile)
+			// graph.UpdateGraph(getPluginType(p), p, pluginmanager.DStatusOk, pluginLogFile)
 		}
 	}()
 	log.Println("Stdout & Stderr:", stdOutErr)
@@ -510,8 +512,12 @@ func executePlugins(psStatus *pluginmanager.PluginsStatus, nPInfo pluginmanager.
 				// TODO: Remove below UpdateGraph() once concurrency issue is
 				//  taken care, and keep the one inside executePluginCmd().
 				//  Refer "TODO Graph" for more details.
-				graph.UpdateGraph(getPluginType(p), p, pluginmanager.DStatusStart, "")
-				go executePluginCmd(exeCh, p, nPInfo, failedDependency[p])
+				pluginLogFile := strings.Replace(config.GetPluginsLogDir(),
+					config.GetPMLogDir(), "", -1) +
+					strings.Replace(p, string(os.PathSeparator), ":", -1) +
+					"." + time.Now().Format(time.RFC3339Nano) + ".log"
+				graph.UpdateGraph(getPluginType(p), p, pluginmanager.DStatusStart, pluginLogFile)
+				go executePluginCmd(exeCh, p, nPInfo, failedDependency[p], pluginLogFile)
 				executingCnt++
 			}
 		}
@@ -523,9 +529,6 @@ func executePlugins(psStatus *pluginmanager.PluginsStatus, nPInfo pluginmanager.
 		graph.GenerateGraph()
 		// start other dependent ones as soon as one of the plugin completes.
 		exeStatus := <-exeCh
-		// TODO: Remove below GenerateGraph() once concurrency issue is taken
-		//  care. Refer "TODO Graph" for more details.
-		graph.GenerateGraph()
 		executingCnt--
 		for plugin, pStatus := range exeStatus {
 			log.Printf("%s status: %v", plugin, pStatus.Status)
@@ -533,6 +536,7 @@ func executePlugins(psStatus *pluginmanager.PluginsStatus, nPInfo pluginmanager.
 			ps := *psStatus
 			ps[pIdx].Status = pStatus.Status
 			ps[pIdx].StdOutErr = pStatus.StdOutErr
+			graph.UpdateGraph(getPluginType(plugin), plugin, pStatus.Status, "")
 			if pStatus.Status == pluginmanager.DStatusFail {
 				retStatus = false
 			}
@@ -550,6 +554,9 @@ func executePlugins(psStatus *pluginmanager.PluginsStatus, nPInfo pluginmanager.
 			}
 			delete(nPInfo, plugin)
 		}
+		// TODO: Remove below GenerateGraph() once concurrency issue is taken
+		//  care. Refer "TODO Graph" for more details.
+		graph.GenerateGraph()
 	}
 	return retStatus
 }
