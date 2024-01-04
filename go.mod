@@ -3,7 +3,7 @@ module github.com/VeritasOS/plugin-manager
 go 1.21
 
 require (
-	github.com/goccy/go-graphviz v0.1.1
+	github.com/goccy/go-graphviz v0.1.2
 	gopkg.in/yaml.v3 v3.0.1
 )
 

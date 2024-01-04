@@ -346,7 +346,7 @@ http://localhost:8080/
 
 ### Service to start `pm server`
 
-To start automatically on `pm server`` on say RHEL, you can create a systemd unit file as follows:
+To start automatically on `pm server` on say RHEL, you can create a systemd unit file as follows:
 
 ```bash
 $ cat /etc/systemd/system/pm-server.service
@@ -367,7 +367,7 @@ $
 
 ### Logs
 
-To tail the `pm-server.service`` logs, run the following command:
+To tail the `pm-server.service` logs, run the following command:
 
 ```bash
 journalctl -u pm-server -e -f
