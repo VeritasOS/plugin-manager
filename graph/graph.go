@@ -74,11 +74,14 @@ func InitGraph(pluginType string, pluginsInfo map[string]*pluginmanager.PluginAt
 		absLibraryPath, _ := filepath.Abs(config.GetPluginsLibrary())
 		relPath, _ := filepath.Rel(absLogPath, absLibraryPath)
 		pURL := filepath.FromSlash(relPath + string(os.PathSeparator) + p)
+		pluginNode.SetShape(cgraph.Box3DShape)
 		pluginNode.SetLabel(pluginsInfo[p].Description)
 		pluginNode.SetFontSize(NodeLabelFontSize)
 		pluginNode.SetURL(pURL)
 		pluginNode.SetStyle(cgraph.FilledNodeStyle)
-		pluginNode.SetFillColor("lightgrey")
+		// pluginNode.SetGradientAngle(45)
+		pluginNode.SetFillColor("#f5f5f5:#b3b3b3") // gray
+		// pluginNode.Set("strokeColor", "#82b366")
 
 		for rby := range pluginsInfo[p].RequiredBy {
 			reqbyNode, err := sb.CreateNode(pluginsInfo[p].RequiredBy[rby])
@@ -143,11 +146,11 @@ func GenerateGraph() error {
 // getStatusColor returns the color for a given result status.
 func getStatusColor(status string) string {
 	// Node color
-	ncolor := "blue" // dStatusStart by default
+	ncolor := "#dae8fc:#7ea6e0" // blue // dStatusStart by default
 	if status == pluginmanager.DStatusFail {
-		ncolor = "red"
+		ncolor = "#f8cecc:#ea6b66" // "red"
 	} else if status == pluginmanager.DStatusOk {
-		ncolor = "green"
+		ncolor = "#d5e8d4:#97d077" // "green"
 	} else if status == pluginmanager.DStatusSkip {
 		ncolor = "yellow"
 	}
