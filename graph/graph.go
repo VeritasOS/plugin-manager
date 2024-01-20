@@ -53,6 +53,11 @@ func InitGraph(pluginType string, pluginsInfo map[string]*pluginmanager.PluginAt
 
 	sb := graph1.SubGraph(pluginType, 1)
 	sb.SetLabel(pluginType)
+	sb.Attr(0, "cluster", "true")
+	// sb.SetBackgroundColor("red")
+	sb.SetStyle(cgraph.FilledGraphStyle + "," + cgraph.RoundedGraphStyle)
+	sb.SetGradientAngle(270)
+
 	// INFO: Sort the plugins so that list of dependencies generated
 	// (used by documentation) doesn't change.
 	// NOTE: If not sorted, then even without addition of any new plugin,
@@ -74,12 +79,12 @@ func InitGraph(pluginType string, pluginsInfo map[string]*pluginmanager.PluginAt
 		absLibraryPath, _ := filepath.Abs(config.GetPluginsLibrary())
 		relPath, _ := filepath.Rel(absLogPath, absLibraryPath)
 		pURL := filepath.FromSlash(relPath + string(os.PathSeparator) + p)
-		pluginNode.SetShape(cgraph.Box3DShape)
+		pluginNode.SetShape(cgraph.BoxShape) // Box3DShape
 		pluginNode.SetLabel(pluginsInfo[p].Description)
 		pluginNode.SetFontSize(NodeLabelFontSize)
 		pluginNode.SetURL(pURL)
-		pluginNode.SetStyle(cgraph.FilledNodeStyle)
-		// pluginNode.SetGradientAngle(45)
+		pluginNode.SetStyle(cgraph.FilledNodeStyle + "," + cgraph.RoundedNodeStyle)
+		pluginNode.SetGradientAngle(270)
 		pluginNode.SetFillColor("#f5f5f5:#b3b3b3") // gray
 		// pluginNode.Set("strokeColor", "#82b366")
 
