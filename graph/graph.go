@@ -41,6 +41,11 @@ func ResetGraph() {
 	graph1 = nil
 }
 
+// prepareSubGraphName creates subgraph name using pluginType.
+func prepareSubGraphName(pluginType string) string {
+	return "cluster-" + pluginType
+}
+
 // InitGraph initliazes the graph data structure and invokes generateGraph.
 func InitGraph(pluginType string, pluginsInfo map[string]*pluginmanager.PluginAttributes) error {
 	var err error
@@ -51,7 +56,7 @@ func InitGraph(pluginType string, pluginsInfo map[string]*pluginmanager.PluginAt
 		}
 	}
 
-	sb := graph1.SubGraph(pluginType, 1)
+	sb := graph1.SubGraph(prepareSubGraphName(pluginType), 1)
 	sb.SetLabel(pluginType)
 	sb.Attr(0, "cluster", "true")
 	// sb.SetBackgroundColor("red")
@@ -164,7 +169,7 @@ func getStatusColor(status string) string {
 
 // UpdateGraph updates the plugin node with the status and url.
 func UpdateGraph(subgraphName, plugin, status, url string) error {
-	sb := graph1.SubGraph(subgraphName, 0)
+	sb := graph1.SubGraph(prepareSubGraphName(subgraphName), 0)
 	if sb == nil {
 		err := logutil.PrintNLogError("Graph.SubGraph(%s, 0) returns nil. Error: Subgraph not found!", subgraphName)
 		return err
