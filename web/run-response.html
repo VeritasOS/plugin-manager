@@ -7,10 +7,13 @@
         Getting status...
     </div>
     <br>
-
-    <h2>Log</h2>
-    <hr>
-    <div hx-get="{{.}}.log" hx-trigger="every 5s">
-        Gathering logs...
-    </div>
 </div>
+
+<h2>Log</h2>
+<hr>
+<object data="{{.}}.log" type="text/plain" height="100%" width="100%" hx-trigger="every 5s">
+    Gathering logs...
+    <p>View <a href="{{.}}.log">Log file</a>.</p>
+</object>
+
+<hr>

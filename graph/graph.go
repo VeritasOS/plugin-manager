@@ -41,6 +41,11 @@ func ResetGraph() {
 	graph1 = nil
 }
 
+// prepareSubGraphName creates subgraph name using pluginType.
+func prepareSubGraphName(pluginType string) string {
+	return "cluster-" + pluginType
+}
+
 // InitGraph initliazes the graph data structure and invokes generateGraph.
 func InitGraph(pluginType string, pluginsInfo map[string]*pluginmanager.PluginAttributes) error {
 	var err error
@@ -49,10 +54,16 @@ func InitGraph(pluginType string, pluginsInfo map[string]*pluginmanager.PluginAt
 		if err != nil {
 			log.Fatal(err)
 		}
+		graph1.SetCompound(true)
 	}
 
-	sb := graph1.SubGraph(pluginType, 1)
+	sb := graph1.SubGraph(prepareSubGraphName(pluginType), 1)
 	sb.SetLabel(pluginType)
+	sb.Attr(0, "cluster", "true")
+	// sb.SetBackgroundColor("red")
+	sb.SetStyle(cgraph.FilledGraphStyle + "," + cgraph.RoundedGraphStyle)
+	sb.SetGradientAngle(270)
+
 	// INFO: Sort the plugins so that list of dependencies generated
 	// (used by documentation) doesn't change.
 	// NOTE: If not sorted, then even without addition of any new plugin,
@@ -74,11 +85,14 @@ func InitGraph(pluginType string, pluginsInfo map[string]*pluginmanager.PluginAt
 		absLibraryPath, _ := filepath.Abs(config.GetPluginsLibrary())
 		relPath, _ := filepath.Rel(absLogPath, absLibraryPath)
 		pURL := filepath.FromSlash(relPath + string(os.PathSeparator) + p)
+		pluginNode.SetShape(cgraph.BoxShape) // Box3DShape
 		pluginNode.SetLabel(pluginsInfo[p].Description)
 		pluginNode.SetFontSize(NodeLabelFontSize)
 		pluginNode.SetURL(pURL)
-		pluginNode.SetStyle(cgraph.FilledNodeStyle)
-		pluginNode.SetFillColor("lightgrey")
+		pluginNode.SetStyle(cgraph.FilledNodeStyle + "," + cgraph.RoundedNodeStyle)
+		pluginNode.SetGradientAngle(270)
+		pluginNode.SetFillColor("#f5f5f5:#b3b3b3") // gray
+		// pluginNode.Set("strokeColor", "#82b366")
 
 		for rby := range pluginsInfo[p].RequiredBy {
 			reqbyNode, err := sb.CreateNode(pluginsInfo[p].RequiredBy[rby])
@@ -143,11 +157,11 @@ func GenerateGraph() error {
 // getStatusColor returns the color for a given result status.
 func getStatusColor(status string) string {
 	// Node color
-	ncolor := "blue" // dStatusStart by default
+	ncolor := "#dae8fc:#7ea6e0" // blue // dStatusStart by default
 	if status == pluginmanager.DStatusFail {
-		ncolor = "red"
+		ncolor = "#f8cecc:#ea6b66" // "red"
 	} else if status == pluginmanager.DStatusOk {
-		ncolor = "green"
+		ncolor = "#d5e8d4:#97d077" // "green"
 	} else if status == pluginmanager.DStatusSkip {
 		ncolor = "yellow"
 	}
@@ -156,7 +170,7 @@ func getStatusColor(status string) string {
 
 // UpdateGraph updates the plugin node with the status and url.
 func UpdateGraph(subgraphName, plugin, status, url string) error {
-	sb := graph1.SubGraph(subgraphName, 0)
+	sb := graph1.SubGraph(prepareSubGraphName(subgraphName), 0)
 	if sb == nil {
 		err := logutil.PrintNLogError("Graph.SubGraph(%s, 0) returns nil. Error: Subgraph not found!", subgraphName)
 		return err
@@ -175,5 +189,36 @@ func UpdateGraph(subgraphName, plugin, status, url string) error {
 	}
 	//  TODO Graph: Commenting until concurrency is supported in RenderFilename() of GenerateGraph().
 	// return GenerateGraph()
+	return nil
+}
+
+// ConnectGraph connects two subgraphs by an edge.
+// TODO: Currently no edge is created between clusters/subgraphs. The dot file is not showing any edge at all. May have to wait for graphviz update.
+func ConnectGraph(source, target string) error {
+	sourceSB := graph1.SubGraph(prepareSubGraphName(source), 0)
+	if sourceSB == nil {
+		err := logutil.PrintNLogError("Graph.SubGraph(%s, 0) returns nil. Error: Subgraph not found!", source)
+		return err
+	}
+
+	targetSB := graph1.SubGraph(prepareSubGraphName(target), 0)
+	if targetSB == nil {
+		err := logutil.PrintNLogError("Graph.SubGraph(%s, 0) returns nil. Error: Subgraph not found!", target)
+		return err
+	}
+
+	sourceNode := sourceSB.FirstNode()
+	targetNode := targetSB.LastNode()
+
+	log.Printf("Connecting %v to %v", sourceNode.Name(), targetNode.Name())
+	edge, err := graph1.CreateEdge("", sourceNode, targetNode)
+	if err != nil {
+		log.Printf("SubGraph.CreateEdge(%s, %s) Error: %s",
+			sourceNode.Name(), targetNode.Name(), err.Error())
+		return err
+	}
+	edge.SetLogicalHead(prepareSubGraphName(target))
+	edge.SetLogicalTail(prepareSubGraphName(source))
+
 	return nil
 }
