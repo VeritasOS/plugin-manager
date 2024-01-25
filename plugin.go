@@ -750,11 +750,14 @@ func listHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	fmt.Printf("Plugin Types(%d): %+v\n", len(pluginTypes), pluginTypes)
 	var err error
-	for _, pluginType := range pluginTypes {
+	for idx, pluginType := range pluginTypes {
 		fmt.Println("Type:", pluginType)
 		err = List(pluginType)
 		if err != nil {
 			fmt.Fprintf(w, "Error: %s", err.Error())
+		}
+		if idx > 0 {
+			graph.ConnectGraph(pluginTypes[idx-1], pluginType)
 		}
 	}
 	if err == nil {
@@ -800,12 +803,15 @@ func runHandler(w http.ResponseWriter, r *http.Request) {
 
 	runFunc := func() {
 		// fmt.Println("Inside runFunc routine...")
-		for _, pluginType := range pluginTypes {
+		for idx, pluginType := range pluginTypes {
 			fmt.Printf("\nRunning %v plugins...\n", pluginType)
 			err := Run(&pmstatus, pluginType)
 			if err != nil {
 				fmt.Fprintf(w, "Error: %s", err.Error())
 				return
+			}
+			if idx > 0 {
+				graph.ConnectGraph(pluginTypes[idx-1], pluginType)
 			}
 		}
 	}

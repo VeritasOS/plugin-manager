@@ -54,6 +54,7 @@ func InitGraph(pluginType string, pluginsInfo map[string]*pluginmanager.PluginAt
 		if err != nil {
 			log.Fatal(err)
 		}
+		graph1.SetCompound(true)
 	}
 
 	sb := graph1.SubGraph(prepareSubGraphName(pluginType), 1)
@@ -188,5 +189,36 @@ func UpdateGraph(subgraphName, plugin, status, url string) error {
 	}
 	//  TODO Graph: Commenting until concurrency is supported in RenderFilename() of GenerateGraph().
 	// return GenerateGraph()
+	return nil
+}
+
+// ConnectGraph connects two subgraphs by an edge.
+// TODO: Currently no edge is created between clusters/subgraphs. The dot file is not showing any edge at all. May have to wait for graphviz update.
+func ConnectGraph(source, target string) error {
+	sourceSB := graph1.SubGraph(prepareSubGraphName(source), 0)
+	if sourceSB == nil {
+		err := logutil.PrintNLogError("Graph.SubGraph(%s, 0) returns nil. Error: Subgraph not found!", source)
+		return err
+	}
+
+	targetSB := graph1.SubGraph(prepareSubGraphName(target), 0)
+	if targetSB == nil {
+		err := logutil.PrintNLogError("Graph.SubGraph(%s, 0) returns nil. Error: Subgraph not found!", target)
+		return err
+	}
+
+	sourceNode := sourceSB.FirstNode()
+	targetNode := targetSB.LastNode()
+
+	log.Printf("Connecting %v to %v", sourceNode.Name(), targetNode.Name())
+	edge, err := graph1.CreateEdge("", sourceNode, targetNode)
+	if err != nil {
+		log.Printf("SubGraph.CreateEdge(%s, %s) Error: %s",
+			sourceNode.Name(), targetNode.Name(), err.Error())
+		return err
+	}
+	edge.SetLogicalHead(prepareSubGraphName(target))
+	edge.SetLogicalTail(prepareSubGraphName(source))
+
 	return nil
 }
