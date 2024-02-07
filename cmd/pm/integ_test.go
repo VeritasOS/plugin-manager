@@ -13,8 +13,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/VeritasOS/plugin-manager/config"
-	"github.com/VeritasOS/plugin-manager/pluginmanager"
+	"github.com/VeritasOS/plugin-manager/v2/config"
+	"github.com/VeritasOS/plugin-manager/v2/pluginmanager"
 
 	yaml "gopkg.in/yaml.v3"
 )

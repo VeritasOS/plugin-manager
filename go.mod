@@ -1,4 +1,4 @@
-module github.com/VeritasOS/plugin-manager
+module github.com/VeritasOS/plugin-manager/v2
 
 go 1.21
 
