@@ -9,9 +9,9 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/VeritasOS/plugin-manager/config"
-	"github.com/VeritasOS/plugin-manager/graph"
-	"github.com/VeritasOS/plugin-manager/pluginmanager"
+	"github.com/VeritasOS/plugin-manager/v2/config"
+	"github.com/VeritasOS/plugin-manager/v2/graph"
+	"github.com/VeritasOS/plugin-manager/v2/pluginmanager"
 )
 
 func Test_getPluginFiles(t *testing.T) {
