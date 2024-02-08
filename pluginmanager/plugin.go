@@ -38,3 +38,13 @@ type RunAllStatus struct {
 
 // PluginsStatus is a list of plugins' run info.
 type PluginsStatus []RunStatus
+
+// Workflow indicates action and rollback plugin types to be run.
+type Workflow struct {
+	ActionRollback []ActionRollback `yaml:",inline"`
+}
+
+type ActionRollback struct {
+	Action   string
+	Rollback string `yaml:",omitempty"`
+}
