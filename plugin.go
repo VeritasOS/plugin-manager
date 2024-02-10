@@ -953,9 +953,73 @@ func ScanCommandOptions(options map[string]interface{}) error {
 	}
 
 	if *CmdOptions.workflowPtr != "" {
-		pWorkflow := new(pluginmanager.Workflow)
-		json.Unmarshal([]byte(*CmdOptions.workflowPtr), pWorkflow)
-		fmt.Printf("Received workflow request with data: %+v", pWorkflow)
+		var pWorkflow pluginmanager.Workflow
+		json.Unmarshal([]byte(*CmdOptions.workflowPtr), &pWorkflow)
+		fmt.Printf("Received workflow request: %+v\n", pWorkflow)
+
+		for idx, actionRollback := range pWorkflow {
+			pluginType := actionRollback.Action
+			err := List(pluginType)
+			if err != nil {
+				logutil.PrintNLogError("Error: %s", err.Error())
+			}
+			if idx > 0 {
+				graph.ConnectGraph(pWorkflow[idx-1].Action, pluginType)
+			}
+
+			rollbackPluginType := actionRollback.Rollback
+			if rollbackPluginType != "" {
+				err := List(rollbackPluginType)
+				if err != nil {
+					logutil.PrintNLogError("Error: %s", err.Error())
+				}
+				graph.ConnectGraph(pluginType, rollbackPluginType)
+			}
+
+		}
+
+		switch cmd {
+		case "list":
+			// List already done above.
+			return nil
+
+		case "run":
+			runRollback := false
+			pmstatus := pluginmanager.RunAllStatus{}
+
+			idx := 0
+			var actionRollback pluginmanager.ActionRollback
+			totalPluginTypes := len(pWorkflow)
+			log.Printf("Number of action plugin-types to run: %+v\n", totalPluginTypes)
+			for idx, actionRollback = range pWorkflow {
+				pluginType := actionRollback.Action
+				fmt.Printf("\nRunning action plugins: %v [%d/%d]...\n", pluginType, idx+1, totalPluginTypes)
+				err := Run(&pmstatus, pluginType)
+				if err != nil {
+					logutil.PrintNLogError("Error: %s", err.Error())
+					runRollback = true
+					break
+				}
+				if idx > 0 {
+					graph.ConnectGraph(pWorkflow[idx-1].Action, pluginType)
+				}
+			}
+
+			logutil.PrintNLog("Starting rollback...")
+			totalRollbackPluginTypes2Run := idx + 1
+			log.Printf("Number of rollback plugin-types to run: %+v\n", totalRollbackPluginTypes2Run)
+			if runRollback {
+				for ; idx >= 0; idx-- {
+					rollbackPluginType := pWorkflow[idx].Rollback
+					fmt.Printf("\nRunning rollback plugins: %v [%d/%d]...\n", rollbackPluginType, totalRollbackPluginTypes2Run-idx, totalRollbackPluginTypes2Run)
+					err := Run(&pmstatus, rollbackPluginType)
+					if err != nil {
+						logutil.PrintNLogError("Error: %s", err.Error())
+					}
+				}
+			}
+		}
+
 		return nil
 	}
 
