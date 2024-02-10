@@ -20,6 +20,8 @@ systemd.
     - [Example: Plugin Manager (PM) with `sequential` flag](#example-plugin-manager-pm-with-sequential-flag)
     - [Example: Overriding Plugin Manager (PM) configuration - `library`, `log-dir` and `log-file`](#example-overriding-plugin-manager-pm-configuration---library-log-dir-and-log-file)
     - [Example: Writing plugins result to a `output-file` in `output-format` {json, yaml} format](#example-writing-plugins-result-to-a-output-file-in-output-format-json-yaml-format)
+  - [Workflow](#workflow)
+    - [Running workflow](#running-workflow)
   - [Plugin Manager Web Server](#plugin-manager-web-server)
     - [Start the server](#start-the-server)
     - [Service to start `pm server`](#service-to-start-pm-server)
@@ -327,6 +329,14 @@ plugins:
 status: Failed
 stdouterr: 'Running preupgrade plugins: Failed'
 $
+```
+
+## Workflow
+
+### Running workflow
+
+```bash
+./bin/pm run --workflow '[{"action": "test1", "rollback": "test1-rollback"}, {"action": "test2", "rollback": "test2-rollback"}]'
 ```
 
 ## Plugin Manager Web Server
