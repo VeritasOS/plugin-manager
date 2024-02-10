@@ -974,6 +974,9 @@ func ScanCommandOptions(options map[string]interface{}) error {
 					logutil.PrintNLogError("Error: %s", err.Error())
 				}
 				graph.ConnectGraph(pluginType, rollbackPluginType)
+				if idx > 0 {
+					graph.ConnectGraph(rollbackPluginType, pWorkflow[idx-1].Rollback)
+				}
 			}
 
 		}
