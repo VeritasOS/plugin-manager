@@ -20,13 +20,17 @@
     <hr />
     <div>
         <form>
+            <div class="mb-1">
+                <label for="library">library</label>
+                <input type="text" name="library" id="library" value="sample/library" class="form-control" />
+            </div>
             <div class="mb-2">
                 <label for="plugin-type">Type</label>
                 <input type="text" name="type" id="plugin-type" class="form-control" />
             </div>
             <div class="mb-3">
-                <label for="library">library</label>
-                <input type="text" name="library" id="library" class="form-control" />
+                <label for="workflow">Workflow</label>
+                <input type="text" name="workflow" id="workflow" class="form-control" value='{"action":"prereboot", "rollback":"postreboot"}'/>
             </div>
 
             <button type="List" hx-post="/list" hx-target="#pm-response" hx-swap="innerHTML"
