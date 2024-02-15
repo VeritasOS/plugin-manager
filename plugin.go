@@ -811,6 +811,26 @@ func runHandler(w http.ResponseWriter, r *http.Request) {
 
 	config.SetPluginsLibrary(library)
 
+	userEnvs := r.PostForm["env"]
+	fmt.Printf("User Parameters (ENV) %d: %+v\n", len(userEnvs), userEnvs)
+	if len(userEnvs) > 0 {
+		for _, userEnv := range userEnvs {
+			userEnv = strings.TrimSpace(userEnv)
+			fmt.Println("userEnv: ", userEnv)
+			lines := strings.Split(userEnv, "\n")
+			fmt.Printf("Lines (%+v): %v\n", len(lines), lines)
+			for _, line := range lines {
+				line := strings.TrimSpace(line)
+				fmt.Printf("Line (%+v): %v\n", len(line), line)
+				env_var, env_val, status := strings.Cut(line, "=")
+				if status {
+					fmt.Println("ENV: ", env_var, "=", env_val)
+					os.Setenv(env_var, env_val)
+				}
+			}
+		}
+	}
+
 	userPluginTypes := r.PostForm["type"]
 	if len(userPluginTypes) > 0 {
 		// INFO: pluginTypes could be either a single element of comma or space separated list, or multiple elements - all in the array.
@@ -845,8 +865,8 @@ func runHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	userWorkflow := r.PostForm["workflow"]
-	fmt.Printf("User Workflow: %+v\n", userWorkflow)
 	if len(userWorkflow) > 0 {
+		fmt.Printf("User Workflow (%v): %+v\n", len(userWorkflow), userWorkflow)
 
 		var workflow pluginmanager.Workflow
 		for _, ar := range userWorkflow {
