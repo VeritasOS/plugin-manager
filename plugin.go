@@ -959,8 +959,12 @@ func triggerWorkflow(cmd string, workflow pluginmanager.Workflow) error {
 				logutil.PrintNLogError("Error: %s", err.Error())
 			}
 			graph.ConnectGraph(pluginType, rollbackPluginType)
-			if idx > 0 {
-				graph.ConnectGraph(rollbackPluginType, workflow[idx-1].Rollback)
+			// NOTE: Some actions may not have rollback plugin-type. In those cases, instead of connecting current rollback to its immediate previous rollback plugin, connect to the next available previous rollback plugin-type.
+			for rIdx := idx; rIdx > 0; rIdx-- {
+				if workflow[rIdx-1].Rollback != "" {
+					graph.ConnectGraph(rollbackPluginType, workflow[rIdx-1].Rollback)
+					break
+				}
 			}
 		}
 
