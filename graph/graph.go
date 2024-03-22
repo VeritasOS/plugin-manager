@@ -195,6 +195,14 @@ func UpdateGraph(subgraphName, plugin, status, url string) error {
 // ConnectGraph connects two subgraphs by an edge.
 // TODO: Currently no edge is created between clusters/subgraphs. The dot file is not showing any edge at all. May have to wait for graphviz update.
 func ConnectGraph(source, target string) error {
+	log.Printf("Entering ConnectGraph(%+v, %+v)", source, target)
+	defer log.Println("Exiting ConnectGraph")
+
+	if source == "" || target == "" {
+		err := logutil.PrintNLogError("ConnectGraph(): source (%v) and target (%v) must not be empty.", source, target)
+		return err
+	}
+
 	sourceSB := graph1.SubGraph(prepareSubGraphName(source), 0)
 	if sourceSB == nil {
 		err := logutil.PrintNLogError("Graph.SubGraph(%s, 0) returns nil. Error: Subgraph not found!", source)
