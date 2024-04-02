@@ -22,6 +22,7 @@ systemd.
     - [Example: Writing plugins result to a `output-file` in `output-format` {json, yaml} format](#example-writing-plugins-result-to-a-output-file-in-output-format-json-yaml-format)
   - [Workflow](#workflow)
     - [Running workflow](#running-workflow)
+    - [Example](#example)
   - [Plugin Manager Web Server](#plugin-manager-web-server)
     - [Start the server](#start-the-server)
     - [Service to start `pm server`](#service-to-start-pm-server)
@@ -333,16 +334,77 @@ $
 
 ## Workflow
 
+Plugin Manager (PM) provides workflow option, where one can specify multiple action and rollback plugin types to run. Without `Workflow` support, one has to wait for one set of plugins execution to be complete before triggering the next one.
+The Workflow option helps one to automatically trigger either the next `Action` or `Rollback` depending on current execution status.
+
 ### Running workflow
 
 ```bash
-./bin/pm run --workflow '[{"action": "preupgrade", "rollback": "requiredby"}, {"action": "postreboot", "rollback": "prereboot"}]' -library sample/library/
+./bin/pm run --workflow '[{"action": "preupgrade", "rollback": "requiredby"}, {"action": "postreboot", "rollback": "prereboot"}]' -library sample/library/ -output-format json -output-file /tmp/ab.json;
+echo; echo; echo;
+jq . /tmp/ab.json;
+```
+
+### Example
+
+```bash
+@abhijithda ➜ /workspaces/plugin-manager (workflow) $ ./bin/pm run --workflow '[{"action": "preupgrade", "rollback": "requiredby"}, {"action": "postreboot", "rollback": "prereboot"}]' -library sample/library/ -output-format json -output-file /tmp/ab.json 
+Log: pm.2024-04-02T03:10:05.356691548Z.log
+
+Running action plugins: preupgrade [1/2]...
+
+Checking for "D" settings...: Starting
+Checking for "D" settings...: Succeeded
+
+Checking for "E" settings: Starting
+
+Checking for "A" settings: Starting
+Checking for "E" settings: Succeeded
+Checking for "A" settings: Succeeded
+Running preupgrade plugins: Succeeded
+
+Running action plugins: postreboot [2/2]...
+
+Validating "A's" configuration: Starting
+Validating "A's" configuration: Failed
+Running postreboot plugins: Failed
+ERROR: Running postreboot plugins: Failed
+
+Starting rollback...
+Running rollback plugins: prereboot [1/2]...
+
+Applying "B" settings: Starting
+
+Applying "C" settings: Starting
+Applying "C" settings: Succeeded
+Applying "B" settings: Succeeded
+
+Applying "D" settings: Starting
+Applying "D" settings: Succeeded
+
+Applying "A" settings: Starting
+Applying "A" settings: Succeeded
+Running prereboot plugins: Succeeded
+
+Running rollback plugins: requiredby [2/2]...
+
+Applying "A" settings: Starting
+Applying "A" settings: Succeeded
+
+Applying "B" settings: Starting
+Applying "B" settings: Succeeded
+
+Applying "C" settings: Starting
+Applying "C" settings: Succeeded
+Running requiredby plugins: Succeeded
+ERROR: Running Workflow: Failed
+@abhijithda ➜ /workspaces/plugin-manager (workflow) $ 
 ```
 
 ## Plugin Manager Web Server
 
-Plugin Manager could be now run as a service. 
-A minimal UI support has been added to list or run the specified list of `Plugin Type`s in the given `Plugin Library`.
+Plugin Manager can be run as a service.
+A minimal UI exists to list or run the specified list of `Plugin Type`s in the given `Plugin Library`.
 
 ### Start the server
 
