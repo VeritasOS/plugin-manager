@@ -24,7 +24,7 @@ type Plugins map[string]*PluginAttributes
 type RunStatus struct {
 	PluginAttributes `yaml:",inline"`
 	Status           string
-	StdOutErr        string
+	StdOutErr        []string
 }
 
 // RunAllStatus is the pm run status.
