@@ -450,7 +450,7 @@ func executePluginCmd(statusCh chan<- map[string]*pluginmanager.RunStatus, p str
 		}
 	}()
 	log.Println("Stdout & Stderr:", stdOutErr)
-	pStatus := pluginmanager.RunStatus{StdOutErr: strings.Join(stdOutErr, "\n")}
+	pStatus := pluginmanager.RunStatus{StdOutErr: stdOutErr}
 	if err != nil {
 		pStatus.Status = pluginmanager.DStatusFail
 		log.Printf("Failed to execute plugin %s. Error: %s\n", p, err.Error())
