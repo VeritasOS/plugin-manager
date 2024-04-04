@@ -566,14 +566,14 @@ func executePlugins(psStatus *pluginmanager.PluginsStatus, nPInfo pluginmanager.
 }
 
 // List the plugin and its dependencies.
-func List(pluginType string) error {
+func List(pluginType string, options map[string]string) error {
 	var pluginsInfo, err = getPluginsInfo(pluginType)
 	if err != nil {
 		return err
 	}
 	nPInfo := normalizePluginsInfo(pluginsInfo)
 
-	err = graph.InitGraph(pluginType, nPInfo)
+	err = graph.InitGraph(pluginType, nPInfo, options)
 	if err != nil {
 		return err
 	}
@@ -660,7 +660,7 @@ func RegisterCommandOptions(progname string) {
 }
 
 // Run the specified plugin type plugins.
-func Run(result *pluginmanager.RunAllStatus, pluginType string) error {
+func Run(result *pluginmanager.RunAllStatus, pluginType string, options map[string]string) error {
 	result.Type = pluginType
 	status := true
 
@@ -680,7 +680,7 @@ func Run(result *pluginmanager.RunAllStatus, pluginType string) error {
 		return err
 	}
 	nPInfo := normalizePluginsInfo(pluginsInfo)
-	graph.InitGraph(pluginType, nPInfo)
+	graph.InitGraph(pluginType, nPInfo, options)
 
 	status = executePlugins(&result.Plugins, nPInfo, *CmdOptions.sequential)
 	if !status {
@@ -770,7 +770,7 @@ func listHandler(w http.ResponseWriter, r *http.Request) {
 		listFunc := func() {
 			for idx, pluginType := range pluginTypes {
 				fmt.Printf("\nListing %v plugins...\n", pluginType)
-				err = List(pluginType)
+				err = List(pluginType, nil)
 				if err != nil {
 					fmt.Fprintf(w, "Error: %s", err.Error())
 					return
@@ -878,7 +878,7 @@ func runHandler(w http.ResponseWriter, r *http.Request) {
 			// fmt.Println("Inside runFunc routine...")
 			for idx, pluginType := range pluginTypes {
 				fmt.Printf("\nRunning %v plugins...\n", pluginType)
-				err := Run(&pmstatus, pluginType)
+				err := Run(&pmstatus, pluginType, nil)
 				if err != nil {
 					fmt.Fprintf(w, "Error: %s", err.Error())
 					return
@@ -935,7 +935,7 @@ func triggerWorkflow(cmd string, workflow pluginmanager.Workflow) error {
 
 	for idx, actionRollback := range workflow {
 		pluginType := actionRollback.Action
-		err := List(pluginType)
+		err := List(pluginType, map[string]string{"TYPE": "ACTION"})
 		if err != nil {
 			logutil.PrintNLogError("Error: %s", err.Error())
 		}
@@ -945,7 +945,7 @@ func triggerWorkflow(cmd string, workflow pluginmanager.Workflow) error {
 
 		rollbackPluginType := actionRollback.Rollback
 		if rollbackPluginType != "" {
-			err := List(rollbackPluginType)
+			err := List(rollbackPluginType, map[string]string{"TYPE": "ROLLBACK"})
 			if err != nil {
 				logutil.PrintNLogError("Error: %s", err.Error())
 			}
@@ -980,7 +980,7 @@ func triggerWorkflow(cmd string, workflow pluginmanager.Workflow) error {
 		for idx, actionRollback = range workflow {
 			pluginType := actionRollback.Action
 			fmt.Printf("\nRunning action plugins: %v [%d/%d]...\n", pluginType, idx+1, workflowCnt)
-			err := Run(&workflowStatus.Action[idx], pluginType)
+			err := Run(&workflowStatus.Action[idx], pluginType, map[string]string{"TYPE": "ACTION"})
 			if err != nil {
 				logutil.PrintNLogError("%s", err.Error())
 				workflowStatus.Status = pluginmanager.DStatusFail
@@ -999,7 +999,7 @@ func triggerWorkflow(cmd string, workflow pluginmanager.Workflow) error {
 			for ; idx >= 0; idx-- {
 				rollbackPluginType := workflow[idx].Rollback
 				fmt.Printf("\nRunning rollback plugins: %v [%d/%d]...\n", rollbackPluginType, totalRollbackPluginTypes2Run-idx, totalRollbackPluginTypes2Run)
-				err := Run(&workflowStatus.Rollback[idx], rollbackPluginType)
+				err := Run(&workflowStatus.Rollback[idx], rollbackPluginType, map[string]string{"TYPE": "ROLLBACK"})
 				if err != nil {
 					logutil.PrintNLogError("Error: %s", err.Error())
 					workflowStatus.Rollback[idx].Status = pluginmanager.DStatusFail
@@ -1132,13 +1132,13 @@ func ScanCommandOptions(options map[string]interface{}) error {
 		pluginType := *CmdOptions.pluginTypePtr
 		switch cmd {
 		case "list":
-			err = List(pluginType)
+			err = List(pluginType, nil)
 			logutil.PrintNLog("The list of plugins are mapped in %s\n",
 				graph.GetImagePath())
 
 		case "run":
 			pmstatus := pluginmanager.RunAllStatus{}
-			err = Run(&pmstatus, pluginType)
+			err = Run(&pmstatus, pluginType, nil)
 			output.Write(pmstatus)
 		}
 	}

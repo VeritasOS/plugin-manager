@@ -47,7 +47,7 @@ func prepareSubGraphName(pluginType string) string {
 }
 
 // InitGraph initliazes the graph data structure and invokes generateGraph.
-func InitGraph(pluginType string, pluginsInfo map[string]*pluginmanager.PluginAttributes) error {
+func InitGraph(pluginType string, pluginsInfo map[string]*pluginmanager.PluginAttributes, options map[string]string) error {
 	var err error
 	if graph1 == nil {
 		graph1, err = gv.Graph()
@@ -60,7 +60,11 @@ func InitGraph(pluginType string, pluginsInfo map[string]*pluginmanager.PluginAt
 	sb := graph1.SubGraph(prepareSubGraphName(pluginType), 1)
 	sb.SetLabel(pluginType)
 	sb.Attr(0, "cluster", "true")
-	// sb.SetBackgroundColor("red")
+	if val, ok := options["TYPE"]; ok {
+		color := getDisplayColor(val)
+		// sb.SetBackgroundColor("#dae8fc:#7ea6e0")
+		sb.SetBackgroundColor(color)
+	}
 	sb.SetStyle(cgraph.FilledGraphStyle + "," + cgraph.RoundedGraphStyle)
 	sb.SetGradientAngle(270)
 
@@ -154,18 +158,23 @@ func GenerateGraph() error {
 	return nil
 }
 
-// getStatusColor returns the color for a given result status.
-func getStatusColor(status string) string {
+// getDisplayColor returns the color for a given result status.
+func getDisplayColor(key string) string {
 	// Node color
-	ncolor := "#dae8fc:#7ea6e0" // blue // dStatusStart by default
-	if status == pluginmanager.DStatusFail {
-		ncolor = "#f8cecc:#ea6b66" // "red"
-	} else if status == pluginmanager.DStatusOk {
-		ncolor = "#d5e8d4:#97d077" // "green"
-	} else if status == pluginmanager.DStatusSkip {
-		ncolor = "yellow"
+	color := "#dae8fc:#7ea6e0" // blue // dStatusStart by default
+	switch key {
+	case "ACTION":
+		color = "#d5e8d4:#ffffff"
+	case "ROLLBACK":
+		color = "#f8cecc:#ffffff"
+	case pluginmanager.DStatusFail:
+		color = "#f8cecc:#ea6b66" // "red"
+	case pluginmanager.DStatusOk:
+		color = "#d5e8d4:#97d077" // "green"
+	case pluginmanager.DStatusSkip:
+		color = "yellow"
 	}
-	return ncolor
+	return color
 }
 
 // UpdateGraph updates the plugin node with the status and url.
@@ -183,7 +192,7 @@ func UpdateGraph(subgraphName, plugin, status, url string) error {
 		return err
 	}
 	node.SetStyle("filled")
-	node.SetFillColor(getStatusColor(status))
+	node.SetFillColor(getDisplayColor(status))
 	if url != "" {
 		node.SetURL(url)
 	}
