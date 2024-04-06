@@ -1,0 +1,33 @@
+syntax = "proto3";
+
+package workflow;
+
+import "plugin.proto";
+import "google/protobuf/timestamp.proto";
+
+// Workflow indicates action and rollback plugin types to be run.
+message Workflow {
+    repeated ActionRollback;
+}
+
+// ActionRollback basically contains plugin-type info for Action and Rollback.
+message ActionRollback {
+	string Action   = 1;
+	string Rollback = 2;
+}
+
+// WorkflowStatus contains status info for Workflow.
+message WorkflowStatus {
+	string Status    = 1;
+	string StdOutErr = 2;
+	// TODO: Add Percentage to get no. of pending vs. completed run of plugins.
+	// ActionRollbacks []ActionRollbackStatus `yaml:",omitempty"`
+	repeated RunAllStatus Action = 3;
+    repeated RunAllStatus Rollback =4;
+}
+
+// ActionRollbackStatus contains run status of Action, and contains Rollback plugins' status if specified in case of Action's failure.
+message ActionRollbackStatus {
+	   RunAllStatus Action = 1;
+	 RunAllStatus Rollback = 2;
+}
