@@ -114,3 +114,38 @@ go-race: 	## Run Go tests with race detector enabled
 	go test -mod=vendor -v -race ./...;
 
 .NOTPARALLEL:
+
+.PHONY: install-protobuf
+install-protobuf:
+	sudo apt update;
+	sudo apt install -y protobuf-compiler;
+	ret=$$?; \
+	if [ $${ret} -ne 0 ]; then \
+		echo "Failed to install protobuf-compiler. Return: $${d}."; \
+		exit 1; \
+	fi ; \
+	go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.28
+	ret=$$?; \
+	if [ $${ret} -ne 0 ]; then \
+		echo "Failed to install protoc-gen-go@v1.28. Return: $${d}."; \
+		exit 1; \
+	fi ; \
+	go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.3;
+	ret=$$?; \
+	if [ $${ret} -ne 0 ]; then \
+		echo "Failed to install protoc-gen-go-grpc@v1.3. Return: $${d}."; \
+		exit 1; \
+	fi ; \
+
+.PHONY: compile-proto
+compile-proto:
+	protoc --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative pm/*.proto
+	ret=$$?; \
+	if [ $${ret} -ne 0 ]; then \
+		echo "Failed to compile proto files. Return: $${d}."; \
+		exit 1; \
+	fi ; \
+
+.PHONY: clean-proto
+clean-proto:
+	-@rm -rf pm/*.pb.go;

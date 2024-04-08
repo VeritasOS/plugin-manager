@@ -1,19 +1,16 @@
 syntax = "proto3";
 
-package pluginmanager;
-import "google/protobuf/timestamp.proto";
+package plugin;
+// import "google/protobuf/timestamp.proto";
+option go_package = "pm/pm";
 
 
 // Status of plugin execution used for displaying to user on console.
 enum Status {
-	// DStatusOk    = 
-	"Succeeded" = 0;
-	// DStatusStart = 
-	"Starting" =1;
-	// DStatusSkip  = 
-	"Skipped" = 2;
-	// DStatusFail  =
-	"Failed" = 3;
+	PLUGIN_STATUS_OK = 0;
+	PLUGIN_STATUS_START =1;
+	PLUGIN_STATUS_SKIP = 2;
+	PLUGIN_STATUS_FAIL = 3;
 }
 
 // PluginAttributes that are supported in a plugin file.
@@ -37,14 +34,12 @@ message PluginStatus {
 	PluginAttributes Attributes = 3;
 }
 
-// RunAllStatus is the pm run status.
-message RunAllStatus {
+// PluginsStatus is the pm run status.
+message PluginsStatus {
 	string Type = 1;
 	string Status    = 2;
 	string StdOutErr = 3;
-	repeated RunStatus = 4;
 	// TODO: Add Percentage to get no. of pending vs. completed run of plugins.
+	repeated PluginStatus PluginStatus = 9;
 }
 
-// PluginsStatus is a list of plugins' run info.
-type PluginsStatus []RunStatus

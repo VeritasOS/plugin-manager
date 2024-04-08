@@ -1,0 +1,57 @@
+syntax = "proto3";
+
+package pluginmanager;
+option go_package = "pm/pm";
+
+// import "google/protobuf/timestamp.proto";
+// import "plugin.proto";
+import "pm/plugin.proto";
+
+
+service PM {
+	rpc Run (RunRequest) returns (RunResponse);
+}
+
+message RunRequest {
+    string PluginsLibrary = 1;
+    // oneof {
+        string Type = 2;
+    //     string Workflow = 3;
+    // }
+    // map<string,PluginAttributes> Plugins = 2;
+}
+
+// RunResponse is the pm run status.
+message RunResponse {
+    string Status = 1;
+    string StdOutErr = 2;
+    string Type = 3;
+	// TODO: Add Percentage to get no. of pending vs. completed run of plugins.
+    // string Percentage = 4;
+    // Reserve number 5 to 8 for FUTURE use - say for any additional scalar fields that needs to be added.
+    repeated plugin.PluginStatus PluginsStatus = 9;
+}
+
+
+
+// Workflow indicates action and rollback plugin types to be run.
+message Workflow {
+	repeated ActionRollback ActionRollback = 1;
+}
+
+// ActionRollback basically contains plugin-type info for Action and Rollback.
+message ActionRollback {
+	string Action   = 1;
+	string Rollback = 2;
+}
+
+// WorkflowStatus contains status info for Workflow.
+message WorkflowStatus {
+	string Status    = 1;
+	string StdOutErr = 2;
+	// TODO: Add Percentage to get no. of pending vs. completed run of plugins.
+	// ActionRollbacks []ActionRollbackStatus `yaml:",omitempty"`
+	repeated plugin.PluginsStatus Action = 8;
+    repeated plugin.PluginsStatus Rollback =9;
+}
+
