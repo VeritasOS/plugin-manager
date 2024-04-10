@@ -3,8 +3,6 @@ syntax = "proto3";
 package pluginmanager;
 option go_package = "pluginmanager/pluginmanager";
 
-// import "google/protobuf/timestamp.proto";
-// import "plugin.proto";
 import "pluginmanager/plugin.proto";
 
 
@@ -26,8 +24,11 @@ message RunResponse {
     string Status = 1;
     string StdOutErr = 2;
     string Type = 3;
+
 	// TODO: Add Percentage to get no. of pending vs. completed run of plugins.
     // string Percentage = 4;
+    
     // Reserve number 5 to 8 for FUTURE use - say for any additional scalar fields that needs to be added.
+    
     repeated plugin.PluginStatus PluginsStatus = 9;
 }
