@@ -17,13 +17,10 @@ message ActionRollback {
 }
 
 // WorkflowStatus contains status info for Workflow.
-message WorkflowStatus {
-	string Status    = 1;
-	string StdOutErr = 2;
-	
+message WorkflowStatus {	
+	repeated plugin.PluginTypeStatus Action = 1;
+    repeated plugin.PluginTypeStatus Rollback = 2;
+	string Status = 3;
+	string StdOutErr = 4;
 	// TODO: Add Percentage to get no. of pending vs. completed run of plugins.
-	// ActionRollbacks []ActionRollbackStatus `yaml:",omitempty"`
-	
-	repeated plugin.PluginTypeStatus Action = 8;
-    repeated plugin.PluginTypeStatus Rollback =9;
 }

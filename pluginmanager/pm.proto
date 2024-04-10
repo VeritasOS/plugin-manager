@@ -16,19 +16,15 @@ message RunRequest {
         string Type = 2;
     //     string Workflow = 3;
     // }
-    // map<string,PluginAttributes> Plugins = 2;
+    // map<string,Attributes> Plugins = 2;
 }
 
 // RunResponse is the pm run status.
 message RunResponse {
-    string Status = 1;
-    string StdOutErr = 2;
-    string Type = 3;
-
+    string Type = 1;
+    repeated plugin.PluginStatus PluginsStatus = 2;
+    string Status = 3;
+    string StdOutErr = 4;
 	// TODO: Add Percentage to get no. of pending vs. completed run of plugins.
-    // string Percentage = 4;
-    
-    // Reserve number 5 to 8 for FUTURE use - say for any additional scalar fields that needs to be added.
-    
-    repeated plugin.PluginStatus PluginsStatus = 9;
+    // string Percentage = 5;
 }
