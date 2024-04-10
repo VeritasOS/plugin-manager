@@ -35,7 +35,7 @@ clean: 	## Clean Plugin Manager go build & test artifacts
 	-@rm -rf $(GOCOVERDIR);
 
 .PHONY: build
-build: 	## Build source code
+build: compile-proto ## Build source code
 	# Since go build determines and build only updated sources, no need to run clean all go binaries
 	@echo "Building Plugin Manager Go binaries...";
 	export GOBIN=$(GOBIN); \
@@ -139,7 +139,7 @@ install-protobuf:
 
 .PHONY: compile-proto
 compile-proto:
-	protoc --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative pm/*.proto
+	protoc --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative pluginmanager/*.proto
 	ret=$$?; \
 	if [ $${ret} -ne 0 ]; then \
 		echo "Failed to compile proto files. Return: $${d}."; \
@@ -148,4 +148,4 @@ compile-proto:
 
 .PHONY: clean-proto
 clean-proto:
-	-@rm -rf pm/*.pb.go;
+	-@rm -rf pluginmanager/*.pb.go;

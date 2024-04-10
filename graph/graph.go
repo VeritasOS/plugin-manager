@@ -99,7 +99,7 @@ func InitGraph(pluginType string, pluginsInfo map[string]*pluginmanager.PluginAt
 		// pluginNode.Set("strokeColor", "#82b366")
 
 		for rby := range pluginsInfo[p].RequiredBy {
-			reqbyNode, err := sb.CreateNode(pluginsInfo[p].RequiredBy[rby])
+			reqbyNode, err := sb.CreateNode(string(pluginsInfo[p].RequiredBy[rby]))
 			if err != nil {
 				log.Printf("SubGraph.CreateNode(%s) Error: %s", pluginsInfo[p].RequiredBy[rby], err.Error())
 				continue
@@ -117,7 +117,7 @@ func InitGraph(pluginType string, pluginsInfo map[string]*pluginmanager.PluginAt
 			// rbyEdge.SetFontSize(EdgeLabelFontSize)
 		}
 		for rs := range pluginsInfo[p].Requires {
-			rsNode, err := sb.CreateNode(pluginsInfo[p].Requires[rs])
+			rsNode, err := sb.CreateNode(string(pluginsInfo[p].Requires[rs]))
 			if err != nil {
 				log.Printf("SubGraph.CreateNode(%s) Error: %s", pluginsInfo[p].Requires[rs], err.Error())
 				continue

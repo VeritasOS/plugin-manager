@@ -126,55 +126,57 @@ func getPluginType(file string) string {
 	return strings.Replace(path.Ext(file), ".", ``, -1)
 }
 
-func getPluginsInfo(pluginType string) (pluginmanager.Plugins, error) {
-	var pluginsInfo = make(pluginmanager.Plugins)
+func getPluginsInfo(pluginType string) (*pluginmanager.Plugins, error) {
+	var plugins = &pluginmanager.Plugins{}
+	plugins.PluginsAttributes = make(map[string]*pluginmanager.PluginAttributes)
 	pluginFiles, err := getPluginFiles(pluginType)
 	if err != nil {
-		return pluginsInfo, err
+		return plugins, err
 	}
-	for file := range pluginFiles {
+	for _, file := range pluginFiles {
 		fContents, rerr := readFile(filepath.FromSlash(
-			config.GetPluginsLibrary() + pluginFiles[file]))
+			config.GetPluginsLibrary() + file))
 		if rerr != nil {
-			return pluginsInfo, logutil.PrintNLogError(rerr.Error())
+			return plugins, logutil.PrintNLogError(rerr.Error())
 		}
-		// log.Printf("Plugin file %s contents: \n%s\n", pluginFiles[file], fContents)
+		// log.Printf("Plugin file %s contents: \n%s\n", file, fContents)
 		pInfo, perr := parseUnitFile(fContents)
 		if perr != nil {
-			return pluginsInfo, perr
+			return plugins, perr
 		}
-		log.Printf("Plugin %s info: %+v\n", pluginFiles[file], pInfo)
-		pluginsInfo[pluginFiles[file]] = &pInfo
+		log.Printf("Plugin %s info: %+v\n", file, pInfo)
+		plugins.PluginsAttributes[file] = pInfo
 	}
-	return pluginsInfo, nil
+	return plugins, nil
 }
 
-func normalizePluginsInfo(pluginsInfo pluginmanager.Plugins) pluginmanager.Plugins {
+func normalizePluginsInfo(pluginsInfo *pluginmanager.Plugins) *pluginmanager.Plugins {
 	log.Println("Entering normalizePluginsInfo")
 	defer log.Println("Exiting normalizePluginsInfo")
 
-	nPInfo := pluginmanager.Plugins{}
-	for pFile, pFContents := range pluginsInfo {
-		nPInfo[pFile] = &pluginmanager.PluginAttributes{
+	nPInfo := &pluginmanager.Plugins{}
+	nPInfo.PluginsAttributes = make(map[string]*pluginmanager.PluginAttributes)
+	for pFile, pFContents := range pluginsInfo.PluginsAttributes {
+		nPInfo.PluginsAttributes[pFile] = &pluginmanager.PluginAttributes{
 			Description: pFContents.Description,
 			ExecStart:   pFContents.ExecStart,
 			FileName:    pFile,
 		}
-		nPInfo[pFile].RequiredBy = append(nPInfo[pFile].Requires, pFContents.RequiredBy...)
-		nPInfo[pFile].Requires = append(nPInfo[pFile].Requires, pFContents.Requires...)
-		log.Printf("%s plugin dependencies: %v", pFile, nPInfo[pFile])
+		nPInfo.PluginsAttributes[pFile].RequiredBy = append(nPInfo.PluginsAttributes[pFile].Requires, pFContents.RequiredBy...)
+		nPInfo.PluginsAttributes[pFile].Requires = append(nPInfo.PluginsAttributes[pFile].Requires, pFContents.Requires...)
+		log.Printf("%s plugin dependencies: %v", pFile, nPInfo.PluginsAttributes[pFile])
 	}
-	for p := range nPInfo {
-		log.Printf("nPInfo key(%s): %v", p, nPInfo[p])
-		for _, rs := range nPInfo[p].Requires {
+	for p := range nPInfo.PluginsAttributes {
+		log.Printf("nPInfo key(%s): %v", p, nPInfo.PluginsAttributes[p])
+		for _, rs := range nPInfo.PluginsAttributes[p].Requires {
 			// Check whether it's already marked as RequiredBy dependency in `Requires` plugin.
 			// log.Printf("Check whether `in` (%s) already marked as RequiredBy dependency in `Requires`(%s) plugin: %v",
 			// p, rs, nPInfo[rs])
 			present := false
 			// If dependencies are missing, then nPInfo[rs] value will not be defined.
-			if nPInfo[rs] != nil {
-				log.Printf("PluginInfo for %s is present: %v", rs, nPInfo[rs])
-				for _, rby := range nPInfo[rs].RequiredBy {
+			if nPInfo.PluginsAttributes[rs] != nil {
+				log.Printf("PluginInfo for %s is present: %v", rs, nPInfo.PluginsAttributes[rs])
+				for _, rby := range nPInfo.PluginsAttributes[rs].RequiredBy {
 					log.Printf("p(%s) == rby(%s)? %v", p, rby, p == rby)
 					if p == rby {
 						present = true
@@ -182,49 +184,49 @@ func normalizePluginsInfo(pluginsInfo pluginmanager.Plugins) pluginmanager.Plugi
 					}
 				}
 				if !present {
-					nPInfo[rs].RequiredBy = append(nPInfo[rs].RequiredBy, p)
-					log.Printf("Added %s as RequiredBy dependency of %s: %+v", p, rs, nPInfo[rs])
+					nPInfo.PluginsAttributes[rs].RequiredBy = append(nPInfo.PluginsAttributes[rs].RequiredBy, p)
+					log.Printf("Added %s as RequiredBy dependency of %s: %+v", p, rs, nPInfo.PluginsAttributes[rs])
 				}
 			}
 		}
 
 		// Check whether RequiredBy dependencies are also marked as Requires dependency on other plugin.
 		log.Printf("Check whether RequiredBy dependencies are also marked as Requires dependency on other plugin.")
-		for _, rby := range nPInfo[p].RequiredBy {
+		for _, rby := range nPInfo.PluginsAttributes[p].RequiredBy {
 			log.Printf("RequiredBy of %s: %s", p, rby)
-			log.Printf("nPInfo of %s: %+v", rby, nPInfo[rby])
+			log.Printf("nPInfo.PluginsAttributes of %s: %+v", rby, nPInfo.PluginsAttributes[rby])
 			// INFO: If one plugin type is added as dependent on another by
 			// any chance, then skip checking its contents as the other
 			// plugin type files were not parsed.
-			if nPInfo[rby] == nil {
+			if nPInfo.PluginsAttributes[rby] == nil {
 				// NOTE: Add the missing plugin in Requires, So that the issue
 				// gets caught during validation.
-				nPInfo[p].Requires = append(nPInfo[p].Requires, rby)
+				nPInfo.PluginsAttributes[p].Requires = append(nPInfo.PluginsAttributes[p].Requires, rby)
 				continue
 			}
 			present := false
-			for _, rs := range nPInfo[rby].Requires {
+			for _, rs := range nPInfo.PluginsAttributes[rby].Requires {
 				if p == rs {
 					present = true
 					break
 				}
 			}
 			if !present {
-				nPInfo[rby].Requires = append(nPInfo[rby].Requires, p)
-				log.Printf("Added %s as Requires dependency of %s: %+v", p, rby, nPInfo[rby])
+				nPInfo.PluginsAttributes[rby].Requires = append(nPInfo.PluginsAttributes[rby].Requires, p)
+				log.Printf("Added %s as Requires dependency of %s: %+v", p, rby, nPInfo.PluginsAttributes[rby])
 			}
 		}
 	}
-	log.Printf("Plugins info after normalizing: \n%+v\n", nPInfo)
+	log.Printf("Plugins info after normalizing: \n%+v\n", nPInfo.PluginsAttributes)
 	return nPInfo
 }
 
 // parseUnitFile parses the plugin file contents.
-func parseUnitFile(fileContents string) (pluginmanager.PluginAttributes, error) {
+func parseUnitFile(fileContents string) (*pluginmanager.PluginAttributes, error) {
 	log.Println("Entering parseUnitFile")
 	defer log.Println("Exiting parseUnitFile")
 
-	pluginInfo := pluginmanager.PluginAttributes{}
+	pluginInfo := &pluginmanager.PluginAttributes{}
 	if len(fileContents) == 0 {
 		return pluginInfo, nil
 	}
@@ -273,7 +275,7 @@ func parseUnitFile(fileContents string) (pluginmanager.PluginAttributes, error) 
 	return pluginInfo, nil
 }
 
-func validateDependencies(nPInfo pluginmanager.Plugins) ([]string, error) {
+func validateDependencies(nPInfo *pluginmanager.Plugins) ([]string, error) {
 	log.Println("Entering validateDependencies")
 	defer log.Println("Exiting validateDependencies")
 
@@ -282,7 +284,7 @@ func validateDependencies(nPInfo pluginmanager.Plugins) ([]string, error) {
 	dependencyMet := map[string]bool{}
 	// for pFile, pFContents := range pluginsInfo {}
 	sortedPFiles := []string{}
-	for pFile := range nPInfo {
+	for pFile := range nPInfo.PluginsAttributes {
 		sortedPFiles = append(sortedPFiles, pFile)
 	}
 	// NOTE: Sorting plugin files mainly to have a deterministic order,
@@ -293,7 +295,7 @@ func validateDependencies(nPInfo pluginmanager.Plugins) ([]string, error) {
 
 	for pFileIndex := range sortedPFiles {
 		pFile := sortedPFiles[pFileIndex]
-		pFContents := nPInfo[pFile]
+		pFContents := nPInfo.PluginsAttributes[pFile]
 		log.Printf("\nFile: %s \n%+v \n\n", pFile, pFContents)
 		if len(pFContents.Requires) == 0 {
 			dependencyMet[pFile] = true
@@ -316,7 +318,7 @@ func validateDependencies(nPInfo pluginmanager.Plugins) ([]string, error) {
 	for curLen != 0 {
 		pFile := notPlacedPlugins[0]
 		notPlacedPlugins = notPlacedPlugins[1:]
-		pDependencies := nPInfo[pFile].Requires
+		pDependencies := nPInfo.PluginsAttributes[pFile].Requires
 		log.Printf("Plugin %s dependencies: %+v\n", pFile, pDependencies)
 
 		dependencyMet[pFile] = true
@@ -359,8 +361,8 @@ func validateDependencies(nPInfo pluginmanager.Plugins) ([]string, error) {
 	return pluginOrder, nil
 }
 
-func executePluginCmd(statusCh chan<- map[string]*pluginmanager.RunStatus, p string, pluginsInfo pluginmanager.Plugins, failedDependency bool, pluginLogFile string) {
-	pInfo := pluginsInfo[p]
+func executePluginCmd(statusCh chan<- map[string]*pluginmanager.PluginStatus, p string, pluginsInfo *pluginmanager.Plugins, failedDependency bool, pluginLogFile string) {
+	pInfo := pluginsInfo.PluginsAttributes[p]
 	log.Printf("\nChannel: Plugin %s info: \n%+v\n", p, pInfo)
 	// TODO: Uncomment below UpdateGraph() once concurrency issue is
 	//  taken care, and remove the one from where executePluginCmd().
@@ -404,7 +406,7 @@ func executePluginCmd(statusCh chan<- map[string]*pluginmanager.RunStatus, p str
 		chLog.Println(myStatusMsg)
 		// graph.UpdateGraph(getPluginType(p), p, myStatus, "")
 		logutil.PrintNLog("%s: %s\n", pInfo.Description, myStatus)
-		statusCh <- map[string]*pluginmanager.RunStatus{p: {Status: myStatus}}
+		statusCh <- map[string]*pluginmanager.PluginStatus{p: {Status: myStatus}}
 		return
 	}
 
@@ -418,10 +420,10 @@ func executePluginCmd(statusCh chan<- map[string]*pluginmanager.RunStatus, p str
 	// INFO: https://stackoverflow.com/questions/69954944/capture-stdout-from-exec-command-line-by-line-and-also-pipe-to-os-stdout
 	iostdout, err := cmd.StdoutPipe()
 	if err != nil {
-		pStatus := pluginmanager.RunStatus{Status: pluginmanager.DStatusFail}
+		pStatus := pluginmanager.PluginStatus{Status: pluginmanager.DStatusFail}
 		log.Printf("Failed to execute plugin %s. Error: %s\n", p, err.Error())
 		logutil.PrintNLog("%s: %s\n", pInfo.Description, pluginmanager.DStatusFail)
-		statusCh <- map[string]*pluginmanager.RunStatus{p: &pStatus}
+		statusCh <- map[string]*pluginmanager.PluginStatus{p: &pStatus}
 		return
 	}
 	cmd.Stderr = cmd.Stdout
@@ -450,20 +452,20 @@ func executePluginCmd(statusCh chan<- map[string]*pluginmanager.RunStatus, p str
 		}
 	}()
 	log.Println("Stdout & Stderr:", stdOutErr)
-	pStatus := pluginmanager.RunStatus{StdOutErr: strings.Join(stdOutErr, "\n")}
+	pStatus := pluginmanager.PluginStatus{StdOutErr: stdOutErr}
 	if err != nil {
 		pStatus.Status = pluginmanager.DStatusFail
 		log.Printf("Failed to execute plugin %s. Error: %s\n", p, err.Error())
 		logutil.PrintNLog("%s: %s\n", pInfo.Description, pluginmanager.DStatusFail)
-		statusCh <- map[string]*pluginmanager.RunStatus{p: &pStatus}
+		statusCh <- map[string]*pluginmanager.PluginStatus{p: &pStatus}
 		return
 	}
 	pStatus.Status = pluginmanager.DStatusOk
 	logutil.PrintNLog("%s: %s\n", pInfo.Description, pluginmanager.DStatusOk)
-	statusCh <- map[string]*pluginmanager.RunStatus{p: &pStatus}
+	statusCh <- map[string]*pluginmanager.PluginStatus{p: &pStatus}
 }
 
-func executePlugins(psStatus *pluginmanager.PluginsStatus, nPInfo pluginmanager.Plugins, sequential bool) bool {
+func executePlugins(psStatus *pluginmanager.PluginTypeStatus, nPInfo *pluginmanager.Plugins, sequential bool) bool {
 	log.Println("Entering executePlugins")
 	defer log.Println("Exiting executePlugins")
 
@@ -487,17 +489,17 @@ func executePlugins(psStatus *pluginmanager.PluginsStatus, nPInfo pluginmanager.
 	os.Setenv("PM_PLUGIN_DIR", config.GetPluginsLibrary())
 
 	waitCount := map[string]int{}
-	for p := range nPInfo {
-		waitCount[p] = len(nPInfo[p].Requires)
-		log.Printf("%s plugin dependencies: %+v", p, nPInfo[p])
+	for p := range nPInfo.PluginsAttributes {
+		waitCount[p] = len(nPInfo.PluginsAttributes[p].Requires)
+		log.Printf("%s plugin dependencies: %+v", p, nPInfo.PluginsAttributes[p])
 	}
 
 	executingCnt := 0
-	exeCh := make(chan map[string]*pluginmanager.RunStatus)
+	exeCh := make(chan map[string]*pluginmanager.PluginStatus)
 	pluginIndexes := make(map[string]int)
 	failedDependency := make(map[string]bool)
-	for len(nPInfo) > 0 || executingCnt != 0 {
-		for p := range nPInfo {
+	for len(nPInfo.PluginsAttributes) > 0 || executingCnt != 0 {
+		for p := range nPInfo.PluginsAttributes {
 			// INFO: When all dependencies are met, plugin waitCount would be 0.
 			// 	When sequential execution is enforced, even if a plugin is ready
 			// 	 to run, make sure that only one plugin is running at time, by
@@ -505,13 +507,13 @@ func executePlugins(psStatus *pluginmanager.PluginsStatus, nPInfo pluginmanager.
 			// 	When sequential execution is not enforced, run plugins that are ready.
 			if waitCount[p] == 0 && (!sequential ||
 				(sequential && executingCnt == 0)) {
-				log.Printf("Plugin %s is ready for execution: %v.", p, nPInfo[p])
+				log.Printf("Plugin %s is ready for execution: %v.", p, nPInfo.PluginsAttributes[p])
 				waitCount[p]--
 
-				ps := pluginmanager.RunStatus{}
-				ps.PluginAttributes = *nPInfo[p]
-				*psStatus = append(*psStatus, ps)
-				pluginIndexes[p] = len(*psStatus) - 1
+				ps := &pluginmanager.PluginStatus{}
+				ps.PluginAttributes = nPInfo.PluginsAttributes[p]
+				psStatus.PluginsStatus = append(psStatus.PluginsStatus, ps)
+				pluginIndexes[p] = len(psStatus.PluginsStatus) - 1
 
 				// TODO: Remove below UpdateGraph() once concurrency issue is
 				//  taken care, and keep the one inside executePluginCmd().
@@ -537,7 +539,7 @@ func executePlugins(psStatus *pluginmanager.PluginsStatus, nPInfo pluginmanager.
 		for plugin, pStatus := range exeStatus {
 			log.Printf("%s status: %v", plugin, pStatus.Status)
 			pIdx := pluginIndexes[plugin]
-			ps := *psStatus
+			ps := psStatus.PluginsStatus
 			ps[pIdx].Status = pStatus.Status
 			ps[pIdx].StdOutErr = pStatus.StdOutErr
 			graph.UpdateGraph(getPluginType(plugin), plugin, pStatus.Status, "")
@@ -545,7 +547,7 @@ func executePlugins(psStatus *pluginmanager.PluginsStatus, nPInfo pluginmanager.
 				retStatus = false
 			}
 
-			for _, rby := range nPInfo[plugin].RequiredBy {
+			for _, rby := range nPInfo.PluginsAttributes[plugin].RequiredBy {
 				if pStatus.Status == pluginmanager.DStatusFail ||
 					pStatus.Status == pluginmanager.DStatusSkip {
 					// TODO: When "Wants" and "WantedBy" options are supported similar to
@@ -556,7 +558,7 @@ func executePlugins(psStatus *pluginmanager.PluginsStatus, nPInfo pluginmanager.
 				}
 				waitCount[rby]--
 			}
-			delete(nPInfo, plugin)
+			delete(nPInfo.PluginsAttributes, plugin)
 		}
 		// TODO: Remove below GenerateGraph() once concurrency issue is taken
 		//  care. Refer "TODO Graph" for more details.
@@ -573,7 +575,7 @@ func List(pluginType string, options map[string]string) error {
 	}
 	nPInfo := normalizePluginsInfo(pluginsInfo)
 
-	err = graph.InitGraph(pluginType, nPInfo, options)
+	err = graph.InitGraph(pluginType, nPInfo.PluginsAttributes, options)
 	if err != nil {
 		return err
 	}
@@ -660,7 +662,7 @@ func RegisterCommandOptions(progname string) {
 }
 
 // Run the specified plugin type plugins.
-func Run(result *pluginmanager.RunAllStatus, pluginType string, options map[string]string) error {
+func Run(result *pluginmanager.PluginTypeStatus, pluginType string, options map[string]string) error {
 	result.Type = pluginType
 	status := true
 
@@ -680,9 +682,9 @@ func Run(result *pluginmanager.RunAllStatus, pluginType string, options map[stri
 		return err
 	}
 	nPInfo := normalizePluginsInfo(pluginsInfo)
-	graph.InitGraph(pluginType, nPInfo, options)
+	graph.InitGraph(pluginType, nPInfo.PluginsAttributes, options)
 
-	status = executePlugins(&result.Plugins, nPInfo, *CmdOptions.sequential)
+	status = executePlugins(result, nPInfo, *CmdOptions.sequential)
 	if !status {
 		result.Status = pluginmanager.DStatusFail
 		err = fmt.Errorf("Running %s plugins: %s", pluginType, pluginmanager.DStatusFail)
@@ -804,15 +806,15 @@ func listHandler(w http.ResponseWriter, r *http.Request) {
 			}
 			var pAR pluginmanager.ActionRollback
 			json.Unmarshal([]byte(ar), &pAR)
-			fmt.Printf("Unmarshal(%+v) = %+v\n", userWorkflow, pAR)
-			workflow = append(workflow, pAR)
+			fmt.Printf("Unmarshal(%+v) = %+v\n", userWorkflow, &pAR)
+			workflow.ActionRollbacks = append(workflow.ActionRollbacks, &pAR)
 		}
-		if len(workflow) > 0 {
-			json.Unmarshal([]byte(userWorkflow[0]), &workflow)
-			fmt.Printf("Received workflow request: %+v\n", workflow)
+		if len(workflow.ActionRollbacks) > 0 {
+			json.Unmarshal([]byte(userWorkflow[0]), &workflow.ActionRollbacks)
+			fmt.Printf("Received workflow request: %+v\n", &workflow)
 
 			workflowFunc := func() {
-				err = triggerWorkflow("list", workflow)
+				err = triggerWorkflow("list", &workflow)
 			}
 			go workflowFunc()
 		}
@@ -881,7 +883,7 @@ func runHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		fmt.Printf("Plugin Types(%d): %+v\n", len(pluginTypes), pluginTypes)
 
-		pmstatus := pluginmanager.RunAllStatus{}
+		pmstatus := pluginmanager.PluginTypeStatus{}
 
 		runFunc := func() {
 			// fmt.Println("Inside runFunc routine...")
@@ -913,15 +915,17 @@ func runHandler(w http.ResponseWriter, r *http.Request) {
 			}
 			var pAR pluginmanager.ActionRollback
 			json.Unmarshal([]byte(ar), &pAR)
-			fmt.Printf("Unmarshal(%+v) = %+v\n", userWorkflow, pAR)
-			workflow = append(workflow, pAR)
+			// pAR := &pluginmanager.ActionRollback{}
+			// json.Unmarshal([]byte(ar), pAR)
+			fmt.Printf("Unmarshal(%+v) = %+v\n", userWorkflow, &pAR)
+			workflow.ActionRollbacks = append(workflow.ActionRollbacks, &pAR)
 		}
-		if len(workflow) > 0 {
-			json.Unmarshal([]byte(userWorkflow[0]), &workflow)
-			fmt.Printf("Received workflow request: %+v\n", workflow)
+		if len(workflow.ActionRollbacks) > 0 {
+			json.Unmarshal([]byte(userWorkflow[0]), &workflow.ActionRollbacks)
+			fmt.Printf("Received workflow request: %+v\n", workflow.ActionRollbacks)
 
 			workflowFunc := func() {
-				triggerWorkflow("run", workflow)
+				triggerWorkflow("run", &workflow)
 			}
 			go workflowFunc()
 		}
@@ -938,18 +942,18 @@ func runHandler(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func triggerWorkflow(cmd string, workflow pluginmanager.Workflow) error {
+func triggerWorkflow(cmd string, workflow *pluginmanager.Workflow) error {
 	log.Println("Entering triggerWorkflow")
 	defer log.Println("Exiting triggerWorkflow")
 
-	for idx, actionRollback := range workflow {
+	for idx, actionRollback := range workflow.ActionRollbacks {
 		pluginType := actionRollback.Action
 		err := List(pluginType, map[string]string{"TYPE": "ACTION"})
 		if err != nil {
 			logutil.PrintNLogError("Error: %s", err.Error())
 		}
 		if idx > 0 {
-			graph.ConnectGraph(workflow[idx-1].Action, pluginType)
+			graph.ConnectGraph(workflow.ActionRollbacks[idx-1].Action, pluginType)
 		}
 
 		rollbackPluginType := actionRollback.Rollback
@@ -961,8 +965,8 @@ func triggerWorkflow(cmd string, workflow pluginmanager.Workflow) error {
 			graph.ConnectGraph(pluginType, rollbackPluginType)
 			// NOTE: Some actions may not have rollback plugin-type. In those cases, instead of connecting current rollback to its immediate previous rollback plugin, connect to the next available previous rollback plugin-type.
 			for rIdx := idx; rIdx > 0; rIdx-- {
-				if workflow[rIdx-1].Rollback != "" {
-					graph.ConnectGraph(rollbackPluginType, workflow[rIdx-1].Rollback)
+				if workflow.ActionRollbacks[rIdx-1].Rollback != "" {
+					graph.ConnectGraph(rollbackPluginType, workflow.ActionRollbacks[rIdx-1].Rollback)
 					break
 				}
 			}
@@ -979,17 +983,18 @@ func triggerWorkflow(cmd string, workflow pluginmanager.Workflow) error {
 
 	case "run":
 		runRollback := false
-		workflowCnt := len(workflow)
+		workflowCnt := len(workflow.ActionRollbacks)
 		log.Printf("Number of actions to run: %+v\n", workflowCnt)
 		workflowStatus := pluginmanager.WorkflowStatus{}
-		workflowStatus.Action = make([]pluginmanager.RunAllStatus, workflowCnt)
-		workflowStatus.Rollback = make([]pluginmanager.RunAllStatus, workflowCnt)
+		workflowStatus.Action = make([]*pluginmanager.PluginTypeStatus, workflowCnt)
+		workflowStatus.Rollback = make([]*pluginmanager.PluginTypeStatus, workflowCnt)
 		idx := 0
-		var actionRollback pluginmanager.ActionRollback
-		for idx, actionRollback = range workflow {
+		var actionRollback *pluginmanager.ActionRollback
+		for idx, actionRollback = range workflow.ActionRollbacks {
 			pluginType := actionRollback.Action
 			fmt.Printf("\nRunning action plugins: %v [%d/%d]...\n", pluginType, idx+1, workflowCnt)
-			err := Run(&workflowStatus.Action[idx], pluginType, map[string]string{"TYPE": "ACTION"})
+			workflowStatus.Action[idx] = &pluginmanager.PluginTypeStatus{}
+			err := Run(workflowStatus.Action[idx], pluginType, map[string]string{"TYPE": "ACTION"})
 			if err != nil {
 				logutil.PrintNLogError("%s", err.Error())
 				workflowStatus.Status = pluginmanager.DStatusFail
@@ -1006,9 +1011,10 @@ func triggerWorkflow(cmd string, workflow pluginmanager.Workflow) error {
 			totalRollbackPluginTypes2Run := idx + 1
 			log.Printf("Number of rollback plugin-types to run: %+v\n", totalRollbackPluginTypes2Run)
 			for ; idx >= 0; idx-- {
-				rollbackPluginType := workflow[idx].Rollback
+				rollbackPluginType := workflow.ActionRollbacks[idx].Rollback
 				fmt.Printf("\nRunning rollback plugins: %v [%d/%d]...\n", rollbackPluginType, totalRollbackPluginTypes2Run-idx, totalRollbackPluginTypes2Run)
-				err := Run(&workflowStatus.Rollback[idx], rollbackPluginType, map[string]string{"TYPE": "ROLLBACK"})
+				workflowStatus.Rollback[idx] = &pluginmanager.PluginTypeStatus{}
+				err := Run(workflowStatus.Rollback[idx], rollbackPluginType, map[string]string{"TYPE": "ROLLBACK"})
 				if err != nil {
 					logutil.PrintNLogError("Error: %s", err.Error())
 					workflowStatus.Rollback[idx].Status = pluginmanager.DStatusFail
@@ -1016,7 +1022,7 @@ func triggerWorkflow(cmd string, workflow pluginmanager.Workflow) error {
 				}
 			}
 		}
-		output.Write(workflowStatus)
+		output.Write(&workflowStatus)
 		if runRollback {
 			return logutil.PrintNLogError("Running Workflow: %v",
 				pluginmanager.DStatusFail)
@@ -1131,10 +1137,10 @@ func ScanCommandOptions(options map[string]interface{}) error {
 	var err error
 	if *CmdOptions.workflowPtr != "" {
 		var workflow pluginmanager.Workflow
-		json.Unmarshal([]byte(*CmdOptions.workflowPtr), &workflow)
-		log.Printf("Received workflow request: %+v\n", workflow)
+		json.Unmarshal([]byte(*CmdOptions.workflowPtr), &workflow.ActionRollbacks)
+		log.Printf("Received workflow request: %+v\n", &workflow)
 
-		err = triggerWorkflow(cmd, workflow)
+		err = triggerWorkflow(cmd, &workflow)
 	}
 
 	if *CmdOptions.pluginTypePtr != "" {
@@ -1146,9 +1152,9 @@ func ScanCommandOptions(options map[string]interface{}) error {
 				graph.GetImagePath())
 
 		case "run":
-			pmstatus := pluginmanager.RunAllStatus{}
+			pmstatus := pluginmanager.PluginTypeStatus{}
 			err = Run(&pmstatus, pluginType, nil)
-			output.Write(pmstatus)
+			output.Write(&pmstatus)
 		}
 	}
 	return err
