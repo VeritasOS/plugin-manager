@@ -21,26 +21,24 @@
     <div>
         <form>
             <div class="mb-1">
-                <label for="plugin-type"><b>Type</b></label>
-                <input type="text" name="type" id="plugin-type" placeholder="Comma separated list of plugin types."
-                    class="form-control" />
+                <label for="library">library</label>
+                <input type="text" name="library" id="library" value="sample/library" class="form-control" />
             </div>
             <div class="mb-2">
-                <label for="workflow"><b>Workflow</b></label>
+                <label for="plugin-type">Type</label>
+                <input type="text" name="type" id="plugin-type" placeholder="Comma separated list of plugin types." class="form-control" />
+            </div>
+            <div class="mb-3">
+                <label for="workflow">Workflow</label>
                 <input type="text" name="workflow" id="workflow" class="form-control"
                     value='{"action":"prereboot", "rollback":"postreboot"}' />
             </div>
-            <div class="mb-3">
-                <label for="library"><b>Library</b></label>
-                <input type="text" name="library" id="library" value="sample/library" class="form-control" />
-            </div>
 
-            <div class="mb-4">
-                <label for="env"><b>Parameters</b>
-                    <p><i>Environment variables - one per line:</i>
+            <div>
+                <label for="env"> <b>Parameters</b>
+                    <p>(ENV variables to be set - one per line):
                 </label><br> </p>
-                <textarea id="env" name="env" rows="10" cols="100" placeholder="USERNAME=admin_user
-PASSWORD=password
+                <textarea id="env" name="env" rows="10" cols="100" placeholder="Required environment variables. Ex:
 TEST_PLUGIN_EXIT_STATUS=1"></textarea>
             </div>
 
@@ -61,7 +59,13 @@ TEST_PLUGIN_EXIT_STATUS=1"></textarea>
     </div>
 
     <div id="pm-response">
+        <!-- <h1 class="mb-4">Response</h1> -->
     </div>
+
+    <!-- View Log Directory contents -->
+    <!-- <div class="col-12" id="log-dir" hx-boost=true>
+        <div hx-get="/log" hx-trigger="every 10s"></div>
+    </div> -->
 
 </body>
 

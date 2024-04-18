@@ -870,24 +870,18 @@ func runHandler(w http.ResponseWriter, r *http.Request) {
 
 		var workflow pluginmanager.Workflow
 		for _, ar := range userWorkflow {
-			ar = strings.TrimSpace(ar)
-			if ar == "" {
-				continue
-			}
 			var pAR pluginmanager.ActionRollback
 			json.Unmarshal([]byte(ar), &pAR)
 			fmt.Printf("Unmarshal(%+v) = %+v\n", userWorkflow, pAR)
 			workflow = append(workflow, pAR)
 		}
-		if len(workflow) > 0 {
-			json.Unmarshal([]byte(userWorkflow[0]), &workflow)
-			fmt.Printf("Received workflow request: %+v\n", workflow)
+		json.Unmarshal([]byte(userWorkflow[0]), &workflow)
+		fmt.Printf("Received workflow request: %+v\n", workflow)
 
-			workflowFunc := func() {
-				triggerWorkflow("run", workflow)
-			}
-			go workflowFunc()
+		workflowFunc := func() {
+			triggerWorkflow("run", workflow)
 		}
+		go workflowFunc()
 	}
 
 	webPath := os.Getenv("PM_WEB")
