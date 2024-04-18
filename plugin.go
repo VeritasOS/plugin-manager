@@ -578,6 +578,8 @@ func List(pluginType string) error {
 		return err
 	}
 
+	logutil.PrintNLog("The list of plugins are mapped in %s\n",
+		graph.GetImagePath())
 	return nil
 }
 
@@ -964,8 +966,6 @@ func triggerWorkflow(cmd string, workflow pluginmanager.Workflow) error {
 	switch cmd {
 	case "list":
 		// List already done above.
-		logutil.PrintNLog("The list of plugins are mapped in %s\n",
-			graph.GetImagePath())
 		return nil
 
 	case "run":
@@ -982,7 +982,7 @@ func triggerWorkflow(cmd string, workflow pluginmanager.Workflow) error {
 			fmt.Printf("\nRunning action plugins: %v [%d/%d]...\n", pluginType, idx+1, workflowCnt)
 			err := Run(&workflowStatus.Action[idx], pluginType)
 			if err != nil {
-				logutil.PrintNLogError("%s", err.Error())
+				logutil.PrintNLogError("Error: %s", err.Error())
 				workflowStatus.Status = pluginmanager.DStatusFail
 				workflowStatus.Action[idx].Status = pluginmanager.DStatusFail
 				workflowStatus.Action[idx].StdOutErr = err.Error()
@@ -992,7 +992,6 @@ func triggerWorkflow(cmd string, workflow pluginmanager.Workflow) error {
 		}
 
 		if runRollback {
-			fmt.Println()
 			logutil.PrintNLog("Starting rollback...")
 			totalRollbackPluginTypes2Run := idx + 1
 			log.Printf("Number of rollback plugin-types to run: %+v\n", totalRollbackPluginTypes2Run)
@@ -1008,10 +1007,6 @@ func triggerWorkflow(cmd string, workflow pluginmanager.Workflow) error {
 			}
 		}
 		output.Write(workflowStatus)
-		if runRollback {
-			return logutil.PrintNLogError("Running Workflow: %v",
-				pluginmanager.DStatusFail)
-		}
 	}
 
 	return nil
@@ -1112,37 +1107,37 @@ func ScanCommandOptions(options map[string]interface{}) error {
 		RegisterHandlers(*CmdOptions.portPtr)
 	}
 
-	log.Printf("plugin-type: %+v, workflow: %+v\n",
-		*CmdOptions.pluginTypePtr, *CmdOptions.workflowPtr)
+	fmt.Printf("plugin-type: %+v, workflow: %+v\n", *CmdOptions.pluginTypePtr, *CmdOptions.workflowPtr)
 	if *CmdOptions.pluginTypePtr != "" && *CmdOptions.workflowPtr != "" {
 		log.Fatalln("Only one of either 'plugin-type' or 'workflow' argument can be specified. Check usage for details...")
 		CmdOptions.RunCmd.Usage()
 	}
 
-	var err error
 	if *CmdOptions.workflowPtr != "" {
 		var workflow pluginmanager.Workflow
 		json.Unmarshal([]byte(*CmdOptions.workflowPtr), &workflow)
-		log.Printf("Received workflow request: %+v\n", workflow)
+		fmt.Printf("Received workflow request: %+v\n", workflow)
 
-		err = triggerWorkflow(cmd, workflow)
+		triggerWorkflow(cmd, workflow)
 	}
 
 	if *CmdOptions.pluginTypePtr != "" {
 		pluginType := *CmdOptions.pluginTypePtr
+		var err error
 		switch cmd {
 		case "list":
 			err = List(pluginType)
-			logutil.PrintNLog("The list of plugins are mapped in %s\n",
-				graph.GetImagePath())
 
 		case "run":
 			pmstatus := pluginmanager.RunAllStatus{}
 			err = Run(&pmstatus, pluginType)
 			output.Write(pmstatus)
 		}
+		if err != nil {
+			return err
+		}
 	}
-	return err
+	return nil
 }
 
 // Usage of Plugin Manager (pm) command.
