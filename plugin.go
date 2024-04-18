@@ -850,10 +850,10 @@ func runHandler(w http.ResponseWriter, r *http.Request) {
 			for _, line := range lines {
 				line := strings.TrimSpace(line)
 				fmt.Printf("Line (%+v): %v\n", len(line), line)
-				envVar, envVal, status := strings.Cut(line, "=")
+				env_var, env_val, status := strings.Cut(line, "=")
 				if status {
-					fmt.Println("ENV: ", envVar, "=", envVal)
-					os.Setenv(envVar, envVal)
+					fmt.Println("ENV: ", env_var, "=", env_val)
+					os.Setenv(env_var, env_val)
 				}
 			}
 		}

@@ -42,13 +42,11 @@ type PluginsStatus []RunStatus
 // Workflow indicates action and rollback plugin types to be run.
 type Workflow []ActionRollback
 
-// ActionRollback basically contains plugin-type info for Action and Rollback.
 type ActionRollback struct {
 	Action   string
 	Rollback string `yaml:",omitempty"`
 }
 
-// WorkflowStatus contains status info for Workflow.
 type WorkflowStatus struct {
 	Status    string
 	StdOutErr string
@@ -58,7 +56,6 @@ type WorkflowStatus struct {
 	Rollback []RunAllStatus `yaml:",omitempty"`
 }
 
-// ActionRollbackStatus contains run status of Action, and contains Rollback plugins' status if specified in case of Action's failure.
 type ActionRollbackStatus struct {
 	Action   RunAllStatus `yaml:",omitempty"`
 	Rollback RunAllStatus `yaml:",omitempty"`

@@ -805,7 +805,7 @@ func Test_executePlugins(t *testing.T) {
 				func(t *testing.T) {
 					npInfo := normalizePluginsInfo(tt.pluginInfo)
 					graph.ResetGraph()
-					graph.InitGraph(pluginType, npInfo, nil)
+					graph.InitGraph(pluginType, npInfo)
 					var result pluginmanager.PluginsStatus
 					res := executePlugins(&result, npInfo, tt.sequential)
 					// t.Logf("res: %+v, expected: %v", res, tt.want.returnStatus)
