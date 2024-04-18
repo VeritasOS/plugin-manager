@@ -336,7 +336,7 @@ $
 ### Running workflow
 
 ```bash
-./bin/pm run --workflow '[{"action": "preupgrade", "rollback": "requiredby"}, {"action": "postreboot", "rollback": "prereboot"}]' -library sample/library/
+./bin/pm run --workflow '[{"action": "test1", "rollback": "test1-rollback"}, {"action": "test2", "rollback": "test2-rollback"}]'
 ```
 
 ## Plugin Manager Web Server
