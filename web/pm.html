@@ -26,20 +26,11 @@
             </div>
             <div class="mb-2">
                 <label for="plugin-type">Type</label>
-                <input type="text" name="type" id="plugin-type" placeholder="Comma separated list of plugin types." class="form-control" />
+                <input type="text" name="type" id="plugin-type" class="form-control" />
             </div>
             <div class="mb-3">
                 <label for="workflow">Workflow</label>
-                <input type="text" name="workflow" id="workflow" class="form-control"
-                    value='{"action":"prereboot", "rollback":"postreboot"}' />
-            </div>
-
-            <div>
-                <label for="env"> <b>Parameters</b>
-                    <p>(ENV variables to be set - one per line):
-                </label><br> </p>
-                <textarea id="env" name="env" rows="10" cols="100" placeholder="Required environment variables. Ex:
-TEST_PLUGIN_EXIT_STATUS=1"></textarea>
+                <input type="text" name="workflow" id="workflow" class="form-control" value='{"action":"prereboot", "rollback":"postreboot"}'/>
             </div>
 
             <button type="List" hx-post="/list" hx-target="#pm-response" hx-swap="innerHTML"
