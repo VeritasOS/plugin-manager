@@ -644,7 +644,7 @@ func Test_executePlugins(t *testing.T) {
 							Requires:    []string{},
 						},
 						Status:    "Succeeded",
-						StdOutErr: []string{`Running A...`},
+						StdOutErr: `Running A...`,
 					},
 					pluginmanager.RunStatus{
 						PluginAttributes: pluginmanager.PluginAttributes{
@@ -655,7 +655,7 @@ func Test_executePlugins(t *testing.T) {
 							Requires:    []string{"A/a.test"},
 						},
 						Status:    "Succeeded",
-						StdOutErr: []string{`"Running D..."`},
+						StdOutErr: `"Running D..."`,
 					},
 				},
 			},
@@ -702,7 +702,7 @@ func Test_executePlugins(t *testing.T) {
 							Requires:    []string{},
 						},
 						Status:    "Succeeded",
-						StdOutErr: []string{"Running A...!\"\""},
+						StdOutErr: "Running A...!\"\"",
 					},
 					pluginmanager.RunStatus{
 						PluginAttributes: pluginmanager.PluginAttributes{
@@ -713,7 +713,7 @@ func Test_executePlugins(t *testing.T) {
 							Requires:    []string{"A/a.test"},
 						},
 						Status:    "Succeeded",
-						StdOutErr: []string{"\"Running D...!\"\""},
+						StdOutErr: "\"Running D...!\"\"",
 					},
 				},
 			},
@@ -742,7 +742,7 @@ func Test_executePlugins(t *testing.T) {
 							Requires:   []string{},
 						},
 						Status:    "Succeeded",
-						StdOutErr: []string{"\"Running A...!\""},
+						StdOutErr: "\"Running A...!\"",
 					},
 					{
 						PluginAttributes: pluginmanager.PluginAttributes{
@@ -753,7 +753,7 @@ func Test_executePlugins(t *testing.T) {
 							Requires:    []string{"A/a.test"},
 						},
 						Status:    "Succeeded",
-						StdOutErr: []string{"\"Running D...!\""},
+						StdOutErr: "\"Running D...!\"",
 					},
 				},
 			},
