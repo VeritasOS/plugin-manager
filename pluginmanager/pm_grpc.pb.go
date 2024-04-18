@@ -26,7 +26,7 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type PMClient interface {
-	Run(ctx context.Context, in *RunRequest, opts ...grpc.CallOption) (*RunResponse, error)
+	Run(ctx context.Context, in *RunRequest, opts ...grpc.CallOption) (*PluginTypeStatus, error)
 }
 
 type pMClient struct {
@@ -37,8 +37,8 @@ func NewPMClient(cc grpc.ClientConnInterface) PMClient {
 	return &pMClient{cc}
 }
 
-func (c *pMClient) Run(ctx context.Context, in *RunRequest, opts ...grpc.CallOption) (*RunResponse, error) {
-	out := new(RunResponse)
+func (c *pMClient) Run(ctx context.Context, in *RunRequest, opts ...grpc.CallOption) (*PluginTypeStatus, error) {
+	out := new(PluginTypeStatus)
 	err := c.cc.Invoke(ctx, PM_Run_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -50,7 +50,7 @@ func (c *pMClient) Run(ctx context.Context, in *RunRequest, opts ...grpc.CallOpt
 // All implementations must embed UnimplementedPMServer
 // for forward compatibility
 type PMServer interface {
-	Run(context.Context, *RunRequest) (*RunResponse, error)
+	Run(context.Context, *RunRequest) (*PluginTypeStatus, error)
 	mustEmbedUnimplementedPMServer()
 }
 
@@ -58,7 +58,7 @@ type PMServer interface {
 type UnimplementedPMServer struct {
 }
 
-func (UnimplementedPMServer) Run(context.Context, *RunRequest) (*RunResponse, error) {
+func (UnimplementedPMServer) Run(context.Context, *RunRequest) (*PluginTypeStatus, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Run not implemented")
 }
 func (UnimplementedPMServer) mustEmbedUnimplementedPMServer() {}

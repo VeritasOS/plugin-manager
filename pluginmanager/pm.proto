@@ -7,11 +7,11 @@ import "pluginmanager/plugin.proto";
 
 
 service PM {
-	rpc Run (RunRequest) returns (RunResponse);
+	rpc Run (RunRequest) returns (plugin.PluginTypeStatus);
 }
 
 message RunRequest {
-    string PluginsLibrary = 1;
+    string Library = 1;
     // oneof {
         string Type = 2;
     //     string Workflow = 3;
@@ -20,11 +20,11 @@ message RunRequest {
 }
 
 // RunResponse is the pm run status.
-message RunResponse {
-    string Type = 1;
-    repeated plugin.PluginStatus PluginsStatus = 2;
-    string Status = 3;
-    string StdOutErr = 4;
-	// TODO: Add Percentage to get no. of pending vs. completed run of plugins.
-    // string Percentage = 5;
-}
+// message RunResponse {
+//     string Type = 1;
+//     repeated plugin.PluginStatus PluginsStatus = 2;
+//     string Status = 3;
+//     string StdOutErr = 4;
+// 	// TODO: Add Percentage to get no. of pending vs. completed run of plugins.
+//     // string Percentage = 5;
+// }
