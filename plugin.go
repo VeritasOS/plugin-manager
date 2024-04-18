@@ -661,6 +661,13 @@ func RegisterCommandOptions(progname string) {
 
 }
 
+func Workflow(result *pluginmanager.RunAllStatus, workflow string) error {
+	wf := &pluginmanager.Workflow{}
+	json.Unmarshal([]byte(workflow), wf)
+	log.Printf("Workflow: %+v", wf)
+	return nil
+}
+
 // Run the specified plugin type plugins.
 func Run(result *pluginmanager.RunAllStatus, pluginType string) error {
 	result.Type = pluginType
@@ -970,24 +977,23 @@ func triggerWorkflow(cmd string, workflow pluginmanager.Workflow) error {
 
 	case "run":
 		runRollback := false
-		workflowCnt := len(workflow)
-		log.Printf("Number of actions to run: %+v\n", workflowCnt)
-		workflowStatus := pluginmanager.WorkflowStatus{}
-		workflowStatus.Action = make([]pluginmanager.RunAllStatus, workflowCnt)
-		workflowStatus.Rollback = make([]pluginmanager.RunAllStatus, workflowCnt)
+		pmstatus := pluginmanager.RunAllStatus{}
+
 		idx := 0
 		var actionRollback pluginmanager.ActionRollback
+		totalPluginTypes := len(workflow)
+		log.Printf("Number of action plugin-types to run: %+v\n", totalPluginTypes)
 		for idx, actionRollback = range workflow {
 			pluginType := actionRollback.Action
-			fmt.Printf("\nRunning action plugins: %v [%d/%d]...\n", pluginType, idx+1, workflowCnt)
-			err := Run(&workflowStatus.Action[idx], pluginType)
+			fmt.Printf("\nRunning action plugins: %v [%d/%d]...\n", pluginType, idx+1, totalPluginTypes)
+			err := Run(&pmstatus, pluginType)
 			if err != nil {
 				logutil.PrintNLogError("Error: %s", err.Error())
-				workflowStatus.Status = pluginmanager.DStatusFail
-				workflowStatus.Action[idx].Status = pluginmanager.DStatusFail
-				workflowStatus.Action[idx].StdOutErr = err.Error()
 				runRollback = true
 				break
+			}
+			if idx > 0 {
+				graph.ConnectGraph(workflow[idx-1].Action, pluginType)
 			}
 		}
 
@@ -998,15 +1004,12 @@ func triggerWorkflow(cmd string, workflow pluginmanager.Workflow) error {
 			for ; idx >= 0; idx-- {
 				rollbackPluginType := workflow[idx].Rollback
 				fmt.Printf("\nRunning rollback plugins: %v [%d/%d]...\n", rollbackPluginType, totalRollbackPluginTypes2Run-idx, totalRollbackPluginTypes2Run)
-				err := Run(&workflowStatus.Rollback[idx], rollbackPluginType)
+				err := Run(&pmstatus, rollbackPluginType)
 				if err != nil {
 					logutil.PrintNLogError("Error: %s", err.Error())
-					workflowStatus.Rollback[idx].Status = pluginmanager.DStatusFail
-					workflowStatus.Rollback[idx].StdOutErr = err.Error()
 				}
 			}
 		}
-		output.Write(workflowStatus)
 	}
 
 	return nil

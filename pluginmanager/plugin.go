@@ -46,17 +46,3 @@ type ActionRollback struct {
 	Action   string
 	Rollback string `yaml:",omitempty"`
 }
-
-type WorkflowStatus struct {
-	Status    string
-	StdOutErr string
-	// TODO: Add Percentage to get no. of pending vs. completed run of plugins.
-	// ActionRollbacks []ActionRollbackStatus `yaml:",omitempty"`
-	Action   []RunAllStatus `yaml:",omitempty"`
-	Rollback []RunAllStatus `yaml:",omitempty"`
-}
-
-type ActionRollbackStatus struct {
-	Action   RunAllStatus `yaml:",omitempty"`
-	Rollback RunAllStatus `yaml:",omitempty"`
-}
