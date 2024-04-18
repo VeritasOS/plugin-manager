@@ -210,11 +210,6 @@ func ConnectGraph(source, target string) error {
 	sourceNode := sourceSB.FirstNode()
 	targetNode := targetSB.LastNode()
 
-	if sourceNode == nil || targetNode == nil {
-		logutil.PrintNLogWarning("No node exists yet!")
-		return nil
-	}
-
 	log.Printf("Connecting %v to %v", sourceNode.Name(), targetNode.Name())
 	edge, err := graph1.CreateEdge("", sourceNode, targetNode)
 	if err != nil {
