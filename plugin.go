@@ -785,7 +785,7 @@ func listHandler(w http.ResponseWriter, r *http.Request) {
 					return
 				}
 				if idx > 0 {
-					graph.ConnectGraph(pluginTypes[idx-1], pluginType)
+					graph.ConnectGraph(pluginTypes[idx-1], pluginType, nil)
 				}
 			}
 		}
@@ -893,7 +893,7 @@ func runHandler(w http.ResponseWriter, r *http.Request) {
 					return
 				}
 				if idx > 0 {
-					graph.ConnectGraph(pluginTypes[idx-1], pluginType)
+					graph.ConnectGraph(pluginTypes[idx-1], pluginType, nil)
 				}
 			}
 		}
@@ -949,7 +949,7 @@ func triggerWorkflow(cmd string, workflow pluginmanager.Workflow) error {
 			logutil.PrintNLogError("Error: %s", err.Error())
 		}
 		if idx > 0 {
-			graph.ConnectGraph(workflow[idx-1].Action, pluginType)
+			graph.ConnectGraph(workflow[idx-1].Action, pluginType, nil)
 		}
 
 		rollbackPluginType := actionRollback.Rollback
@@ -958,11 +958,11 @@ func triggerWorkflow(cmd string, workflow pluginmanager.Workflow) error {
 			if err != nil {
 				logutil.PrintNLogError("Error: %s", err.Error())
 			}
-			graph.ConnectGraph(pluginType, rollbackPluginType)
+			graph.ConnectGraph(pluginType, rollbackPluginType, map[string]string{"connDir": "last-nodes"})
 			// NOTE: Some actions may not have rollback plugin-type. In those cases, instead of connecting current rollback to its immediate previous rollback plugin, connect to the next available previous rollback plugin-type.
 			for rIdx := idx; rIdx > 0; rIdx-- {
 				if workflow[rIdx-1].Rollback != "" {
-					graph.ConnectGraph(rollbackPluginType, workflow[rIdx-1].Rollback)
+					graph.ConnectGraph(rollbackPluginType, workflow[rIdx-1].Rollback, map[string]string{"connDir": "last-to-first-node"})
 					break
 				}
 			}
@@ -973,6 +973,7 @@ func triggerWorkflow(cmd string, workflow pluginmanager.Workflow) error {
 	switch cmd {
 	case "list":
 		// List already done above.
+		// graph.GenerateGraph() -- Crashes due to plugin channel updating at same time.
 		return nil
 
 	case "run":
@@ -992,9 +993,9 @@ func triggerWorkflow(cmd string, workflow pluginmanager.Workflow) error {
 				runRollback = true
 				break
 			}
-			if idx > 0 {
-				graph.ConnectGraph(workflow[idx-1].Action, pluginType)
-			}
+			// if idx > 0 {
+			// 	graph.ConnectGraph(workflow[idx-1].Action, pluginType)
+			// }
 		}
 
 		if runRollback {

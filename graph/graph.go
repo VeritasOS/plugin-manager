@@ -194,7 +194,7 @@ func UpdateGraph(subgraphName, plugin, status, url string) error {
 
 // ConnectGraph connects two subgraphs by an edge.
 // TODO: Currently no edge is created between clusters/subgraphs. The dot file is not showing any edge at all. May have to wait for graphviz update.
-func ConnectGraph(source, target string) error {
+func ConnectGraph(source, target string, options map[string]string) error {
 	log.Printf("Entering ConnectGraph(%+v, %+v)", source, target)
 	defer log.Println("Exiting ConnectGraph")
 
@@ -215,8 +215,25 @@ func ConnectGraph(source, target string) error {
 		return err
 	}
 
-	sourceNode := sourceSB.FirstNode()
-	targetNode := targetSB.LastNode()
+	// INFO: First node and Last node aren't exactly the one in the top or the bottom of the subgraph. It's just based on the entry in the dot file - the entry could be sorted, and the dependency order might have that first node in the center or at the bottom of the subgraph. So can't rely on LastNode() and FirstNode() functions.
+	// Default: Source cluster's last node to Target cluster's first node.
+	// Use case: Action1 to Action2 connection.
+	sourceNode := sourceSB.LastNode()
+	targetNode := targetSB.FirstNode()
+	if connDir, ok := options["connDir"]; ok {
+		switch connDir {
+		// "last-nodes": Source cluster's last node to Target cluster's last node.
+		// Use case: Action to Rollback connection.
+		case "last-nodes":
+			sourceNode = sourceSB.LastNode()
+			targetNode = targetSB.LastNode()
+		case "last-to-first-node":
+			// "last-to-first-node": Source cluster's first node to Target cluster's last node.
+			// Use case: Rollback2 to Rollback1 connection.
+			sourceNode = sourceSB.FirstNode()
+			targetNode = targetSB.LastNode()
+		}
+	}
 
 	if sourceNode == nil || targetNode == nil {
 		logutil.PrintNLogWarning("No node exists yet!")
