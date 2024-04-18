@@ -760,75 +760,38 @@ func listHandler(w http.ResponseWriter, r *http.Request) {
 
 	config.SetPluginsLibrary(library)
 
-	var err error
 	r.ParseForm()
 	// INFO: pluginTypes could be either a single element of comma or space separated list, or multiple elements - all in the array.
+	seps := " ,"
+	splitter := func(r rune) bool {
+		return strings.ContainsRune(seps, r)
+	}
 	userPluginTypes := r.PostForm["type"]
-	if len(userPluginTypes) > 0 {
-		// INFO: pluginTypes could be either a single element of comma or space separated list, or multiple elements - all in the array.
-		seps := " ,"
-		splitter := func(r rune) bool {
-			return strings.ContainsRune(seps, r)
-		}
-		pluginTypes := []string{}
-		for _, pt := range userPluginTypes {
-			pluginTypes = append(pluginTypes, strings.FieldsFunc(pt, splitter)...)
-		}
-		fmt.Printf("Plugin Types(%d): %+v\n", len(pluginTypes), pluginTypes)
-
-		listFunc := func() {
-			for idx, pluginType := range pluginTypes {
-				fmt.Printf("\nListing %v plugins...\n", pluginType)
-				err = List(pluginType)
-				if err != nil {
-					fmt.Fprintf(w, "Error: %s", err.Error())
-					return
-				}
-				if idx > 0 {
-					graph.ConnectGraph(pluginTypes[idx-1], pluginType)
-				}
-			}
-		}
-		go listFunc()
+	pluginTypes := []string{}
+	for _, pt := range userPluginTypes {
+		pluginTypes = append(pluginTypes, strings.FieldsFunc(pt, splitter)...)
 	}
-
-	userWorkflow := r.PostForm["workflow"]
-	if len(userWorkflow) > 0 {
-		fmt.Printf("User Workflow (%v): %+v\n", len(userWorkflow), userWorkflow)
-
-		var workflow pluginmanager.Workflow
-		for _, ar := range userWorkflow {
-			ar = strings.TrimSpace(ar)
-			if ar == "" {
-				continue
-			}
-			var pAR pluginmanager.ActionRollback
-			json.Unmarshal([]byte(ar), &pAR)
-			fmt.Printf("Unmarshal(%+v) = %+v\n", userWorkflow, pAR)
-			workflow = append(workflow, pAR)
+	fmt.Printf("Plugin Types(%d): %+v\n", len(pluginTypes), pluginTypes)
+	var err error
+	for idx, pluginType := range pluginTypes {
+		fmt.Println("Type:", pluginType)
+		err = List(pluginType)
+		if err != nil {
+			fmt.Fprintf(w, "Error: %s", err.Error())
 		}
-		if len(workflow) > 0 {
-			json.Unmarshal([]byte(userWorkflow[0]), &workflow)
-			fmt.Printf("Received workflow request: %+v\n", workflow)
-
-			workflowFunc := func() {
-				err = triggerWorkflow("list", workflow)
-			}
-			go workflowFunc()
+		if idx > 0 {
+			graph.ConnectGraph(pluginTypes[idx-1], pluginType)
 		}
 	}
-
-	if err != nil {
-		fmt.Fprintf(w, "Error: \n%v", err.Error())
-	} else {
-		webPath := os.Getenv("PM_WEB")
-		if webPath == "" {
-			webPath = "web"
+	if err == nil {
+		imgPath := graph.GetImagePath()
+		// fmt.Fprintf(w, "Image: %v", imgPath)
+		data, err := readFile(imgPath)
+		if err != nil {
+			fmt.Fprintf(w, "Error: \n%v", err.Error())
+		} else {
+			fmt.Fprintf(w, "%v", data)
 		}
-		tmpl := template.Must(template.ParseFiles(webPath + "/run-response.html"))
-		// Get relative path of log file from log dir, so that the handler can
-		// 	server it under "/log" path.
-		tmpl.Execute(w, "/log/"+filepath.Base(logutil.GetCurLogFile(true, false)))
 	}
 }
 
