@@ -14,140 +14,54 @@
 
 </head>
 
-<body class="container-fluid pt-3">
-    <style>
-        table {
-            font-family: arial, sans-serif;
-            border-collapse: collapse;
-            width: 100%;
-        }
+<body class="container">
 
-        td,
-        th {
-            border: 1px solid #dddddd;
-            text-align: left;
-            padding: 8px;
-        }
-
-        tr:nth-child(even) {
-            background-color: #D6EEEE;
-        }
-    </style>
-
-    <header style="border-bottom: 1px solid #000;">
-        <img style="margin-right: 10%;"
-            src="data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='184.232' height='36.152'%3e%3cpath data-name='Path 2' d='M65.43 9.827a2.472 2.472 0 0 1 2.472-2.472h10.712a4.12 4.12 0 0 1 1.476 7.965l-8.3 3.059a5.768 5.768 0 0 0-.468 10.723l15.53 7.049v-5.408l-13.585-6.007a.989.989 0 0 1 .08-1.838l8.514-2.962A9.064 9.064 0 0 0 78.614 2.41H67.903a7.416 7.416 0 0 0-7.416 7.416V35.37h4.944Z' fill='%23b1181e'/%3e%3cpath data-name='Rectangle 1' fill='%23b1181e' d='M92.668 2.412h4.945V35.37h-4.945z'/%3e%3cpath data-name='Path 3' d='m24.464 2.412-8.849 27.444a.824.824 0 0 1-1.566 0L5.2 2.412H0l9.346 28.972a5.768 5.768 0 0 0 10.971 0l9.346-28.972Z' fill='%23b1181e'/%3e%3cpath data-name='Path 4' d='m127.322 35.37 8.849-27.444a.824.824 0 0 1 1.567 0l8.85 27.445h5.2l-9.347-28.973a5.768 5.768 0 0 0-10.97 0l-9.346 28.973Z' fill='%23b1181e'/%3e%3cpath data-name='Path 5' d='M39.764 7.356h15.655V2.412H39.764a8.24 8.24 0 0 0-8.24 8.24v16.479a8.24 8.24 0 0 0 8.24 8.24h15.655v-4.944H39.764a3.3 3.3 0 0 1-3.3-3.3v-5.805h15.659V16.46H36.468v-5.808a3.3 3.3 0 0 1 3.296-3.296Z' fill='%23b1181e'/%3e%3cpath data-name='Path 6' d='M125.791 2.412h-24.059v4.944h9.559V35.37h4.943V7.356h9.557Z' fill='%23b1181e'/%3e%3cpath data-name='Path 7' d='M170.149 35.37a9.476 9.476 0 0 0 0-18.951h-8.24a4.532 4.532 0 1 1 0-9.064h16.067V2.412h-16.067a9.476 9.476 0 0 0 0 18.951h8.24a4.532 4.532 0 0 1 0 9.064h-16.068v4.944Z' fill='%23b1181e'/%3e%3cpath data-name='Path 8' d='M180.769 2.412h-.429V.4h-.716V0h1.866v.4h-.722Zm2.268-.59.152-.428.543-1.394h.5v2.412h-.408V1.233l.009-.412-.134.34-.482 1.251h-.358l-.483-1.251-.134-.34.009.412v1.179h-.412V0h.5l.545 1.394Z' fill='%23b1181e'/%3e%3c/svg%3e"
-            alt="Veritas Logo" class="img-fluid veritas-logo">
-        <h1 class="text-center" style="display: inline-block;"> Plugin Manager </h1>
-    </header>
-
-    <br>
+    <h1>Plugin Manager</h1>
+    <hr />
     <div>
-        <h2>README</h2>
-        <ol>
-            <li>
-                Specify one or more plugin-types on the left pane in Plugin Type or Workflow,
-                along with the path to plugins library.
-            </li>
-            <li>
-                Specify parameters in the textarea one per line in the format:
-                <b style="color: red;">Key=Value</b>
-            </li>
-            <li>View steps or start running...</li>
-        </ol>
-    </div>
-
-    <form>
-        <div class="row row-cols-2">
-            <div class="col">
-                <h2>Actions</h2>
-                <table class="table table-sm caption-top">
-                    <caption>1. Specify plugin-types or workflow info, along with path to plugins library... </caption>
-                    <tr>
-                        <!-- <th><h3>Actions</h3></th> -->
-                    </tr>
-
-                    <tr>
-                        <td>
-                            <label for="plugin-type"><b>Type</b></label>
-                        </td>
-                    </tr>
-
-                    <tr>
-                        <td>
-                            <div class="mb-1">
-                                <input type="text" name="type" id="plugin-type"
-                                    placeholder="Comma separated list of plugin types." class="form-control" />
-                            </div>
-                        </td>
-                    </tr>
-
-                    <tr>
-                        <td>
-                            <label for="workflow"><b>Workflow</b></label>
-                        </td>
-                    </tr>
-
-                    <tr>
-                        <td>
-                            <div class="mb-2">
-                                <input type="text" name="workflow" id="workflow" class="form-control"
-                                    value='[{"action":"preupgrade", "rollback":"requiredby"}, {"action":"postreboot", "rollback":"prereboot"}]' />
-                            </div>
-                        </td>
-                    </tr>
-
-                    <tr>
-                        <td>
-                            <label for="library"><b>Library</b></label>
-                        </td>
-                    </tr>
-
-                    <tr>
-                        <td>
-                            <div class="mb-3">
-                                <input type="text" name="library" id="library" value="sample/library"
-                                    class="form-control" />
-                            </div>
-                        </td>
-                    </tr>
-                </table>
+        <form>
+            <div class="mb-1">
+                <label for="plugin-type"><b>Type</b></label>
+                <input type="text" name="type" id="plugin-type" placeholder="Comma separated list of plugin types."
+                    class="form-control" />
+            </div>
+            <div class="mb-2">
+                <label for="workflow"><b>Workflow</b></label>
+                <input type="text" name="workflow" id="workflow" class="form-control"
+                    value='{"action":"prereboot", "rollback":"postreboot"}' />
+            </div>
+            <div class="mb-3">
+                <label for="library"><b>Library</b></label>
+                <input type="text" name="library" id="library" value="sample/library" class="form-control" />
             </div>
 
-            <div class="col">
-                <div class="mb-4">
-                    <label for="env">
-                        <h2>Parameters</h2>
-                        <i>2. Specify parameters in the textarea one per line in the format:
-                            <b style="color: red;">Key=Value</b>
-                        </i>
-                    </label><br> </p>
-                    <textarea class="form-control" id="env" name="env" rows="10" placeholder="USERNAME=admin_user
+            <div class="mb-4">
+                <label for="env"><b>Parameters</b>
+                    <p><i>Environment variables - one per line:</i>
+                </label><br> </p>
+                <textarea id="env" name="env" rows="10" cols="100" placeholder="USERNAME=admin_user
 PASSWORD=password
 TEST_PLUGIN_EXIT_STATUS=1"></textarea>
-                </div>
-
-                <div class="caption">3. View steps or start running... </div>
-
-                <button type="List" hx-post="/list" hx-target="#pm-response" hx-swap="innerHTML show:#resp-status:top"
-                    hx-indicator="#list-spinner" class="btn btn-primary">
-                    <span class="spinner-border spinner-border-sm htmx-indicator" id="list-spinner" role="status"
-                        aria-hidden="true"></span>
-                    List
-                </button>
-
-                <button type="Run" hx-post="/run" hx-target="#pm-response" hx-swap="innerHTML show:#resp-status:top"
-                    hx-indicator="#run-spinner" class="btn btn-primary">
-                    <span class="spinner-border spinner-border-sm htmx-indicator" id="run-spinner" role="status"
-                        aria-hidden="true"></span>
-                    Run
-                </button>
             </div>
-        </div>
-    </form>
 
-    <div></div>
-    <div id="pm-response"></div>
+            <button type="List" hx-post="/list" hx-target="#pm-response" hx-swap="innerHTML"
+                hx-indicator="#list-spinner" class="btn btn-primary">
+                <span class="spinner-border spinner-border-sm htmx-indicator" id="list-spinner" role="status"
+                    aria-hidden="true"></span>
+                List
+            </button>
+
+            <button type="Run" hx-post="/run" hx-target="#pm-response" hx-swap="innerHTML" hx-indicator="#run-spinner"
+                class="btn btn-primary">
+                <span class="spinner-border spinner-border-sm htmx-indicator" id="run-spinner" role="status"
+                    aria-hidden="true"></span>
+                Run
+            </button>
+        </form>
+    </div>
+
+    <div id="pm-response">
+    </div>
 
 </body>
 
