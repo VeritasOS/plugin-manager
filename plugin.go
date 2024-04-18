@@ -701,6 +701,15 @@ func RegisterHandlers(port int) {
 	http.HandleFunc("/list", listHandler)
 	http.HandleFunc("/run", runHandler)
 
+	// Loading web/js files
+	webPath := os.Getenv("PM_WEB")
+	if webPath == "" {
+		webPath = "web"
+	}
+	http.Handle("/web/",
+		http.StripPrefix("/web/",
+			http.FileServer(http.Dir(webPath))))
+
 	// Enable viewing of overall log file and plugin logs.
 	http.Handle("/log/",
 		http.StripPrefix("/log/",
