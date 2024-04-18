@@ -6,7 +6,6 @@ package pm
 
 import (
 	"bufio"
-	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
@@ -60,9 +59,6 @@ var CmdOptions struct {
 	// pluginDirPtr indicates the location of the plugins.
 	// 	NOTE: `pluginDir` is deprecated, use `library` instead.
 	pluginDirPtr *string
-
-	// workflowPtr indicates action and rollback plugin types to be run.
-	workflowPtr *string
 }
 
 // getPluginFiles retrieves the plugin files under each component matching
@@ -629,12 +625,6 @@ func RegisterCommandOptions(progname string) {
 		false,
 		"Enforce running plugins in sequential.",
 	)
-	CmdOptions.workflowPtr = CmdOptions.RunCmd.String(
-		"workflow",
-		"",
-		"List of action and optional rollback plugin types in JSON format.",
-	)
-
 	logutil.RegisterCommandOptions(CmdOptions.RunCmd, map[string]string{})
 	output.RegisterCommandOptions(CmdOptions.RunCmd, map[string]string{})
 
@@ -651,21 +641,8 @@ func RegisterCommandOptions(progname string) {
 		"",
 		"Path of the plugins library.",
 	)
-	CmdOptions.ListCmd.StringVar(
-		CmdOptions.workflowPtr,
-		"workflow",
-		"",
-		"List of action and rollback plugin types.",
-	)
 	logutil.RegisterCommandOptions(CmdOptions.ListCmd, map[string]string{})
 
-}
-
-func Workflow(result *pluginmanager.RunAllStatus, workflow string) error {
-	wf := &pluginmanager.Workflow{}
-	json.Unmarshal([]byte(workflow), wf)
-	log.Printf("Workflow: %+v", wf)
-	return nil
 }
 
 // Run the specified plugin type plugins.
@@ -945,20 +922,6 @@ func ScanCommandOptions(options map[string]interface{}) error {
 	if cmd == "server" {
 		RegisterHandlers(*CmdOptions.portPtr)
 	}
-
-	fmt.Printf("plugin-type: %+v, workflow: %+v\n", *CmdOptions.pluginTypePtr, *CmdOptions.workflowPtr)
-	if *CmdOptions.pluginTypePtr != "" && *CmdOptions.workflowPtr != "" {
-		log.Fatalln("Only one of either 'plugin-type' or 'workflow' argument can be specified. Check usage for details...")
-		CmdOptions.RunCmd.Usage()
-	}
-
-	if *CmdOptions.workflowPtr != "" {
-		pWorkflow := new(pluginmanager.Workflow)
-		json.Unmarshal([]byte(*CmdOptions.workflowPtr), pWorkflow)
-		fmt.Printf("Received workflow request with data: %+v", pWorkflow)
-		return nil
-	}
-
 	if *CmdOptions.pluginTypePtr != "" {
 		pluginType := *CmdOptions.pluginTypePtr
 		var err error
