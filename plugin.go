@@ -6,6 +6,7 @@ package pm
 
 import (
 	"bufio"
+	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
@@ -59,6 +60,9 @@ var CmdOptions struct {
 	// pluginDirPtr indicates the location of the plugins.
 	// 	NOTE: `pluginDir` is deprecated, use `library` instead.
 	pluginDirPtr *string
+
+	// workflowPtr indicates action and rollback plugin types to be run.
+	workflowPtr *string
 }
 
 // getPluginFiles retrieves the plugin files under each component matching
@@ -562,20 +566,18 @@ func executePlugins(psStatus *pluginmanager.PluginsStatus, nPInfo pluginmanager.
 }
 
 // List the plugin and its dependencies.
-func List(pluginType string) error {
+func List(pluginType string, options map[string]string) error {
 	var pluginsInfo, err = getPluginsInfo(pluginType)
 	if err != nil {
 		return err
 	}
 	nPInfo := normalizePluginsInfo(pluginsInfo)
 
-	err = graph.InitGraph(pluginType, nPInfo)
+	err = graph.InitGraph(pluginType, nPInfo, options)
 	if err != nil {
 		return err
 	}
 
-	logutil.PrintNLog("The list of plugins are mapped in %s\n",
-		graph.GetImagePath())
 	return nil
 }
 
@@ -625,6 +627,12 @@ func RegisterCommandOptions(progname string) {
 		false,
 		"Enforce running plugins in sequential.",
 	)
+	CmdOptions.workflowPtr = CmdOptions.RunCmd.String(
+		"workflow",
+		"",
+		"List of action and optional rollback plugin types in JSON format.",
+	)
+
 	logutil.RegisterCommandOptions(CmdOptions.RunCmd, map[string]string{})
 	output.RegisterCommandOptions(CmdOptions.RunCmd, map[string]string{})
 
@@ -641,12 +649,18 @@ func RegisterCommandOptions(progname string) {
 		"",
 		"Path of the plugins library.",
 	)
+	CmdOptions.ListCmd.StringVar(
+		CmdOptions.workflowPtr,
+		"workflow",
+		"",
+		"List of action and rollback plugin types.",
+	)
 	logutil.RegisterCommandOptions(CmdOptions.ListCmd, map[string]string{})
 
 }
 
 // Run the specified plugin type plugins.
-func Run(result *pluginmanager.RunAllStatus, pluginType string) error {
+func Run(result *pluginmanager.RunAllStatus, pluginType string, options map[string]string) error {
 	result.Type = pluginType
 	status := true
 
@@ -666,7 +680,7 @@ func Run(result *pluginmanager.RunAllStatus, pluginType string) error {
 		return err
 	}
 	nPInfo := normalizePluginsInfo(pluginsInfo)
-	graph.InitGraph(pluginType, nPInfo)
+	graph.InitGraph(pluginType, nPInfo, options)
 
 	status = executePlugins(&result.Plugins, nPInfo, *CmdOptions.sequential)
 	if !status {
@@ -686,6 +700,15 @@ func RegisterHandlers(port int) {
 	http.HandleFunc("/", homePage)
 	http.HandleFunc("/list", listHandler)
 	http.HandleFunc("/run", runHandler)
+
+	// Loading web/js files
+	webPath := os.Getenv("PM_WEB")
+	if webPath == "" {
+		webPath = "web"
+	}
+	http.Handle("/web/",
+		http.StripPrefix("/web/",
+			http.FileServer(http.Dir(webPath))))
 
 	// Enable viewing of overall log file and plugin logs.
 	http.Handle("/log/",
@@ -737,38 +760,75 @@ func listHandler(w http.ResponseWriter, r *http.Request) {
 
 	config.SetPluginsLibrary(library)
 
+	var err error
 	r.ParseForm()
 	// INFO: pluginTypes could be either a single element of comma or space separated list, or multiple elements - all in the array.
-	seps := " ,"
-	splitter := func(r rune) bool {
-		return strings.ContainsRune(seps, r)
-	}
 	userPluginTypes := r.PostForm["type"]
-	pluginTypes := []string{}
-	for _, pt := range userPluginTypes {
-		pluginTypes = append(pluginTypes, strings.FieldsFunc(pt, splitter)...)
+	if len(userPluginTypes) > 0 {
+		// INFO: pluginTypes could be either a single element of comma or space separated list, or multiple elements - all in the array.
+		seps := " ,"
+		splitter := func(r rune) bool {
+			return strings.ContainsRune(seps, r)
+		}
+		pluginTypes := []string{}
+		for _, pt := range userPluginTypes {
+			pluginTypes = append(pluginTypes, strings.FieldsFunc(pt, splitter)...)
+		}
+		fmt.Printf("Plugin Types(%d): %+v\n", len(pluginTypes), pluginTypes)
+
+		listFunc := func() {
+			for idx, pluginType := range pluginTypes {
+				fmt.Printf("\nListing %v plugins...\n", pluginType)
+				err = List(pluginType, nil)
+				if err != nil {
+					fmt.Fprintf(w, "Error: %s", err.Error())
+					return
+				}
+				if idx > 0 {
+					graph.ConnectGraph(pluginTypes[idx-1], pluginType)
+				}
+			}
+		}
+		go listFunc()
 	}
-	fmt.Printf("Plugin Types(%d): %+v\n", len(pluginTypes), pluginTypes)
-	var err error
-	for idx, pluginType := range pluginTypes {
-		fmt.Println("Type:", pluginType)
-		err = List(pluginType)
-		if err != nil {
-			fmt.Fprintf(w, "Error: %s", err.Error())
+
+	userWorkflow := r.PostForm["workflow"]
+	if len(userWorkflow) > 0 {
+		fmt.Printf("User Workflow (%v): %+v\n", len(userWorkflow), userWorkflow)
+
+		var workflow pluginmanager.Workflow
+		for _, ar := range userWorkflow {
+			ar = strings.TrimSpace(ar)
+			if ar == "" {
+				continue
+			}
+			var pAR pluginmanager.ActionRollback
+			json.Unmarshal([]byte(ar), &pAR)
+			fmt.Printf("Unmarshal(%+v) = %+v\n", userWorkflow, pAR)
+			workflow = append(workflow, pAR)
 		}
-		if idx > 0 {
-			graph.ConnectGraph(pluginTypes[idx-1], pluginType)
+		if len(workflow) > 0 {
+			json.Unmarshal([]byte(userWorkflow[0]), &workflow)
+			fmt.Printf("Received workflow request: %+v\n", workflow)
+
+			workflowFunc := func() {
+				err = triggerWorkflow("list", workflow)
+			}
+			go workflowFunc()
 		}
 	}
-	if err == nil {
-		imgPath := graph.GetImagePath()
-		// fmt.Fprintf(w, "Image: %v", imgPath)
-		data, err := readFile(imgPath)
-		if err != nil {
-			fmt.Fprintf(w, "Error: \n%v", err.Error())
-		} else {
-			fmt.Fprintf(w, "%v", data)
+
+	if err != nil {
+		fmt.Fprintf(w, "Error: \n%v", err.Error())
+	} else {
+		webPath := os.Getenv("PM_WEB")
+		if webPath == "" {
+			webPath = "web"
 		}
+		tmpl := template.Must(template.ParseFiles(webPath + "/run-response.html"))
+		// Get relative path of log file from log dir, so that the handler can
+		// 	server it under "/log" path.
+		tmpl.Execute(w, "/log/"+filepath.Base(logutil.GetCurLogFile(true, false)))
 	}
 }
 
@@ -783,39 +843,89 @@ func runHandler(w http.ResponseWriter, r *http.Request) {
 	// pluginType := r.PostFormValue("type")
 	// fmt.Println("Type:", pluginType)
 	r.ParseForm()
-	// INFO: pluginTypes could be either a single element of comma or space separated list, or multiple elements - all in the array.
-	seps := " ,"
-	splitter := func(r rune) bool {
-		return strings.ContainsRune(seps, r)
-	}
-	userPluginTypes := r.PostForm["type"]
-	pluginTypes := []string{}
-	for _, pt := range userPluginTypes {
-		pluginTypes = append(pluginTypes, strings.FieldsFunc(pt, splitter)...)
-	}
-	fmt.Printf("Plugin Types(%d): %+v\n", len(pluginTypes), pluginTypes)
 	library := r.PostFormValue("library")
 	fmt.Println("Library:", library)
 
 	config.SetPluginsLibrary(library)
 
-	pmstatus := pluginmanager.RunAllStatus{}
-
-	runFunc := func() {
-		// fmt.Println("Inside runFunc routine...")
-		for idx, pluginType := range pluginTypes {
-			fmt.Printf("\nRunning %v plugins...\n", pluginType)
-			err := Run(&pmstatus, pluginType)
-			if err != nil {
-				fmt.Fprintf(w, "Error: %s", err.Error())
-				return
-			}
-			if idx > 0 {
-				graph.ConnectGraph(pluginTypes[idx-1], pluginType)
+	userEnvs := r.PostForm["env"]
+	fmt.Printf("User Parameters (ENV) %d: %+v\n", len(userEnvs), userEnvs)
+	if len(userEnvs) > 0 {
+		for _, userEnv := range userEnvs {
+			userEnv = strings.TrimSpace(userEnv)
+			fmt.Println("userEnv: ", userEnv)
+			lines := strings.Split(userEnv, "\n")
+			fmt.Printf("Lines (%+v): %v\n", len(lines), lines)
+			for _, line := range lines {
+				line := strings.TrimSpace(line)
+				fmt.Printf("Line (%+v): %v\n", len(line), line)
+				envVar, envVal, status := strings.Cut(line, "=")
+				if status {
+					fmt.Println("ENV: ", envVar, "=", envVal)
+					os.Setenv(envVar, envVal)
+				}
 			}
 		}
 	}
-	go runFunc()
+
+	userPluginTypes := r.PostForm["type"]
+	if len(userPluginTypes) > 0 {
+		// INFO: pluginTypes could be either a single element of comma or space separated list, or multiple elements - all in the array.
+		seps := " ,"
+		splitter := func(r rune) bool {
+			return strings.ContainsRune(seps, r)
+		}
+		pluginTypes := []string{}
+		for _, pt := range userPluginTypes {
+			pluginTypes = append(pluginTypes, strings.FieldsFunc(pt, splitter)...)
+		}
+		fmt.Printf("Plugin Types(%d): %+v\n", len(pluginTypes), pluginTypes)
+
+		pmstatus := pluginmanager.RunAllStatus{}
+
+		runFunc := func() {
+			// fmt.Println("Inside runFunc routine...")
+			for idx, pluginType := range pluginTypes {
+				fmt.Printf("\nRunning %v plugins...\n", pluginType)
+				err := Run(&pmstatus, pluginType, nil)
+				if err != nil {
+					fmt.Fprintf(w, "Error: %s", err.Error())
+					return
+				}
+				if idx > 0 {
+					graph.ConnectGraph(pluginTypes[idx-1], pluginType)
+				}
+			}
+		}
+		go runFunc()
+
+	}
+
+	userWorkflow := r.PostForm["workflow"]
+	if len(userWorkflow) > 0 {
+		fmt.Printf("User Workflow (%v): %+v\n", len(userWorkflow), userWorkflow)
+
+		var workflow pluginmanager.Workflow
+		for _, ar := range userWorkflow {
+			ar = strings.TrimSpace(ar)
+			if ar == "" {
+				continue
+			}
+			var pAR pluginmanager.ActionRollback
+			json.Unmarshal([]byte(ar), &pAR)
+			fmt.Printf("Unmarshal(%+v) = %+v\n", userWorkflow, pAR)
+			workflow = append(workflow, pAR)
+		}
+		if len(workflow) > 0 {
+			json.Unmarshal([]byte(userWorkflow[0]), &workflow)
+			fmt.Printf("Received workflow request: %+v\n", workflow)
+
+			workflowFunc := func() {
+				triggerWorkflow("run", workflow)
+			}
+			go workflowFunc()
+		}
+	}
 
 	webPath := os.Getenv("PM_WEB")
 	if webPath == "" {
@@ -826,6 +936,94 @@ func runHandler(w http.ResponseWriter, r *http.Request) {
 	// 	server it under "/log" path.
 	tmpl.Execute(w, "/log/"+filepath.Base(logutil.GetCurLogFile(true, false)))
 
+}
+
+func triggerWorkflow(cmd string, workflow pluginmanager.Workflow) error {
+	log.Println("Entering triggerWorkflow")
+	defer log.Println("Exiting triggerWorkflow")
+
+	for idx, actionRollback := range workflow {
+		pluginType := actionRollback.Action
+		err := List(pluginType, map[string]string{"TYPE": "ACTION"})
+		if err != nil {
+			logutil.PrintNLogError("Error: %s", err.Error())
+		}
+		if idx > 0 {
+			graph.ConnectGraph(workflow[idx-1].Action, pluginType)
+		}
+
+		rollbackPluginType := actionRollback.Rollback
+		if rollbackPluginType != "" {
+			err := List(rollbackPluginType, map[string]string{"TYPE": "ROLLBACK"})
+			if err != nil {
+				logutil.PrintNLogError("Error: %s", err.Error())
+			}
+			graph.ConnectGraph(pluginType, rollbackPluginType)
+			// NOTE: Some actions may not have rollback plugin-type. In those cases, instead of connecting current rollback to its immediate previous rollback plugin, connect to the next available previous rollback plugin-type.
+			for rIdx := idx; rIdx > 0; rIdx-- {
+				if workflow[rIdx-1].Rollback != "" {
+					graph.ConnectGraph(rollbackPluginType, workflow[rIdx-1].Rollback)
+					break
+				}
+			}
+		}
+
+	}
+
+	switch cmd {
+	case "list":
+		// List already done above.
+		logutil.PrintNLog("The list of plugins are mapped in %s\n",
+			graph.GetImagePath())
+		return nil
+
+	case "run":
+		runRollback := false
+		workflowCnt := len(workflow)
+		log.Printf("Number of actions to run: %+v\n", workflowCnt)
+		workflowStatus := pluginmanager.WorkflowStatus{}
+		workflowStatus.Action = make([]pluginmanager.RunAllStatus, workflowCnt)
+		workflowStatus.Rollback = make([]pluginmanager.RunAllStatus, workflowCnt)
+		idx := 0
+		var actionRollback pluginmanager.ActionRollback
+		for idx, actionRollback = range workflow {
+			pluginType := actionRollback.Action
+			fmt.Printf("\nRunning action plugins: %v [%d/%d]...\n", pluginType, idx+1, workflowCnt)
+			err := Run(&workflowStatus.Action[idx], pluginType, map[string]string{"TYPE": "ACTION"})
+			if err != nil {
+				logutil.PrintNLogError("%s", err.Error())
+				workflowStatus.Status = pluginmanager.DStatusFail
+				workflowStatus.Action[idx].Status = pluginmanager.DStatusFail
+				workflowStatus.Action[idx].StdOutErr = err.Error()
+				runRollback = true
+				break
+			}
+		}
+
+		if runRollback {
+			fmt.Println()
+			logutil.PrintNLog("Starting rollback...")
+			totalRollbackPluginTypes2Run := idx + 1
+			log.Printf("Number of rollback plugin-types to run: %+v\n", totalRollbackPluginTypes2Run)
+			for ; idx >= 0; idx-- {
+				rollbackPluginType := workflow[idx].Rollback
+				fmt.Printf("\nRunning rollback plugins: %v [%d/%d]...\n", rollbackPluginType, totalRollbackPluginTypes2Run-idx, totalRollbackPluginTypes2Run)
+				err := Run(&workflowStatus.Rollback[idx], rollbackPluginType, map[string]string{"TYPE": "ROLLBACK"})
+				if err != nil {
+					logutil.PrintNLogError("Error: %s", err.Error())
+					workflowStatus.Rollback[idx].Status = pluginmanager.DStatusFail
+					workflowStatus.Rollback[idx].StdOutErr = err.Error()
+				}
+			}
+		}
+		output.Write(workflowStatus)
+		if runRollback {
+			return logutil.PrintNLogError("Running Workflow: %v",
+				pluginmanager.DStatusFail)
+		}
+	}
+
+	return nil
 }
 
 // ScanCommandOptions scans for the command line options and makes appropriate
@@ -922,23 +1120,38 @@ func ScanCommandOptions(options map[string]interface{}) error {
 	if cmd == "server" {
 		RegisterHandlers(*CmdOptions.portPtr)
 	}
+
+	log.Printf("plugin-type: %+v, workflow: %+v\n",
+		*CmdOptions.pluginTypePtr, *CmdOptions.workflowPtr)
+	if *CmdOptions.pluginTypePtr != "" && *CmdOptions.workflowPtr != "" {
+		log.Fatalln("Only one of either 'plugin-type' or 'workflow' argument can be specified. Check usage for details...")
+		CmdOptions.RunCmd.Usage()
+	}
+
+	var err error
+	if *CmdOptions.workflowPtr != "" {
+		var workflow pluginmanager.Workflow
+		json.Unmarshal([]byte(*CmdOptions.workflowPtr), &workflow)
+		log.Printf("Received workflow request: %+v\n", workflow)
+
+		err = triggerWorkflow(cmd, workflow)
+	}
+
 	if *CmdOptions.pluginTypePtr != "" {
 		pluginType := *CmdOptions.pluginTypePtr
-		var err error
 		switch cmd {
 		case "list":
-			err = List(pluginType)
+			err = List(pluginType, nil)
+			logutil.PrintNLog("The list of plugins are mapped in %s\n",
+				graph.GetImagePath())
 
 		case "run":
 			pmstatus := pluginmanager.RunAllStatus{}
-			err = Run(&pmstatus, pluginType)
+			err = Run(&pmstatus, pluginType, nil)
 			output.Write(pmstatus)
 		}
-		if err != nil {
-			return err
-		}
 	}
-	return nil
+	return err
 }
 
 // Usage of Plugin Manager (pm) command.

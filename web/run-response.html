@@ -1,19 +1,23 @@
-<div hx-boost="true">
-    <br>
-    <h2>Status</h2>
-    <hr>
-    <i>Click on the green or red blocks to view the logs...</i>
-    <div hx-get="{{.}}.svg" hx-trigger="every 5s">
-        Getting status...
+<br>
+<div class="row">
+    <div id="resp-status" class="col" hx-boost="true">
+        <h2>Status</h2>
+        <hr>
+        <i>Click on the green or red blocks to view the logs...</i>
+        <div hx-get="{{.}}.svg" hx-trigger="load, every 5s">
+            Getting status...
+        </div>
+        <br>
     </div>
-    <br>
+
+    <div class="col">
+        <h2>Log</h2>
+        <hr>
+        <object data="{{.}}.log" type="text/log" height="100%" width="100%" hx-trigger="every 5s">
+            Gathering logs...
+            <p>View <a href="{{.}}.log">Log file</a>.</p>
+        </object>
+
+        <hr>
+    </div>
 </div>
-
-<h2>Log</h2>
-<hr>
-<object data="{{.}}.log" type="text/plain" height="100%" width="100%" hx-trigger="every 5s">
-    Gathering logs...
-    <p>View <a href="{{.}}.log">Log file</a>.</p>
-</object>
-
-<hr>
