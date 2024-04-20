@@ -29,6 +29,8 @@ import (
 	logutil "github.com/VeritasOS/plugin-manager/utils/log"
 	osutils "github.com/VeritasOS/plugin-manager/utils/os"
 	"github.com/VeritasOS/plugin-manager/utils/output"
+	"github.com/golang/protobuf/ptypes/duration"
+	"github.com/golang/protobuf/ptypes/timestamp"
 )
 
 var (
@@ -364,6 +366,8 @@ func validateDependencies(nPInfo *pluginmanager.Plugins) ([]string, error) {
 func executePluginCmd(statusCh chan<- map[string]*pluginmanager.PluginStatus, p string, pluginsInfo *pluginmanager.Plugins, failedDependency bool, pluginLogFile string) {
 	pInfo := pluginsInfo.Attributes[p]
 	log.Printf("\nChannel: Plugin %s info: \n%+v\n", p, pInfo)
+	start := &timestamp.Timestamp{Nanos: int32(time.Second.Nanoseconds())}
+
 	// TODO: Uncomment below UpdateGraph() once concurrency issue is
 	//  taken care, and remove the one from where executePluginCmd().
 	//  is called. Refer "TODO Graph" for more details.
@@ -406,7 +410,17 @@ func executePluginCmd(statusCh chan<- map[string]*pluginmanager.PluginStatus, p 
 		chLog.Println(myStatusMsg)
 		// graph.UpdateGraph(getPluginType(p), p, myStatus, "")
 		logutil.PrintNLog("%s: %s\n", pInfo.Description, myStatus)
-		statusCh <- map[string]*pluginmanager.PluginStatus{p: {Status: myStatus}}
+		end := &timestamp.Timestamp{Nanos: int32(time.Second.Nanoseconds())}
+		statusCh <- map[string]*pluginmanager.PluginStatus{
+			p: {
+				Status: myStatus,
+				RunTime: &pluginmanager.RunTime{
+					StartTime: start,
+					EndTime:   end,
+					Duration:  &duration.Duration{Nanos: end.Nanos - start.Nanos},
+				},
+			},
+		}
 		return
 	}
 
@@ -462,6 +476,12 @@ func executePluginCmd(statusCh chan<- map[string]*pluginmanager.PluginStatus, p 
 	}
 	pStatus.Status = pluginmanager.DStatusOk
 	logutil.PrintNLog("%s: %s\n", pInfo.Description, pluginmanager.DStatusOk)
+	end := &timestamp.Timestamp{Nanos: int32(time.Second.Nanoseconds())}
+	pStatus.RunTime = &pluginmanager.RunTime{
+		StartTime: start,
+		EndTime:   end,
+		Duration:  &duration.Duration{Nanos: end.Nanos - start.Nanos},
+	}
 	statusCh <- map[string]*pluginmanager.PluginStatus{p: &pStatus}
 }
 
@@ -542,6 +562,10 @@ func executePlugins(psStatus *pluginmanager.PluginTypeStatus, nPInfo *pluginmana
 			ps := psStatus.Plugins
 			ps[pIdx].Status = pStatus.Status
 			ps[pIdx].StdOutErr = pStatus.StdOutErr
+			ps[pIdx].RunTime = &pluginmanager.RunTime{
+				StartTime: pStatus.RunTime.StartTime,
+				EndTime:   pStatus.RunTime.EndTime,
+				Duration:  pStatus.RunTime.Duration}
 			graph.UpdateGraph(getPluginType(plugin), plugin, pStatus.Status, "")
 			if pStatus.Status == pluginmanager.DStatusFail {
 				retStatus = false

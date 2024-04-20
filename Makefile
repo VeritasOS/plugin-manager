@@ -139,7 +139,7 @@ install-protobuf:
 
 .PHONY: compile-proto
 compile-proto:
-	protoc --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative pluginmanager/*.proto
+	protoc -I ./proto -I /usr/include/google/protobuf/ --go_out=./pluginmanager --go_opt=paths=source_relative --go-grpc_out=./pluginmanager --go-grpc_opt=paths=source_relative proto/*.proto
 	ret=$$?; \
 	if [ $${ret} -ne 0 ]; then \
 		echo "Failed to compile proto files. Return: $${d}."; \

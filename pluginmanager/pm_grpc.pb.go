@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.3.0
 // - protoc             v3.6.1
-// source: pluginmanager/pm.proto
+// source: pm.proto
 
 package pluginmanager
 
@@ -105,5 +105,5 @@ var PM_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "pluginmanager/pm.proto",
+	Metadata: "pm.proto",
 }

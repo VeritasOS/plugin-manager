@@ -4,6 +4,8 @@ package plugin;
 
 option go_package = "pluginmanager/pluginmanager";
 
+import "google/protobuf/duration.proto";
+import "google/protobuf/timestamp.proto";
 
 // Status of plugin execution used for displaying to user on console.
 enum Status {
@@ -32,6 +34,7 @@ message PluginStatus {
 	PluginAttributes Attributes = 1;
 	string Status = 2;
 	repeated string StdOutErr = 3;
+	RunTime RunTime = 4;
 }
 
 // PluginTypeStatus is the pm run status of given Type plugin.
@@ -43,3 +46,9 @@ message PluginTypeStatus {
 	// TODO: Add Percentage to get no. of pending vs. completed run of plugins.
 }
 
+
+message RunTime {
+	google.protobuf.Timestamp StartTime = 1; 
+	google.protobuf.Timestamp EndTime = 2; 
+	google.protobuf.Duration Duration = 3; 
+}
