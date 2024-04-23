@@ -29,6 +29,7 @@ import (
 	logutil "github.com/VeritasOS/plugin-manager/utils/log"
 	osutils "github.com/VeritasOS/plugin-manager/utils/os"
 	"github.com/VeritasOS/plugin-manager/utils/output"
+	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -366,7 +367,6 @@ func validateDependencies(nPInfo *pluginmanager.Plugins) ([]string, error) {
 func executePluginCmd(statusCh chan<- map[string]*pluginmanager.PluginStatus, p string, pluginsInfo *pluginmanager.Plugins, failedDependency bool, pluginLogFile string) {
 	pInfo := pluginsInfo.Attributes[p]
 	log.Printf("\nChannel: Plugin %s info: \n%+v\n", p, pInfo)
-	start := timestamppb.Now()
 
 	// TODO: Uncomment below UpdateGraph() once concurrency issue is
 	//  taken care, and remove the one from where executePluginCmd().
@@ -410,17 +410,7 @@ func executePluginCmd(statusCh chan<- map[string]*pluginmanager.PluginStatus, p 
 		chLog.Println(myStatusMsg)
 		// graph.UpdateGraph(getPluginType(p), p, myStatus, "")
 		logutil.PrintNLog("%s: %s\n", pInfo.Description, myStatus)
-		end := timestamppb.Now()
-		statusCh <- map[string]*pluginmanager.PluginStatus{
-			p: {
-				Status: myStatus,
-				RunTime: &pluginmanager.RunTime{
-					StartTime: start,
-					EndTime:   end,
-					Duration:  durationpb.New(end.AsTime().Sub(start.AsTime())),
-				},
-			},
-		}
+		statusCh <- map[string]*pluginmanager.PluginStatus{p: {Status: myStatus}}
 		return
 	}
 
@@ -434,14 +424,7 @@ func executePluginCmd(statusCh chan<- map[string]*pluginmanager.PluginStatus, p 
 	// INFO: https://stackoverflow.com/questions/69954944/capture-stdout-from-exec-command-line-by-line-and-also-pipe-to-os-stdout
 	iostdout, err := cmd.StdoutPipe()
 	if err != nil {
-		end := timestamppb.Now()
-		pStatus := pluginmanager.PluginStatus{Status: pluginmanager.DStatusFail,
-			RunTime: &pluginmanager.RunTime{
-				StartTime: start,
-				EndTime:   end,
-				Duration:  durationpb.New(end.AsTime().Sub(start.AsTime())),
-			},
-		}
+		pStatus := pluginmanager.PluginStatus{Status: pluginmanager.DStatusFail}
 		log.Printf("Failed to execute plugin %s. Error: %s\n", p, err.Error())
 		logutil.PrintNLog("%s: %s\n", pInfo.Description, pluginmanager.DStatusFail)
 		statusCh <- map[string]*pluginmanager.PluginStatus{p: &pStatus}
@@ -476,12 +459,6 @@ func executePluginCmd(statusCh chan<- map[string]*pluginmanager.PluginStatus, p 
 	pStatus := pluginmanager.PluginStatus{StdOutErr: stdOutErr}
 	if err != nil {
 		pStatus.Status = pluginmanager.DStatusFail
-		end := timestamppb.Now()
-		pStatus.RunTime = &pluginmanager.RunTime{
-			StartTime: start,
-			EndTime:   end,
-			Duration:  durationpb.New(end.AsTime().Sub(start.AsTime())),
-		}
 		log.Printf("Failed to execute plugin %s. Error: %s\n", p, err.Error())
 		logutil.PrintNLog("%s: %s\n", pInfo.Description, pluginmanager.DStatusFail)
 		statusCh <- map[string]*pluginmanager.PluginStatus{p: &pStatus}
@@ -489,12 +466,6 @@ func executePluginCmd(statusCh chan<- map[string]*pluginmanager.PluginStatus, p 
 	}
 	pStatus.Status = pluginmanager.DStatusOk
 	logutil.PrintNLog("%s: %s\n", pInfo.Description, pluginmanager.DStatusOk)
-	end := timestamppb.Now()
-	pStatus.RunTime = &pluginmanager.RunTime{
-		StartTime: start,
-		EndTime:   end,
-		Duration:  durationpb.New(end.AsTime().Sub(start.AsTime())),
-	}
 	statusCh <- map[string]*pluginmanager.PluginStatus{p: &pStatus}
 }
 
@@ -547,6 +518,7 @@ func executePlugins(psStatus *pluginmanager.PluginTypeStatus, nPInfo *pluginmana
 				ps.Attributes = nPInfo.Attributes[p]
 				psStatus.Plugins = append(psStatus.Plugins, ps)
 				pluginIndexes[p] = len(psStatus.Plugins) - 1
+				ps.RunTime = &pluginmanager.RunTime{StartTime: timestamppb.Now()}
 
 				// TODO: Remove below UpdateGraph() once concurrency issue is
 				//  taken care, and keep the one inside executePluginCmd().
@@ -575,11 +547,9 @@ func executePlugins(psStatus *pluginmanager.PluginTypeStatus, nPInfo *pluginmana
 			ps := psStatus.Plugins
 			ps[pIdx].Status = pStatus.Status
 			ps[pIdx].StdOutErr = pStatus.StdOutErr
-			ps[pIdx].RunTime = &pluginmanager.RunTime{
-				StartTime: pStatus.RunTime.StartTime,
-				EndTime:   pStatus.RunTime.EndTime,
-				Duration:  pStatus.RunTime.Duration}
-			fmt.Printf("Start: %+v; End: %+v; Duration: %+v\n", pStatus.RunTime.StartTime.AsTime(), pStatus.RunTime.EndTime.AsTime(), pStatus.RunTime.Duration.AsDuration().String())
+			ps[pIdx].RunTime.EndTime = timestamppb.Now()
+			ps[pIdx].RunTime.Duration = durationpb.New(ps[pIdx].RunTime.EndTime.AsTime().Sub(ps[pIdx].RunTime.StartTime.AsTime()))
+			// logutil.PrintNLog("Start: %+v; End: %+v; Duration: %+v\n", pStatus.RunTime.StartTime.AsTime(), pStatus.RunTime.EndTime.AsTime(), pStatus.RunTime.Duration.AsDuration().String())
 			graph.UpdateGraph(getPluginType(plugin), plugin, pStatus.Status, "")
 			if pStatus.Status == pluginmanager.DStatusFail {
 				retStatus = false
@@ -701,6 +671,12 @@ func RegisterCommandOptions(progname string) {
 
 // Run the specified plugin type plugins.
 func Run(result *pluginmanager.PluginTypeStatus, pluginType string, options map[string]string) error {
+	result.RunTime = &pluginmanager.RunTime{StartTime: timestamppb.Now()}
+	defer func() {
+		result.RunTime.EndTime = timestamppb.Now()
+		result.RunTime.Duration = durationpb.New(result.RunTime.EndTime.AsTime().Sub(result.RunTime.StartTime.AsTime()))
+	}()
+
 	result.Type = pluginType
 	status := true
 
@@ -852,7 +828,8 @@ func listHandler(w http.ResponseWriter, r *http.Request) {
 			fmt.Printf("Received workflow request: %+v\n", &workflow)
 
 			workflowFunc := func() {
-				err = triggerWorkflow("list", &workflow)
+				workflowStatus := pluginmanager.WorkflowStatus{}
+				err = triggerWorkflow(&workflowStatus, "list", &workflow)
 			}
 			go workflowFunc()
 		}
@@ -963,7 +940,8 @@ func runHandler(w http.ResponseWriter, r *http.Request) {
 			fmt.Printf("Received workflow request: %+v\n", workflow.ActionRollbacks)
 
 			workflowFunc := func() {
-				triggerWorkflow("run", &workflow)
+				workflowStatus := pluginmanager.WorkflowStatus{}
+				triggerWorkflow(&workflowStatus, "run", &workflow)
 			}
 			go workflowFunc()
 		}
@@ -980,9 +958,16 @@ func runHandler(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func triggerWorkflow(cmd string, workflow *pluginmanager.Workflow) error {
+func triggerWorkflow(workflowStatus *pluginmanager.WorkflowStatus, cmd string, workflow *pluginmanager.Workflow) error {
 	log.Println("Entering triggerWorkflow")
 	defer log.Println("Exiting triggerWorkflow")
+
+	workflowStatus.Status = pluginmanager.DStatusStart
+	workflowStatus.RunTime = &pluginmanager.RunTime{StartTime: timestamppb.Now()}
+	defer func() {
+		workflowStatus.RunTime.EndTime = timestamppb.Now()
+		workflowStatus.RunTime.Duration = durationpb.New(workflowStatus.RunTime.EndTime.AsTime().Sub(workflowStatus.RunTime.StartTime.AsTime()))
+	}()
 
 	for idx, actionRollback := range workflow.ActionRollbacks {
 		pluginType := actionRollback.Action
@@ -1022,11 +1007,8 @@ func triggerWorkflow(cmd string, workflow *pluginmanager.Workflow) error {
 		runRollback := false
 		workflowCnt := len(workflow.ActionRollbacks)
 		log.Printf("Number of actions to run: %+v\n", workflowCnt)
-		workflowStatus := pluginmanager.WorkflowStatus{}
-		defer output.Write(&workflowStatus)
 		workflowStatus.Action = make([]*pluginmanager.PluginTypeStatus, workflowCnt)
 		workflowStatus.Rollback = make([]*pluginmanager.PluginTypeStatus, workflowCnt)
-		workflowStatus.Status = pluginmanager.DStatusStart
 		idx := 0
 		var actionRollback *pluginmanager.ActionRollback
 		for idx, actionRollback = range workflow.ActionRollbacks {
@@ -1176,10 +1158,18 @@ func ScanCommandOptions(options map[string]interface{}) error {
 	var err error
 	if *CmdOptions.workflowPtr != "" {
 		var workflow pluginmanager.Workflow
+		workflowStatus := pluginmanager.WorkflowStatus{}
 		json.Unmarshal([]byte(*CmdOptions.workflowPtr), &workflow.ActionRollbacks)
 		log.Printf("Received workflow request: %+v\n", &workflow)
 
-		err = triggerWorkflow(cmd, &workflow)
+		err = triggerWorkflow(&workflowStatus, cmd, &workflow)
+		var data interface{}
+		// INFO: protobuf values user readable when formatted, so make it readable and then write it as json...
+		err := json.Unmarshal([]byte(protojson.Format(&workflowStatus)), &data)
+		if err != nil {
+			logutil.PrintNLogError("Error: %+v", err.Error())
+		}
+		output.Write(data)
 	}
 
 	if *CmdOptions.pluginTypePtr != "" {

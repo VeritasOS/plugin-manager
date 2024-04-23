@@ -43,6 +43,7 @@ message PluginTypeStatus {
 	repeated PluginStatus Plugins = 2;
 	string Status = 3;
 	string StdOutErr = 4;
+	RunTime RunTime = 5;
 	// TODO: Add Percentage to get no. of pending vs. completed run of plugins.
 }
 
