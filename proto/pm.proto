@@ -23,7 +23,7 @@ message RunRequest {
 message RunResponse {
     string Type = 1;
     repeated plugin.PluginStatus PluginsStatus = 2;
-    string Status = 3;
+    plugin.Status Status = 3;
     string StdOutErr = 4;
     plugin.RunTime RunTime = 5;
 	// TODO: Add Percentage to get no. of pending vs. completed run of plugins.

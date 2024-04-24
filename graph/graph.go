@@ -161,17 +161,17 @@ func GenerateGraph() error {
 // getDisplayColor returns the color for a given result status.
 func getDisplayColor(key string) string {
 	// Node color
-	color := "#dae8fc:#7ea6e0" // blue // dStatusStart by default
+	color := "#dae8fc:#7ea6e0" // blue // Status_Running by default
 	switch key {
 	case "ACTION":
 		color = "#d5e8d4:#ffffff"
 	case "ROLLBACK":
 		color = "#f8cecc:#ffffff"
-	case pluginmanager.DStatusFail:
+	case pluginmanager.Status_Failed.String():
 		color = "#f8cecc:#ea6b66" // "red"
-	case pluginmanager.DStatusOk:
+	case pluginmanager.Status_Succeeded.String():
 		color = "#d5e8d4:#97d077" // "green"
-	case pluginmanager.DStatusSkip:
+	case pluginmanager.Status_Skipped.String():
 		color = "yellow"
 	}
 	return color

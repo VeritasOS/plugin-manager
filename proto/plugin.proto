@@ -7,12 +7,17 @@ option go_package = "pluginmanager/pluginmanager";
 import "google/protobuf/duration.proto";
 import "google/protobuf/timestamp.proto";
 
-// Status of plugin execution used for displaying to user on console.
+// Status is the state of the plugin execution.
 enum Status {
-	PLUGIN_STATUS_OK = 0;
-	PLUGIN_STATUS_START = 1;
-	PLUGIN_STATUS_SKIP = 2;
-	PLUGIN_STATUS_FAIL = 3;
+	UNSPECIFIED = 0;
+	
+	Succeeded = 1;
+	Running = 2;
+	Skipped = 3;
+
+	// 4 to 8 reserved for future use. Maybe, new states like paused, cancelled...!
+
+	Failed = 9;
 }
 
 // PluginAttributes that are supported in a plugin file.
@@ -32,7 +37,7 @@ message Plugins {
 // PluginStatus is the plugin run's info: status, stdouterr.
 message PluginStatus {
 	PluginAttributes Attributes = 1;
-	string Status = 2;
+	Status Status = 2;
 	repeated string StdOutErr = 3;
 	RunTime RunTime = 4;
 }
@@ -41,7 +46,7 @@ message PluginStatus {
 message PluginTypeStatus {
 	string Type = 1;
 	repeated PluginStatus Plugins = 2;
-	string Status = 3;
+	Status Status = 3;
 	string StdOutErr = 4;
 	RunTime RunTime = 5;
 	// TODO: Add Percentage to get no. of pending vs. completed run of plugins.

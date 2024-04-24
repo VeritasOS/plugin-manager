@@ -20,7 +20,7 @@ message ActionRollback {
 message WorkflowStatus {	
 	repeated plugin.PluginTypeStatus Action = 1;
     repeated plugin.PluginTypeStatus Rollback = 2;
-	string Status = 3;
+	plugin.Status Status = 3;
 	string StdOutErr = 4;
 	plugin.RunTime RunTime = 5;
 	// TODO: Add Percentage to get no. of pending vs. completed run of plugins.
