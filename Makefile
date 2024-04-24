@@ -115,31 +115,38 @@ go-race: 	## Run Go tests with race detector enabled
 
 .NOTPARALLEL:
 
-.PHONY: install-protobuf
-install-protobuf:
-	sudo apt update;
-	sudo apt install -y protobuf-compiler;
+.PHONY: install-proto-deps
+install-proto-deps:
+	wget -c https://github.com/protocolbuffers/protobuf/releases/download/v26.1/protoc-26.1-linux-x86_64.zip -P tools/
 	ret=$$?; \
 	if [ $${ret} -ne 0 ]; then \
-		echo "Failed to install protobuf-compiler. Return: $${d}."; \
+		echo "Failed to download protobuf protoc. Return: $${d}."; \
 		exit 1; \
-	fi ; \
-	go install google.golang.org/protobuf/cmd/protoc-gen-go@latest;
+	fi ;
+	cd tools; unzip protoc-26.1-linux-x86_64.zip;
+	ret=$$?; \
+	if [ $${ret} -ne 0 ]; then \
+		echo "Failed to unzip protoc*.zip. Return: $${d}."; \
+		exit 1; \
+	fi ;
+	export GOBIN=$(GOTOOLSBIN); \
+	go install google.golang.org/protobuf/cmd/protoc-gen-go@latest; \
 	ret=$$?; \
 	if [ $${ret} -ne 0 ]; then \
 		echo "Failed to install protoc-gen-go@v1.28. Return: $${d}."; \
 		exit 1; \
 	fi ; \
-	go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest;
+	go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest; \
 	ret=$$?; \
 	if [ $${ret} -ne 0 ]; then \
 		echo "Failed to install protoc-gen-go-grpc@v1.3. Return: $${d}."; \
 		exit 1; \
-	fi ; \
+	fi ;
 
 .PHONY: compile-proto
 compile-proto:
-	protoc -I ./proto -I /usr/include/google/protobuf/ --go_out=./pluginmanager --go_opt=paths=source_relative --go-grpc_out=./pluginmanager --go-grpc_opt=paths=source_relative proto/*.proto
+	export PATH=./tools/bin/:$(GOTOOLSBIN):$(PATH); \
+	protoc -I ./proto -I ./tools/include/google/protobuf/ --go_out=./pluginmanager --go_opt=paths=source_relative --go-grpc_out=./pluginmanager --go-grpc_opt=paths=source_relative proto/*.proto
 	ret=$$?; \
 	if [ $${ret} -ne 0 ]; then \
 		echo "Failed to compile proto files. Return: $${d}."; \
