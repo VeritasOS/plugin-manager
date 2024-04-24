@@ -124,13 +124,13 @@ install-protobuf:
 		echo "Failed to install protobuf-compiler. Return: $${d}."; \
 		exit 1; \
 	fi ; \
-	go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.28
+	go install google.golang.org/protobuf/cmd/protoc-gen-go@latest;
 	ret=$$?; \
 	if [ $${ret} -ne 0 ]; then \
 		echo "Failed to install protoc-gen-go@v1.28. Return: $${d}."; \
 		exit 1; \
 	fi ; \
-	go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.3;
+	go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest;
 	ret=$$?; \
 	if [ $${ret} -ne 0 ]; then \
 		echo "Failed to install protoc-gen-go-grpc@v1.3. Return: $${d}."; \
