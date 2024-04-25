@@ -1183,7 +1183,15 @@ func ScanCommandOptions(options map[string]interface{}) error {
 		case "run":
 			pmstatus := pluginmanager.PluginTypeStatus{}
 			err = Run(&pmstatus, pluginType, nil)
-			output.Write(&pmstatus)
+			// output.Write(&pmstatus)
+			var data interface{}
+			// INFO: protobuf values user readable when formatted, so make it readable and then write it as json...
+			err := json.Unmarshal([]byte(protojson.Format(&pmstatus)), &data)
+			if err != nil {
+				logutil.PrintNLogError("Error: %+v", err.Error())
+			}
+			output.Write(data)
+
 		}
 	}
 	return err
