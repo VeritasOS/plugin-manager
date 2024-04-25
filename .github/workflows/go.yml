@@ -44,6 +44,7 @@ jobs:
         PM_CONF_FILE: ${{ github.workspace }}/sample/pm.config.yaml
         INTEGRATION_TEST: START
         INTEG_TEST_BIN: ${{ github.workspace }}
+        GOCOVERDIR: ${{ github.workspace }}/cover
       run: |
         mkdir -p ${{ github.workspace }}/cover
         go test -mod=vendor -v ./...
