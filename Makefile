@@ -124,6 +124,17 @@ update-go-tools:
 	go install github.com/jstemmer/go-junit-report/v2@latest; \
 	go get -u golang.org/x/lint/golint;
 
+.PHONY: install-go
+install-go:
+	wget -c https://go.dev/dl/go1.22.2.linux-amd64.tar.gz -P /tmp
+	ret=$$?; \
+	if [ $${ret} -ne 0 ]; then \
+		echo "Failed to download go install files. Return: $${d}."; \
+		exit 1; \
+	fi ;
+	rm -rf /usr/local/go && tar -C /usr/local -xzf go1.22.2.linux-amd64.tar.gz
+	export PATH=/usr/local/go/bin:$PATH
+
 .PHONY: install-proto-deps
 install-proto-deps:
 	wget -c https://github.com/protocolbuffers/protobuf/releases/download/v26.1/protoc-26.1-linux-x86_64.zip -P tools/
