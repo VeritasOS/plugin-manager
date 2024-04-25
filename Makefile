@@ -115,6 +115,15 @@ go-race: 	## Run Go tests with race detector enabled
 
 .NOTPARALLEL:
 
+.PHONY: update-go-tools
+update-go-tools:
+	export GOBIN=$(GOTOOLSBIN); \
+	go install github.com/axw/gocov/gocov@latest; \
+	go install github.com/AlekSi/gocov-xml@latest; \
+	go install github.com/matm/gocov-html/cmd/gocov-html@latest; \
+	go install github.com/jstemmer/go-junit-report/v2@latest; \
+	go get -u golang.org/x/lint/golint;
+
 .PHONY: install-proto-deps
 install-proto-deps:
 	wget -c https://github.com/protocolbuffers/protobuf/releases/download/v26.1/protoc-26.1-linux-x86_64.zip -P tools/
