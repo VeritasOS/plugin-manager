@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+package status;
+
+option go_package = "github.com/VeritasOS/plugin-manager/utils/status";
+
+// Status is the state of the plugin execution.
+enum Status {
+	UNSPECIFIED = 0;
+	
+	Succeeded = 1;
+	Running = 2;
+	Skipped = 3;
+
+	// 4 to 8 reserved for future use. Maybe, new states like paused, cancelled...!
+
+	Failed = 9;
+}

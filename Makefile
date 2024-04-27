@@ -16,6 +16,7 @@ GOSRC=$(TOP)
 GOBIN?=$(TOP)/bin
 GOCOVERDIR=$(GOSRC)/cover
 GOTOOLSBIN=$(TOP)/tools/go/
+PROTOBUF_PATH=$(TOP)/tools/protobuf/
 
 .SILENT:
 
@@ -35,7 +36,7 @@ clean: 	## Clean Plugin Manager go build & test artifacts
 	-@rm -rf $(GOCOVERDIR);
 
 .PHONY: build
-build: 	## Build source code
+build: compile-proto ## Build source code
 	# Since go build determines and build only updated sources, no need to run clean all go binaries
 	@echo "Building Plugin Manager Go binaries...";
 	export GOBIN=$(GOBIN); \
@@ -114,3 +115,65 @@ go-race: 	## Run Go tests with race detector enabled
 	go test -mod=vendor -v -race ./...;
 
 .NOTPARALLEL:
+
+.PHONY: update-go-tools
+update-go-tools:
+	export GOBIN=$(GOTOOLSBIN); \
+	go install github.com/axw/gocov/gocov@latest; \
+	go install github.com/AlekSi/gocov-xml@latest; \
+	go install github.com/matm/gocov-html/cmd/gocov-html@latest; \
+	go install github.com/jstemmer/go-junit-report/v2@latest; \
+	go get -u golang.org/x/lint/golint;
+
+.PHONY: install-go
+install-go:
+	wget -c https://go.dev/dl/go1.22.2.linux-amd64.tar.gz -P /tmp
+	ret=$$?; \
+	if [ $${ret} -ne 0 ]; then \
+		echo "Failed to download go install files. Return: $${d}."; \
+		exit 1; \
+	fi ;
+	rm -rf /usr/local/go && tar -C /usr/local -xzf go1.22.2.linux-amd64.tar.gz
+	export PATH=/usr/local/go/bin:$PATH
+
+.PHONY: install-proto-deps
+install-proto-deps:
+	wget -c https://github.com/protocolbuffers/protobuf/releases/download/v26.1/protoc-26.1-linux-x86_64.zip -P $(PROTOBUF_PATH)
+	ret=$$?; \
+	if [ $${ret} -ne 0 ]; then \
+		echo "Failed to download protobuf protoc. Return: $${d}."; \
+		exit 1; \
+	fi ;
+	cd $(PROTOBUF_PATH); unzip protoc-26.1-linux-x86_64.zip;
+	ret=$$?; \
+	if [ $${ret} -ne 0 ]; then \
+		echo "Failed to unzip protoc*.zip. Return: $${d}."; \
+		exit 1; \
+	fi ;
+	export GOBIN=$(PROTOBUF_PATH)/bin; \
+	go install google.golang.org/protobuf/cmd/protoc-gen-go@latest; \
+	ret=$$?; \
+	if [ $${ret} -ne 0 ]; then \
+		echo "Failed to install protoc-gen-go@v1.28. Return: $${d}."; \
+		exit 1; \
+	fi ; \
+	go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest; \
+	ret=$$?; \
+	if [ $${ret} -ne 0 ]; then \
+		echo "Failed to install protoc-gen-go-grpc@v1.3. Return: $${d}."; \
+		exit 1; \
+	fi ;
+
+.PHONY: compile-proto
+compile-proto:
+	export PATH=$(PROTOBUF_PATH)/bin/:$(PATH); \
+	protoc -I ./proto -I $(PROTOBUF_PATH)/include/google/protobuf/ --go_out=. --go_opt=module=github.com/VeritasOS/plugin-manager --go-grpc_out=./pluginmanager --go-grpc_opt=paths=source_relative proto/*.proto
+	ret=$$?; \
+	if [ $${ret} -ne 0 ]; then \
+		echo "Failed to compile proto files. Return: $${d}."; \
+		exit 1; \
+	fi ; \
+
+.PHONY: clean-proto
+clean-proto:
+	-@rm -rf pluginmanager/*.pb.go;

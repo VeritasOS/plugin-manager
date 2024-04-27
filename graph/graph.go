@@ -12,6 +12,7 @@ import (
 	"github.com/VeritasOS/plugin-manager/config"
 	"github.com/VeritasOS/plugin-manager/pluginmanager"
 	logutil "github.com/VeritasOS/plugin-manager/utils/log"
+	"github.com/VeritasOS/plugin-manager/utils/status"
 	graphviz "github.com/goccy/go-graphviz"
 	"github.com/goccy/go-graphviz/cgraph"
 )
@@ -99,7 +100,7 @@ func InitGraph(pluginType string, pluginsInfo map[string]*pluginmanager.PluginAt
 		// pluginNode.Set("strokeColor", "#82b366")
 
 		for rby := range pluginsInfo[p].RequiredBy {
-			reqbyNode, err := sb.CreateNode(pluginsInfo[p].RequiredBy[rby])
+			reqbyNode, err := sb.CreateNode(string(pluginsInfo[p].RequiredBy[rby]))
 			if err != nil {
 				log.Printf("SubGraph.CreateNode(%s) Error: %s", pluginsInfo[p].RequiredBy[rby], err.Error())
 				continue
@@ -117,7 +118,7 @@ func InitGraph(pluginType string, pluginsInfo map[string]*pluginmanager.PluginAt
 			// rbyEdge.SetFontSize(EdgeLabelFontSize)
 		}
 		for rs := range pluginsInfo[p].Requires {
-			rsNode, err := sb.CreateNode(pluginsInfo[p].Requires[rs])
+			rsNode, err := sb.CreateNode(string(pluginsInfo[p].Requires[rs]))
 			if err != nil {
 				log.Printf("SubGraph.CreateNode(%s) Error: %s", pluginsInfo[p].Requires[rs], err.Error())
 				continue
@@ -161,17 +162,17 @@ func GenerateGraph() error {
 // getDisplayColor returns the color for a given result status.
 func getDisplayColor(key string) string {
 	// Node color
-	color := "#dae8fc:#7ea6e0" // blue // dStatusStart by default
+	color := "#dae8fc:#7ea6e0" // blue // Status_Running by default
 	switch key {
 	case "ACTION":
 		color = "#d5e8d4:#ffffff"
 	case "ROLLBACK":
 		color = "#f8cecc:#ffffff"
-	case pluginmanager.DStatusFail:
+	case status.Status_Failed.String():
 		color = "#f8cecc:#ea6b66" // "red"
-	case pluginmanager.DStatusOk:
+	case status.Status_Succeeded.String():
 		color = "#d5e8d4:#97d077" // "green"
-	case pluginmanager.DStatusSkip:
+	case status.Status_Skipped.String():
 		color = "yellow"
 	}
 	return color

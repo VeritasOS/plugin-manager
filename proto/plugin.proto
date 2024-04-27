@@ -1,0 +1,40 @@
+syntax = "proto3";
+
+package plugin;
+
+import "runtime.proto";
+import "status.proto";
+
+option go_package = "github.com/VeritasOS/plugin-manager/pluginmanager";
+
+// PluginAttributes that are supported in a plugin file.
+message PluginAttributes {
+	string FileName = 1;
+	string Description = 2;
+	string ExecStart = 3;
+	repeated string RequiredBy = 4;
+	repeated string Requires = 5;
+}
+
+// Plugins is basically a map of file and its contents.
+message Plugins {
+	map<string,PluginAttributes> Attributes = 1;
+}
+
+// PluginStatus is the plugin run's info: status, stdouterr.
+message PluginStatus {
+	PluginAttributes Attributes = 1;
+	status.Status Status = 2;
+	repeated string StdOutErr = 3;
+	runtime.RunTime RunTime = 4;
+}
+
+// PluginTypeStatus is the pm run status of given Type plugin.
+message PluginTypeStatus {
+	string Type = 1;
+	repeated PluginStatus Plugins = 2;
+	status.Status Status = 3;
+	string StdOutErr = 4;
+	runtime.RunTime RunTime = 5;
+	// TODO: Add Percentage to get no. of pending vs. completed run of plugins.
+}

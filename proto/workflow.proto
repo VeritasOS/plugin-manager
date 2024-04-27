@@ -1,0 +1,30 @@
+syntax = "proto3";
+
+package workflow;
+
+import "plugin.proto";
+import "runtime.proto";
+import "status.proto";
+
+option go_package = "github.com/VeritasOS/plugin-manager/pluginmanager";
+
+// Workflow indicates action and rollback plugin types to be run.
+message Workflow {
+	repeated ActionRollback ActionRollbacks = 1;
+}
+
+// ActionRollback basically contains plugin-type info for Action and Rollback.
+message ActionRollback {
+	string Action   = 1 [json_name="action"];
+	string Rollback = 2 [json_name="rollback"];
+}
+
+// WorkflowStatus contains status info for Workflow.
+message WorkflowStatus {	
+	repeated plugin.PluginTypeStatus Action = 1;
+    repeated plugin.PluginTypeStatus Rollback = 2;
+	status.Status Status = 3;
+	string StdOutErr = 4;
+	runtime.RunTime RunTime = 5;
+	// TODO: Add Percentage to get no. of pending vs. completed run of plugins.
+}

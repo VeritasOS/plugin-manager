@@ -401,6 +401,147 @@ ERROR: Running Workflow: Failed
 @abhijithda ➜ /workspaces/plugin-manager (workflow) $ 
 ```
 
+```json
+@abhijithda ➜ /workspaces/plugin-manager (proto) $ jq . /tmp/ab.json 
+{
+  "Action": [
+    {
+      "Plugins": [
+        {
+          "Attributes": {
+            "Description": "Checking for \"D\" settings...",
+            "ExecStart": "$PM_LIBRARY/D/preupgrade.sh",
+            "FileName": "D/d.preupgrade",
+            "RequiredBy": [
+              "A/a.preupgrade"
+            ]
+          },
+          "RunTime": {
+            "Duration": "6.009351200s",
+            "EndTime": "2024-04-23T00:14:45.028782800Z",
+            "StartTime": "2024-04-23T00:14:39.019431600Z"
+          },
+          "Status": "Failed",
+          "StdOutErr": [
+            "Running preupgrade.sh (path: sample/library//D/preupgrade.sh) with status(1)...",
+            "1",
+            "2",
+            "3",
+            "Displaying Plugin Manager (PM) Config file path: ",
+            "Fail(1)"
+          ]
+        },
+        {
+          "Attributes": {
+            "Description": "Checking for \"A\" settings",
+            "ExecStart": "/bin/echo \"Checking A...\"",
+            "FileName": "A/a.preupgrade",
+            "Requires": [
+              "D/d.preupgrade"
+            ]
+          },
+          "RunTime": {
+            "Duration": "0.001955100s",
+            "EndTime": "2024-04-23T00:14:45.032963Z",
+            "StartTime": "2024-04-23T00:14:45.031007900Z"
+          },
+          "Status": "Skipped"
+        }
+      ],
+      "RunTime": {
+        "Duration": "6.018373400s",
+        "EndTime": "2024-04-23T00:14:45.034855700Z",
+        "StartTime": "2024-04-23T00:14:39.016482300Z"
+      },
+      "Status": "Failed",
+      "StdOutErr": "Running preupgrade plugins: Failed",
+      "Type": "preupgrade"
+    },
+    {}
+  ],
+  "Rollback": [
+    {
+      "Plugins": [
+        {
+          "Attributes": {
+            "Description": "Applying \"A\" settings",
+            "ExecStart": "/bin/echo \"Running A...\"",
+            "FileName": "A/a.requiredby",
+            "RequiredBy": [
+              "B/b.requiredby"
+            ]
+          },
+          "RunTime": {
+            "Duration": "0.002292300s",
+            "EndTime": "2024-04-23T00:14:45.040673200Z",
+            "StartTime": "2024-04-23T00:14:45.038380900Z"
+          },
+          "Status": "Succeeded",
+          "StdOutErr": [
+            "\"Running A...\""
+          ]
+        },
+        {
+          "Attributes": {
+            "Description": "Applying \"B\" settings",
+            "ExecStart": "/bin/echo \"Running B...\"",
+            "FileName": "B/b.requiredby",
+            "RequiredBy": [
+              "C/c.requiredby"
+            ],
+            "Requires": [
+              "A/a.requiredby"
+            ]
+          },
+          "RunTime": {
+            "Duration": "0.002402800s",
+            "EndTime": "2024-04-23T00:14:45.045033300Z",
+            "StartTime": "2024-04-23T00:14:45.042630500Z"
+          },
+          "Status": "Succeeded",
+          "StdOutErr": [
+            "\"Running B...\""
+          ]
+        },
+        {
+          "Attributes": {
+            "Description": "Applying \"C\" settings",
+            "ExecStart": "/bin/echo \"Running C...\"",
+            "FileName": "C/c.requiredby",
+            "Requires": [
+              "B/b.requiredby"
+            ]
+          },
+          "RunTime": {
+            "Duration": "0.002582400s",
+            "EndTime": "2024-04-23T00:14:45.049572100Z",
+            "StartTime": "2024-04-23T00:14:45.046989700Z"
+          },
+          "Status": "Succeeded",
+          "StdOutErr": [
+            "\"Running C...\""
+          ]
+        }
+      ],
+      "RunTime": {
+        "Duration": "0.016477500s",
+        "EndTime": "2024-04-23T00:14:45.051404500Z",
+        "StartTime": "2024-04-23T00:14:45.034927Z"
+      },
+      "Status": "Succeeded",
+      "Type": "requiredby"
+    },
+    {}
+  ],
+  "RunTime": {
+    "Duration": "6.044813800s",
+    "EndTime": "2024-04-23T00:14:45.051426200Z",
+    "StartTime": "2024-04-23T00:14:39.006612400Z"
+  },
+  "Status": "Failed"
+}
+```
+
 ## Plugin Manager Web Server
 
 Plugin Manager can be run as a service.
