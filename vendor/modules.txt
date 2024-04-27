@@ -66,10 +66,6 @@ github.com/goccy/go-graphviz/internal/plugin/xlib
 ## explicit
 github.com/golang/freetype/raster
 github.com/golang/freetype/truetype
-# github.com/golang/protobuf v1.5.4
-## explicit; go 1.17
-github.com/golang/protobuf/ptypes/duration
-github.com/golang/protobuf/ptypes/timestamp
 # github.com/pkg/errors v0.9.1
 ## explicit
 github.com/pkg/errors

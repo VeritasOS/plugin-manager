@@ -167,7 +167,7 @@ install-proto-deps:
 .PHONY: compile-proto
 compile-proto:
 	export PATH=$(PROTOBUF_PATH)/bin/:$(PATH); \
-	protoc -I ./proto -I ./tools/include/google/protobuf/ --go_out=. --go_opt=module=github.com/VeritasOS/plugin-manager --go-grpc_out=./pluginmanager --go-grpc_opt=paths=source_relative proto/*.proto
+	protoc -I ./proto -I $(PROTOBUF_PATH)/include/google/protobuf/ --go_out=. --go_opt=module=github.com/VeritasOS/plugin-manager --go-grpc_out=./pluginmanager --go-grpc_opt=paths=source_relative proto/*.proto
 	ret=$$?; \
 	if [ $${ret} -ne 0 ]; then \
 		echo "Failed to compile proto files. Return: $${d}."; \
