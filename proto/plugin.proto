@@ -2,23 +2,10 @@ syntax = "proto3";
 
 package plugin;
 
-option go_package = "pluginmanager/pluginmanager";
+import "runtime.proto";
+import "status.proto";
 
-import "google/protobuf/duration.proto";
-import "google/protobuf/timestamp.proto";
-
-// Status is the state of the plugin execution.
-enum Status {
-	UNSPECIFIED = 0;
-	
-	Succeeded = 1;
-	Running = 2;
-	Skipped = 3;
-
-	// 4 to 8 reserved for future use. Maybe, new states like paused, cancelled...!
-
-	Failed = 9;
-}
+option go_package = "github.com/VeritasOS/plugin-manager/pluginmanager";
 
 // PluginAttributes that are supported in a plugin file.
 message PluginAttributes {
@@ -37,24 +24,17 @@ message Plugins {
 // PluginStatus is the plugin run's info: status, stdouterr.
 message PluginStatus {
 	PluginAttributes Attributes = 1;
-	Status Status = 2;
+	status.Status Status = 2;
 	repeated string StdOutErr = 3;
-	RunTime RunTime = 4;
+	runtime.RunTime RunTime = 4;
 }
 
 // PluginTypeStatus is the pm run status of given Type plugin.
 message PluginTypeStatus {
 	string Type = 1;
 	repeated PluginStatus Plugins = 2;
-	Status Status = 3;
+	status.Status Status = 3;
 	string StdOutErr = 4;
-	RunTime RunTime = 5;
+	runtime.RunTime RunTime = 5;
 	// TODO: Add Percentage to get no. of pending vs. completed run of plugins.
-}
-
-
-message RunTime {
-	google.protobuf.Timestamp StartTime = 1; 
-	google.protobuf.Timestamp EndTime = 2; 
-	google.protobuf.Duration Duration = 3; 
 }

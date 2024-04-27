@@ -1,9 +1,12 @@
 syntax = "proto3";
 
 package pluginmanager;
-option go_package = "pluginmanager/pluginmanager";
+
+option go_package = "github.com/VeritasOS/plugin-manager/pluginmanager";
 
 import "plugin.proto";
+import "runtime.proto";
+import "status.proto";
 
 
 service PM {
@@ -23,9 +26,9 @@ message RunRequest {
 message RunResponse {
     string Type = 1;
     repeated plugin.PluginStatus PluginsStatus = 2;
-    plugin.Status Status = 3;
+    status.Status Status = 3;
     string StdOutErr = 4;
-    plugin.RunTime RunTime = 5;
+    runtime.RunTime RunTime = 5;
 	// TODO: Add Percentage to get no. of pending vs. completed run of plugins.
     // string Percentage = 5;
 }

@@ -12,6 +12,7 @@ import (
 	"github.com/VeritasOS/plugin-manager/config"
 	"github.com/VeritasOS/plugin-manager/pluginmanager"
 	logutil "github.com/VeritasOS/plugin-manager/utils/log"
+	"github.com/VeritasOS/plugin-manager/utils/status"
 	graphviz "github.com/goccy/go-graphviz"
 	"github.com/goccy/go-graphviz/cgraph"
 )
@@ -167,11 +168,11 @@ func getDisplayColor(key string) string {
 		color = "#d5e8d4:#ffffff"
 	case "ROLLBACK":
 		color = "#f8cecc:#ffffff"
-	case pluginmanager.Status_Failed.String():
+	case status.Status_Failed.String():
 		color = "#f8cecc:#ea6b66" // "red"
-	case pluginmanager.Status_Succeeded.String():
+	case status.Status_Succeeded.String():
 		color = "#d5e8d4:#97d077" // "green"
-	case pluginmanager.Status_Skipped.String():
+	case status.Status_Skipped.String():
 		color = "yellow"
 	}
 	return color

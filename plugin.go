@@ -29,6 +29,8 @@ import (
 	logutil "github.com/VeritasOS/plugin-manager/utils/log"
 	osutils "github.com/VeritasOS/plugin-manager/utils/os"
 	"github.com/VeritasOS/plugin-manager/utils/output"
+	"github.com/VeritasOS/plugin-manager/utils/runtime"
+	"github.com/VeritasOS/plugin-manager/utils/status"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -371,8 +373,8 @@ func executePluginCmd(statusCh chan<- map[string]*pluginmanager.PluginStatus, p 
 	// TODO: Uncomment below UpdateGraph() once concurrency issue is
 	//  taken care, and remove the one from where executePluginCmd().
 	//  is called. Refer "TODO Graph" for more details.
-	// graph.UpdateGraph(getPluginType(p), p, pluginmanager.Status_Running, "")
-	logutil.PrintNLog("\n%s: %s\n", pInfo.Description, pluginmanager.Status_Running)
+	// graph.UpdateGraph(getPluginType(p), p, status.Status_Running, "")
+	logutil.PrintNLog("\n%s: %s\n", pInfo.Description, status.Status_Running)
 	// TODO: Uncomment below logFile once UpdateGraph() concurrency issue is
 	//  resolved.
 	// Get relative path to plugins log file from PM log dir, so that linking
@@ -395,14 +397,14 @@ func executePluginCmd(statusCh chan<- map[string]*pluginmanager.PluginStatus, p 
 
 	// If already marked as failed/skipped due to dependency fail,
 	// then just return that status.
-	var myStatus pluginmanager.Status
+	var myStatus status.Status
 	myStatusMsg := ""
 	if failedDependency {
 		myStatusMsg = "Skipping as its dependency failed."
-		myStatus = pluginmanager.Status_Skipped
+		myStatus = status.Status_Skipped
 	} else if pInfo.ExecStart == "" {
 		myStatusMsg = "Passing as ExecStart value is empty!"
-		myStatus = pluginmanager.Status_Succeeded
+		myStatus = status.Status_Succeeded
 	}
 
 	if myStatusMsg != "" {
@@ -424,9 +426,9 @@ func executePluginCmd(statusCh chan<- map[string]*pluginmanager.PluginStatus, p 
 	// INFO: https://stackoverflow.com/questions/69954944/capture-stdout-from-exec-command-line-by-line-and-also-pipe-to-os-stdout
 	iostdout, err := cmd.StdoutPipe()
 	if err != nil {
-		pStatus := pluginmanager.PluginStatus{Status: pluginmanager.Status_Failed}
+		pStatus := pluginmanager.PluginStatus{Status: status.Status_Failed}
 		log.Printf("Failed to execute plugin %s. Error: %s\n", p, err.Error())
-		logutil.PrintNLog("%s: %s\n", pInfo.Description, pluginmanager.Status_Failed)
+		logutil.PrintNLog("%s: %s\n", pInfo.Description, status.Status_Failed)
 		statusCh <- map[string]*pluginmanager.PluginStatus{p: &pStatus}
 		return
 	}
@@ -450,21 +452,21 @@ func executePluginCmd(statusCh chan<- map[string]*pluginmanager.PluginStatus, p 
 	func() {
 		if err != nil {
 			chLog.Println("Error:", err.Error())
-			// graph.UpdateGraph(getPluginType(p), p, pluginmanager.Status_Failed, pluginLogFile)
+			// graph.UpdateGraph(getPluginType(p), p, status.Status_Failed, pluginLogFile)
 		} else {
-			// graph.UpdateGraph(getPluginType(p), p, pluginmanager.Status_Succeeded, pluginLogFile)
+			// graph.UpdateGraph(getPluginType(p), p, status.Status_Succeeded, pluginLogFile)
 		}
 	}()
 	log.Println("Stdout & Stderr:", stdOutErr)
 	pStatus := pluginmanager.PluginStatus{StdOutErr: stdOutErr}
 	if err != nil {
-		pStatus.Status = pluginmanager.Status_Failed
+		pStatus.Status = status.Status_Failed
 		log.Printf("Failed to execute plugin %s. Error: %s\n", p, err.Error())
-		logutil.PrintNLog("%s: %s\n", pInfo.Description, pluginmanager.Status_Failed)
+		logutil.PrintNLog("%s: %s\n", pInfo.Description, status.Status_Failed)
 		statusCh <- map[string]*pluginmanager.PluginStatus{p: &pStatus}
 		return
 	}
-	pStatus.Status = pluginmanager.Status_Succeeded
+	pStatus.Status = status.Status_Succeeded
 	logutil.PrintNLog("%s: %s\n", pInfo.Description, pStatus.Status)
 	statusCh <- map[string]*pluginmanager.PluginStatus{p: &pStatus}
 }
@@ -518,7 +520,7 @@ func executePlugins(psStatus *pluginmanager.PluginTypeStatus, nPInfo *pluginmana
 				ps.Attributes = nPInfo.Attributes[p]
 				psStatus.Plugins = append(psStatus.Plugins, ps)
 				pluginIndexes[p] = len(psStatus.Plugins) - 1
-				ps.RunTime = &pluginmanager.RunTime{StartTime: timestamppb.Now()}
+				ps.RunTime = &runtime.RunTime{StartTime: timestamppb.Now()}
 
 				// TODO: Remove below UpdateGraph() once concurrency issue is
 				//  taken care, and keep the one inside executePluginCmd().
@@ -527,7 +529,7 @@ func executePlugins(psStatus *pluginmanager.PluginTypeStatus, nPInfo *pluginmana
 					config.GetPMLogDir(), "", -1) +
 					strings.Replace(p, string(os.PathSeparator), ":", -1) +
 					"." + time.Now().Format(time.RFC3339Nano) + ".log"
-				graph.UpdateGraph(getPluginType(p), p, pluginmanager.Status_Running.String(), pluginLogFile)
+				graph.UpdateGraph(getPluginType(p), p, status.Status_Running.String(), pluginLogFile)
 				go executePluginCmd(exeCh, p, nPInfo, failedDependency[p], pluginLogFile)
 				executingCnt++
 			}
@@ -551,13 +553,13 @@ func executePlugins(psStatus *pluginmanager.PluginTypeStatus, nPInfo *pluginmana
 			ps[pIdx].RunTime.Duration = durationpb.New(ps[pIdx].RunTime.EndTime.AsTime().Sub(ps[pIdx].RunTime.StartTime.AsTime()))
 			// logutil.PrintNLog("Start: %+v; End: %+v; Duration: %+v\n", pStatus.RunTime.StartTime.AsTime(), pStatus.RunTime.EndTime.AsTime(), pStatus.RunTime.Duration.AsDuration().String())
 			graph.UpdateGraph(getPluginType(plugin), plugin, pStatus.Status.String(), "")
-			if pStatus.Status == pluginmanager.Status_Failed {
+			if pStatus.Status == status.Status_Failed {
 				retStatus = false
 			}
 
 			for _, rby := range nPInfo.Attributes[plugin].RequiredBy {
-				if pStatus.Status == pluginmanager.Status_Failed ||
-					pStatus.Status == pluginmanager.Status_Skipped {
+				if pStatus.Status == status.Status_Failed ||
+					pStatus.Status == status.Status_Skipped {
 					// TODO: When "Wants" and "WantedBy" options are supported similar to
 					// 	"Requires" and "RequiredBy", the failedDependency flag should be
 					// 	checked in conjunction with if its required dependency is failed,
@@ -671,43 +673,43 @@ func RegisterCommandOptions(progname string) {
 
 // Run the specified plugin type plugins.
 func Run(result *pluginmanager.PluginTypeStatus, pluginType string, options map[string]string) error {
-	result.RunTime = &pluginmanager.RunTime{StartTime: timestamppb.Now()}
+	result.RunTime = &runtime.RunTime{StartTime: timestamppb.Now()}
 	defer func() {
 		result.RunTime.EndTime = timestamppb.Now()
 		result.RunTime.Duration = durationpb.New(result.RunTime.EndTime.AsTime().Sub(result.RunTime.StartTime.AsTime()))
 	}()
 
 	result.Type = pluginType
-	status := true
+	myStatus := true
 
 	if err := osutils.OsMkdirAll(config.GetPluginsLogDir(), 0755); nil != err {
 		err = logutil.PrintNLogError(
 			"Failed to create the plugins logs directory: %s. "+
 				"Error: %s", config.GetPluginsLogDir(), err.Error())
-		result.Status = pluginmanager.Status_Failed
+		result.Status = status.Status_Failed
 		result.StdOutErr = err.Error()
 		return err
 	}
 
 	var pluginsInfo, err = getPluginsInfo(pluginType)
 	if err != nil {
-		result.Status = pluginmanager.Status_Failed
+		result.Status = status.Status_Failed
 		result.StdOutErr = err.Error()
 		return err
 	}
 	nPInfo := normalizePluginsInfo(pluginsInfo)
 	graph.InitGraph(pluginType, nPInfo.Attributes, options)
 
-	status = executePlugins(result, nPInfo, *CmdOptions.sequential)
-	if !status {
-		result.Status = pluginmanager.Status_Failed
-		err = fmt.Errorf("Running %s plugins: %s", pluginType, pluginmanager.Status_Failed)
+	myStatus = executePlugins(result, nPInfo, *CmdOptions.sequential)
+	if !myStatus {
+		result.Status = status.Status_Failed
+		err = fmt.Errorf("Running %s plugins: %s", pluginType, status.Status_Failed)
 		result.StdOutErr = err.Error()
 		logutil.PrintNLog("%s\n", err.Error())
 		return err
 	}
-	result.Status = pluginmanager.Status_Succeeded
-	logutil.PrintNLog("Running %s plugins: %s\n", pluginType, pluginmanager.Status_Succeeded)
+	result.Status = status.Status_Succeeded
+	logutil.PrintNLog("Running %s plugins: %s\n", pluginType, status.Status_Succeeded)
 	return nil
 }
 
@@ -962,8 +964,8 @@ func triggerWorkflow(workflowStatus *pluginmanager.WorkflowStatus, cmd string, w
 	log.Println("Entering triggerWorkflow")
 	defer log.Println("Exiting triggerWorkflow")
 
-	workflowStatus.Status = pluginmanager.Status_Running
-	workflowStatus.RunTime = &pluginmanager.RunTime{StartTime: timestamppb.Now()}
+	workflowStatus.Status = status.Status_Running
+	workflowStatus.RunTime = &runtime.RunTime{StartTime: timestamppb.Now()}
 	defer func() {
 		workflowStatus.RunTime.EndTime = timestamppb.Now()
 		workflowStatus.RunTime.Duration = durationpb.New(workflowStatus.RunTime.EndTime.AsTime().Sub(workflowStatus.RunTime.StartTime.AsTime()))
@@ -1018,8 +1020,8 @@ func triggerWorkflow(workflowStatus *pluginmanager.WorkflowStatus, cmd string, w
 			err := Run(workflowStatus.Action[idx], pluginType, map[string]string{"TYPE": "ACTION"})
 			if err != nil {
 				logutil.PrintNLogError("%s", err.Error())
-				workflowStatus.Status = pluginmanager.Status_Failed
-				workflowStatus.Action[idx].Status = pluginmanager.Status_Failed
+				workflowStatus.Status = status.Status_Failed
+				workflowStatus.Action[idx].Status = status.Status_Failed
 				workflowStatus.Action[idx].StdOutErr = err.Error()
 				runRollback = true
 				break
@@ -1038,15 +1040,15 @@ func triggerWorkflow(workflowStatus *pluginmanager.WorkflowStatus, cmd string, w
 				err := Run(workflowStatus.Rollback[idx], rollbackPluginType, map[string]string{"TYPE": "ROLLBACK"})
 				if err != nil {
 					logutil.PrintNLogError("Error: %s", err.Error())
-					workflowStatus.Rollback[idx].Status = pluginmanager.Status_Failed
+					workflowStatus.Rollback[idx].Status = status.Status_Failed
 					workflowStatus.Rollback[idx].StdOutErr = err.Error()
 				}
 			}
 			return logutil.PrintNLogError("Running Workflow: %v",
-				pluginmanager.Status_Failed)
+				status.Status_Failed)
 		}
 
-		workflowStatus.Status = pluginmanager.Status_Succeeded
+		workflowStatus.Status = status.Status_Succeeded
 		logutil.PrintNLog("Running Workflow: %v\n", workflowStatus.Status)
 	}
 

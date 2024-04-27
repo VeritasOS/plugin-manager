@@ -16,6 +16,7 @@ GOSRC=$(TOP)
 GOBIN?=$(TOP)/bin
 GOCOVERDIR=$(GOSRC)/cover
 GOTOOLSBIN=$(TOP)/tools/go/
+PROTOBUF_PATH=$(TOP)/tools/protobuf/
 
 .SILENT:
 
@@ -137,19 +138,19 @@ install-go:
 
 .PHONY: install-proto-deps
 install-proto-deps:
-	wget -c https://github.com/protocolbuffers/protobuf/releases/download/v26.1/protoc-26.1-linux-x86_64.zip -P tools/
+	wget -c https://github.com/protocolbuffers/protobuf/releases/download/v26.1/protoc-26.1-linux-x86_64.zip -P $(PROTOBUF_PATH)
 	ret=$$?; \
 	if [ $${ret} -ne 0 ]; then \
 		echo "Failed to download protobuf protoc. Return: $${d}."; \
 		exit 1; \
 	fi ;
-	cd tools; unzip protoc-26.1-linux-x86_64.zip;
+	cd $(PROTOBUF_PATH); unzip protoc-26.1-linux-x86_64.zip;
 	ret=$$?; \
 	if [ $${ret} -ne 0 ]; then \
 		echo "Failed to unzip protoc*.zip. Return: $${d}."; \
 		exit 1; \
 	fi ;
-	export GOBIN=$(GOTOOLSBIN); \
+	export GOBIN=$(PROTOBUF_PATH)/bin; \
 	go install google.golang.org/protobuf/cmd/protoc-gen-go@latest; \
 	ret=$$?; \
 	if [ $${ret} -ne 0 ]; then \
@@ -165,8 +166,8 @@ install-proto-deps:
 
 .PHONY: compile-proto
 compile-proto:
-	export PATH=./tools/bin/:$(GOTOOLSBIN):$(PATH); \
-	protoc -I ./proto -I ./tools/include/google/protobuf/ --go_out=./pluginmanager --go_opt=paths=source_relative --go-grpc_out=./pluginmanager --go-grpc_opt=paths=source_relative proto/*.proto
+	export PATH=$(PROTOBUF_PATH)/bin/:$(PATH); \
+	protoc -I ./proto -I ./tools/include/google/protobuf/ --go_out=. --go_opt=module=github.com/VeritasOS/plugin-manager --go-grpc_out=./pluginmanager --go-grpc_opt=paths=source_relative proto/*.proto
 	ret=$$?; \
 	if [ $${ret} -ne 0 ]; then \
 		echo "Failed to compile proto files. Return: $${d}."; \

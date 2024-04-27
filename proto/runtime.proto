@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package runtime;
+
+option go_package = "github.com/VeritasOS/plugin-manager/utils/runtime";
+
+import "google/protobuf/duration.proto";
+import "google/protobuf/timestamp.proto";
+
+// RunTime contains start, end and duration for capturing execution time.
+message RunTime {
+	google.protobuf.Timestamp StartTime = 1; 
+	google.protobuf.Timestamp EndTime = 2; 
+	google.protobuf.Duration Duration = 3; 
+}

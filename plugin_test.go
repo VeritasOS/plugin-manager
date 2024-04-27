@@ -12,6 +12,7 @@ import (
 	"github.com/VeritasOS/plugin-manager/config"
 	"github.com/VeritasOS/plugin-manager/graph"
 	"github.com/VeritasOS/plugin-manager/pluginmanager"
+	"github.com/VeritasOS/plugin-manager/utils/status"
 )
 
 func Test_getPluginFiles(t *testing.T) {
@@ -589,7 +590,7 @@ func Test_executePlugins(t *testing.T) {
 								RequiredBy:  []string{},
 								Requires:    []string{},
 							},
-							Status: pluginmanager.Status_Succeeded,
+							Status: status.Status_Succeeded,
 						},
 					},
 				},
@@ -617,7 +618,7 @@ func Test_executePlugins(t *testing.T) {
 								RequiredBy:  []string{},
 								Requires:    []string{},
 							},
-							Status: pluginmanager.Status_Succeeded,
+							Status: status.Status_Succeeded,
 						},
 					},
 				}},
@@ -644,7 +645,7 @@ func Test_executePlugins(t *testing.T) {
 								RequiredBy:  []string{},
 								Requires:    []string{},
 							},
-							Status: pluginmanager.Status_Failed,
+							Status: status.Status_Failed,
 						},
 					},
 				},
@@ -677,7 +678,7 @@ func Test_executePlugins(t *testing.T) {
 								RequiredBy:  []string{"D/d.test"},
 								Requires:    []string{},
 							},
-							Status:    pluginmanager.Status_Succeeded,
+							Status:    status.Status_Succeeded,
 							StdOutErr: []string{`Running A...`},
 						},
 						{
@@ -688,7 +689,7 @@ func Test_executePlugins(t *testing.T) {
 								RequiredBy:  []string{},
 								Requires:    []string{"A/a.test"},
 							},
-							Status:    pluginmanager.Status_Succeeded,
+							Status:    status.Status_Succeeded,
 							StdOutErr: []string{`"Running D..."`},
 						},
 					},
@@ -744,7 +745,7 @@ func Test_executePlugins(t *testing.T) {
 								RequiredBy:  []string{"D/d.test"},
 								Requires:    []string{},
 							},
-							Status:    pluginmanager.Status_Succeeded,
+							Status:    status.Status_Succeeded,
 							StdOutErr: []string{"Running A...!\"\""},
 						},
 						{
@@ -755,7 +756,7 @@ func Test_executePlugins(t *testing.T) {
 								RequiredBy:  []string{},
 								Requires:    []string{"A/a.test"},
 							},
-							Status:    pluginmanager.Status_Succeeded,
+							Status:    status.Status_Succeeded,
 							StdOutErr: []string{"\"Running D...!\"\""},
 						},
 					},
@@ -788,7 +789,7 @@ func Test_executePlugins(t *testing.T) {
 								RequiredBy: []string{"D/d.test"},
 								Requires:   []string{},
 							},
-							Status:    pluginmanager.Status_Succeeded,
+							Status:    status.Status_Succeeded,
 							StdOutErr: []string{"\"Running A...!\""},
 						},
 						{
@@ -799,7 +800,7 @@ func Test_executePlugins(t *testing.T) {
 								RequiredBy:  []string{},
 								Requires:    []string{"A/a.test"},
 							},
-							Status:    pluginmanager.Status_Succeeded,
+							Status:    status.Status_Succeeded,
 							StdOutErr: []string{"\"Running D...!\""},
 						},
 					},
@@ -832,7 +833,7 @@ func Test_executePlugins(t *testing.T) {
 								ExecStart:   "exit 1",
 								RequiredBy:  []string{"D/d.test"},
 							},
-							Status: pluginmanager.Status_Failed,
+							Status: status.Status_Failed,
 						},
 						{
 							Attributes: &pluginmanager.PluginAttributes{
@@ -842,7 +843,7 @@ func Test_executePlugins(t *testing.T) {
 								FileName:    "D/d.test",
 								RequiredBy:  []string{},
 							},
-							Status: pluginmanager.Status_Skipped,
+							Status: status.Status_Skipped,
 						},
 					},
 				},

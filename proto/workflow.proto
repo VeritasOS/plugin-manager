@@ -1,9 +1,12 @@
 syntax = "proto3";
 
 package workflow;
-option go_package = "pluginmanager/pluginmanager";
 
 import "plugin.proto";
+import "runtime.proto";
+import "status.proto";
+
+option go_package = "github.com/VeritasOS/plugin-manager/pluginmanager";
 
 // Workflow indicates action and rollback plugin types to be run.
 message Workflow {
@@ -20,8 +23,8 @@ message ActionRollback {
 message WorkflowStatus {	
 	repeated plugin.PluginTypeStatus Action = 1;
     repeated plugin.PluginTypeStatus Rollback = 2;
-	plugin.Status Status = 3;
+	status.Status Status = 3;
 	string StdOutErr = 4;
-	plugin.RunTime RunTime = 5;
+	runtime.RunTime RunTime = 5;
 	// TODO: Add Percentage to get no. of pending vs. completed run of plugins.
 }
