@@ -66,6 +66,9 @@ github.com/goccy/go-graphviz/internal/plugin/xlib
 ## explicit
 github.com/golang/freetype/raster
 github.com/golang/freetype/truetype
+# github.com/google/uuid v1.6.0
+## explicit
+github.com/google/uuid
 # github.com/pkg/errors v0.9.1
 ## explicit
 github.com/pkg/errors

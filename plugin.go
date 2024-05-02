@@ -31,6 +31,7 @@ import (
 	"github.com/VeritasOS/plugin-manager/utils/output"
 	"github.com/VeritasOS/plugin-manager/utils/runtime"
 	"github.com/VeritasOS/plugin-manager/utils/status"
+	"github.com/google/uuid"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -830,7 +831,7 @@ func listHandler(w http.ResponseWriter, r *http.Request) {
 			fmt.Printf("Received workflow request: %+v\n", &workflow)
 
 			workflowFunc := func() {
-				workflowStatus := pluginmanager.WorkflowStatus{}
+				workflowStatus := pluginmanager.WorkflowStatus{TaskID: uuid.NewString()}
 				err = triggerWorkflow(&workflowStatus, "list", &workflow)
 			}
 			go workflowFunc()
@@ -942,7 +943,7 @@ func runHandler(w http.ResponseWriter, r *http.Request) {
 			fmt.Printf("Received workflow request: %+v\n", workflow.ActionRollbacks)
 
 			workflowFunc := func() {
-				workflowStatus := pluginmanager.WorkflowStatus{}
+				workflowStatus := pluginmanager.WorkflowStatus{TaskID: uuid.NewString()}
 				triggerWorkflow(&workflowStatus, "run", &workflow)
 			}
 			go workflowFunc()
@@ -1160,7 +1161,7 @@ func ScanCommandOptions(options map[string]interface{}) error {
 	var err error
 	if *CmdOptions.workflowPtr != "" {
 		var workflow pluginmanager.Workflow
-		workflowStatus := pluginmanager.WorkflowStatus{}
+		workflowStatus := pluginmanager.WorkflowStatus{TaskID: uuid.NewString()}
 		json.Unmarshal([]byte(*CmdOptions.workflowPtr), &workflow.ActionRollbacks)
 		log.Printf("Received workflow request: %+v\n", &workflow)
 

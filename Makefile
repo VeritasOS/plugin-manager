@@ -44,7 +44,7 @@ build: compile-proto ## Build source code
 	go install -ldflags "-X main.buildDate=`date -u +%Y%m%d.%H%M%S`" -mod=vendor -v ./...; \
 	ret=$$?; \
 	if [ $${ret} -ne 0 ]; then \
-		@echo "Failed to build Plugin Manager Go binaries."; \
+		echo "Failed to build Plugin Manager Go binaries."; \
 		exit 1; \
 	fi
 
@@ -133,7 +133,7 @@ install-go:
 		echo "Failed to download go install files. Return: $${d}."; \
 		exit 1; \
 	fi ;
-	rm -rf /usr/local/go && tar -C /usr/local -xzf go1.22.2.linux-amd64.tar.gz
+	rm -rf /usr/local/go && tar -C /usr/local -xzf /tmp/go1.22.2.linux-amd64.tar.gz
 	export PATH=/usr/local/go/bin:$PATH
 
 .PHONY: install-proto-deps

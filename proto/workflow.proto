@@ -26,5 +26,6 @@ message WorkflowStatus {
 	status.Status Status = 3;
 	string StdOutErr = 4;
 	runtime.RunTime RunTime = 5;
+	string TaskID = 6;
 	// TODO: Add Percentage to get no. of pending vs. completed run of plugins.
 }
