@@ -13,6 +13,7 @@ import (
 	"github.com/VeritasOS/plugin-manager/pluginmanager"
 	logutil "github.com/VeritasOS/plugin-manager/utils/log"
 	"github.com/VeritasOS/plugin-manager/utils/status"
+	"github.com/goccy/go-graphviz"
 	graphviz "github.com/goccy/go-graphviz"
 	"github.com/goccy/go-graphviz/cgraph"
 )
@@ -34,6 +35,15 @@ func GetDotFilePath() string {
 	return logutil.GetCurLogFile(true, false) + ".dot"
 }
 
+type myGraph struct {
+	pmGraph *cgraph.Graph
+}
+
+// ResetGraph deletes contents saved in graph thereby cleaning memory.
+func (g *myGraph) ResetGraph() {
+	g.pmGraph = nil
+}
+
 var gv = graphviz.New()
 var graph1 *cgraph.Graph
 
@@ -49,16 +59,20 @@ func prepareSubGraphName(pluginType string) string {
 
 // InitGraph initliazes the graph data structure and invokes generateGraph.
 func InitGraph(pluginType string, pluginsInfo map[string]*pluginmanager.PluginAttributes, options map[string]string) error {
+	return graph1.InitGraph(pluginType, pluginsInfo, options)
+}
+
+func (g *myGraph) InitGraph(pluginType string, pluginsInfo map[string]*pluginmanager.PluginAttributes, options map[string]string) error {
 	var err error
-	if graph1 == nil {
-		graph1, err = gv.Graph()
+	if g.pmGraph == nil {
+		g.pmGraph, err = gv.Graph()
 		if err != nil {
 			log.Fatal(err)
 		}
-		graph1.SetCompound(true)
+		g.pmGraph.SetCompound(true)
 	}
 
-	sb := graph1.SubGraph(prepareSubGraphName(pluginType), 1)
+	sb := g.pmGraph.SubGraph(prepareSubGraphName(pluginType), 1)
 	sb.SetLabel(pluginType)
 	sb.Attr(0, "cluster", "true")
 	if val, ok := options["TYPE"]; ok {
