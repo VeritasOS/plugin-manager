@@ -71,15 +71,25 @@ var CmdOptions struct {
 	workflowPtr *string
 }
 
+type Task struct {
+	Request pluginmanager.Workflow
+	Status  pluginmanager.WorkflowStatus
+	Graph   graph.Graph
+	Log     logutil.LogNew
+}
+
+// Task map contains info of a Task which can be accessed using TaskID.
+var TaskInfo map[string]*Task
+
 // getPluginFiles retrieves the plugin files under each component matching
 // the specified pluginType.
-func getPluginFiles(pluginType string) ([]string, error) {
+func getPluginFiles(pluginType, library string) ([]string, error) {
 	log.Println("Entering getPluginFiles")
 	defer log.Println("Exiting getPluginFiles")
 
 	var pluginFiles []string
 
-	library := config.GetPluginsLibrary()
+	// library := config.GetPluginsLibrary()
 	if _, err := os.Stat(library); os.IsNotExist(err) {
 		return pluginFiles, logutil.PrintNLogError("Library '%s' doesn't exist. "+
 			"A valid plugins library path must be specified.", library)
@@ -132,16 +142,17 @@ func getPluginType(file string) string {
 	return strings.Replace(path.Ext(file), ".", ``, -1)
 }
 
-func getPluginsInfo(pluginType string) (*pluginmanager.Plugins, error) {
+func getPluginsInfo(pluginType, library string) (*pluginmanager.Plugins, error) {
 	var plugins = &pluginmanager.Plugins{}
 	plugins.Attributes = make(map[string]*pluginmanager.PluginAttributes)
-	pluginFiles, err := getPluginFiles(pluginType)
+	pluginFiles, err := getPluginFiles(pluginType, library)
 	if err != nil {
 		return plugins, err
 	}
 	for _, file := range pluginFiles {
 		fContents, rerr := readFile(filepath.FromSlash(
-			config.GetPluginsLibrary() + file))
+			library + file))
+		// config.GetPluginsLibrary() + file))
 		if rerr != nil {
 			return plugins, logutil.PrintNLogError(rerr.Error())
 		}
@@ -579,8 +590,24 @@ func executePlugins(psStatus *pluginmanager.PluginTypeStatus, nPInfo *pluginmana
 }
 
 // List the plugin and its dependencies.
+func (t *Task) List(pluginType, library string, options map[string]string) error {
+	var pluginsInfo, err = getPluginsInfo(pluginType, library)
+	if err != nil {
+		return err
+	}
+	nPInfo := normalizePluginsInfo(pluginsInfo)
+
+	err = t.Graph.InitGraph(pluginType, nPInfo.Attributes, options)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// List the plugin and its dependencies.
 func List(pluginType string, options map[string]string) error {
-	var pluginsInfo, err = getPluginsInfo(pluginType)
+	var pluginsInfo, err = getPluginsInfo(pluginType, config.GetPluginsLibrary())
 	if err != nil {
 		return err
 	}
@@ -856,9 +883,11 @@ func runHandler(w http.ResponseWriter, r *http.Request) {
 	log.Println("Entering runHandler")
 	defer log.Println("Exiting runHandler")
 
+	taskId := uuid.NewString()
+	myLogFile := config.GetPMLogDir() + string(os.PathSeparator) + taskId + string(os.PathSeparator) + "workflow.log"
+
 	// Create new log file with same name but with new timestamp.
-	logutil.SetLogging(logutil.GetCurLogFile(false, false))
-	graph.ResetGraph()
+	logutil.SetLogging(myLogFile)
 
 	// pluginType := r.PostFormValue("type")
 	// fmt.Println("Type:", pluginType)
@@ -943,7 +972,7 @@ func runHandler(w http.ResponseWriter, r *http.Request) {
 			fmt.Printf("Received workflow request: %+v\n", workflow.ActionRollbacks)
 
 			workflowFunc := func() {
-				workflowStatus := pluginmanager.WorkflowStatus{TaskID: uuid.NewString()}
+				workflowStatus := pluginmanager.WorkflowStatus{TaskID: taskId}
 				triggerWorkflow(&workflowStatus, "run", &workflow)
 			}
 			go workflowFunc()

@@ -13,7 +13,6 @@ import (
 	"github.com/VeritasOS/plugin-manager/pluginmanager"
 	logutil "github.com/VeritasOS/plugin-manager/utils/log"
 	"github.com/VeritasOS/plugin-manager/utils/status"
-	"github.com/goccy/go-graphviz"
 	graphviz "github.com/goccy/go-graphviz"
 	"github.com/goccy/go-graphviz/cgraph"
 )
@@ -25,9 +24,35 @@ const (
 	EdgeLabelFontSize float64 = 2.0
 )
 
+type Graph struct {
+	pmGraph *cgraph.Graph
+	imgPath string
+	dotPath string
+}
+
+// GetImagePath gets the path of the image file.
+func (g *Graph) GetImagePath() string {
+	return g.imgPath
+}
+
+// SetImagePath gets the path of the image file.
+func (g *Graph) SetImagePath(filePath string) {
+	g.imgPath = filePath
+}
+
 // GetImagePath gets the path of the image file.
 func GetImagePath() string {
 	return logutil.GetCurLogFile(true, false) + ".svg"
+}
+
+// GetDotFilePath gets the path of the dot file.
+func (g *Graph) GetDotFilePath() string {
+	return g.dotPath
+}
+
+// SetDotFilePath gets the path of the dot file.
+func (g *Graph) SetDotFilePath(filePath string) {
+	g.dotPath = filePath
 }
 
 // GetDotFilePath gets the path of the dot file.
@@ -35,21 +60,20 @@ func GetDotFilePath() string {
 	return logutil.GetCurLogFile(true, false) + ".dot"
 }
 
-type myGraph struct {
-	pmGraph *cgraph.Graph
-}
-
-// ResetGraph deletes contents saved in graph thereby cleaning memory.
-func (g *myGraph) ResetGraph() {
-	g.pmGraph = nil
-}
-
 var gv = graphviz.New()
 var graph1 *cgraph.Graph
 
+var globalGraph = Graph{pmGraph: graph1}
+
+// Close flushes into file, and deletes contents saved in graph thereby cleaning memory.
+func (g *Graph) Close() {
+	// TODO: Write contents to file.
+	g.pmGraph = nil
+}
+
 // ResetGraph is mainly used for unit testing.
 func ResetGraph() {
-	graph1 = nil
+	globalGraph.Close()
 }
 
 // prepareSubGraphName creates subgraph name using pluginType.
@@ -57,12 +81,9 @@ func prepareSubGraphName(pluginType string) string {
 	return "cluster-" + pluginType
 }
 
-// InitGraph initliazes the graph data structure and invokes generateGraph.
-func InitGraph(pluginType string, pluginsInfo map[string]*pluginmanager.PluginAttributes, options map[string]string) error {
-	return graph1.InitGraph(pluginType, pluginsInfo, options)
-}
-
-func (g *myGraph) InitGraph(pluginType string, pluginsInfo map[string]*pluginmanager.PluginAttributes, options map[string]string) error {
+// InitGraphConfig initiliazes the graph data structure.
+func InitGraphConfig(filename string) (Graph, error) {
+	g := Graph{}
 	var err error
 	if g.pmGraph == nil {
 		g.pmGraph, err = gv.Graph()
@@ -72,6 +93,16 @@ func (g *myGraph) InitGraph(pluginType string, pluginsInfo map[string]*pluginman
 		g.pmGraph.SetCompound(true)
 	}
 
+	g.dotPath = filename + ".dot"
+	g.imgPath = filename + ".svg"
+	return g, nil
+}
+
+func InitGraph(pluginType string, pluginsInfo map[string]*pluginmanager.PluginAttributes, options map[string]string) error {
+	return globalGraph.InitGraph(pluginType, pluginsInfo, options)
+}
+
+func (g *Graph) InitGraph(pluginType string, pluginsInfo map[string]*pluginmanager.PluginAttributes, options map[string]string) error {
 	sb := g.pmGraph.SubGraph(prepareSubGraphName(pluginType), 1)
 	sb.SetLabel(pluginType)
 	sb.Attr(0, "cluster", "true")
@@ -151,20 +182,24 @@ func (g *myGraph) InitGraph(pluginType string, pluginsInfo map[string]*pluginman
 		}
 	}
 
-	return GenerateGraph()
+	return g.GenerateGraph()
+}
+
+func GenerateGraph() error {
+	return globalGraph.GenerateGraph()
 }
 
 // GenerateGraph generates an input `.dot` file based on the fileNoExt name,
 // and then generates an `.svg` image output file as fileNoExt.svg.
-func GenerateGraph() error {
+func (g *Graph) GenerateGraph() error {
 	svgFile := GetImagePath()
 
-	rendererr := gv.RenderFilename(graph1, graphviz.Format(graphviz.DOT), GetDotFilePath())
+	rendererr := gv.RenderFilename(g.pmGraph, graphviz.Format(graphviz.DOT), g.dotPath)
 	if rendererr != nil {
 		log.Printf("gv.RenderFilename( , DOT) Err: %s", rendererr.Error())
 		// return rendererr
 	}
-	rendererr = gv.RenderFilename(graph1, graphviz.SVG, svgFile)
+	rendererr = gv.RenderFilename(g.pmGraph, graphviz.SVG, svgFile)
 	if rendererr != nil {
 		log.Printf("gv.RenderFilename( , SVG) Err: %s", rendererr.Error())
 		return rendererr
@@ -194,7 +229,11 @@ func getDisplayColor(key string) string {
 
 // UpdateGraph updates the plugin node with the status and url.
 func UpdateGraph(subgraphName, plugin, status, url string) error {
-	sb := graph1.SubGraph(prepareSubGraphName(subgraphName), 0)
+	return globalGraph.UpdateGraph(subgraphName, plugin, status, url)
+}
+
+func (g *Graph) UpdateGraph(subgraphName, plugin, status, url string) error {
+	sb := g.pmGraph.SubGraph(prepareSubGraphName(subgraphName), 0)
 	if sb == nil {
 		err := logutil.PrintNLogError("Graph.SubGraph(%s, 0) returns nil. Error: Subgraph not found!", subgraphName)
 		return err
@@ -217,8 +256,12 @@ func UpdateGraph(subgraphName, plugin, status, url string) error {
 }
 
 // ConnectGraph connects two subgraphs by an edge.
-// TODO: Currently no edge is created between clusters/subgraphs. The dot file is not showing any edge at all. May have to wait for graphviz update.
 func ConnectGraph(source, target string) error {
+	return globalGraph.ConnectGraph(source, target)
+}
+
+// ConnectGraph connects two subgraphs by an edge.
+func (g *Graph) ConnectGraph(source, target string) error {
 	log.Printf("Entering ConnectGraph(%+v, %+v)", source, target)
 	defer log.Println("Exiting ConnectGraph")
 
@@ -227,13 +270,13 @@ func ConnectGraph(source, target string) error {
 		return err
 	}
 
-	sourceSB := graph1.SubGraph(prepareSubGraphName(source), 0)
+	sourceSB := g.pmGraph.SubGraph(prepareSubGraphName(source), 0)
 	if sourceSB == nil {
 		err := logutil.PrintNLogError("Graph.SubGraph(%s, 0) returns nil. Error: Subgraph not found!", source)
 		return err
 	}
 
-	targetSB := graph1.SubGraph(prepareSubGraphName(target), 0)
+	targetSB := g.pmGraph.SubGraph(prepareSubGraphName(target), 0)
 	if targetSB == nil {
 		err := logutil.PrintNLogError("Graph.SubGraph(%s, 0) returns nil. Error: Subgraph not found!", target)
 		return err
@@ -248,7 +291,7 @@ func ConnectGraph(source, target string) error {
 	}
 
 	log.Printf("Connecting %v to %v", sourceNode.Name(), targetNode.Name())
-	edge, err := graph1.CreateEdge("", sourceNode, targetNode)
+	edge, err := g.pmGraph.CreateEdge("", sourceNode, targetNode)
 	if err != nil {
 		log.Printf("SubGraph.CreateEdge(%s, %s) Error: %s",
 			sourceNode.Name(), targetNode.Name(), err.Error())

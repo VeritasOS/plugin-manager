@@ -11,12 +11,14 @@ option go_package = "github.com/VeritasOS/plugin-manager/pluginmanager";
 // Workflow indicates action and rollback plugin types to be run.
 message Workflow {
 	repeated ActionRollback ActionRollbacks = 1;
+	string Library = 2;
 }
 
 // ActionRollback basically contains plugin-type info for Action and Rollback.
 message ActionRollback {
-	string Action   = 1 [json_name="action"];
+	string Action = 1 [json_name="action"];
 	string Rollback = 2 [json_name="rollback"];
+	string Library = 3;
 }
 
 // WorkflowStatus contains status info for Workflow.
