@@ -1,10 +1,12 @@
-// Copyright (c) 2021 Veritas Technologies LLC. All rights reserved. IP63-2828-7171-04-15-9
+// Copyright (c) 2022 Veritas Technologies LLC. All rights reserved. IP63-2828-7171-04-15-9
 package config
 
 import (
 	"os"
 	"reflect"
 	"testing"
+
+	logger "github.com/VeritasOS/plugin-manager/utils/log"
 )
 
 func init() {
@@ -41,11 +43,11 @@ func Test_Load(t *testing.T) {
 		{
 			name: "Valid pm.config file",
 			args: args{
-				EnvConfFile: "../sample/pm.config.yaml",
+				EnvConfFile: "../docs/sample/pm.config.yaml",
 			},
 			want: Config{
 				PluginManager{
-					Library: "../sample/library",
+					Library: "../docs/sample/library",
 					LogDir:  "./",
 					LogFile: "pm",
 				},
@@ -59,6 +61,8 @@ func Test_Load(t *testing.T) {
 			want: Config{},
 		},
 	}
+	// Set log file name to "test", so that cleaning becomes easier.
+	logger.InitFileLogger("test.log", "INFO")
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if err := os.Setenv(EnvConfFile, tt.args.EnvConfFile); nil != err {
@@ -99,11 +103,11 @@ func Test_readConfigFile(t *testing.T) {
 		{
 			name: "Valid conf file",
 			args: args{
-				confFilePath: "../sample/pm.config.yaml",
+				confFilePath: "../docs/sample/pm.config.yaml",
 			},
 			want: Config{
 				PluginManager{
-					Library: "../sample/library",
+					Library: "../docs/sample/library",
 					LogDir:  "./",
 					LogFile: "pm",
 				},
@@ -123,7 +127,7 @@ func Test_readConfigFile(t *testing.T) {
 		{
 			name: "Invalid conf file",
 			args: args{
-				confFilePath: "../../sample/library/D/preupgrade.sh",
+				confFilePath: "../../docs/sample/library/D/preupgrade.sh",
 			},
 			want: Config{
 				PluginManager{},

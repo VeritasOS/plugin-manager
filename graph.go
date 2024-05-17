@@ -1,10 +1,9 @@
-// Copyright (c) 2023 Veritas Technologies LLC. All rights reserved. IP63-2828-7171-04-15-9
+// Copyright (c) 2022 Veritas Technologies LLC. All rights reserved. IP63-2828-7171-04-15-9
 
 // Package pm graph is used for generating the graph image.
 package pm
 
 import (
-	"log"
 	"os"
 	"path/filepath"
 	"sort"
@@ -14,6 +13,7 @@ import (
 	"time"
 
 	"github.com/VeritasOS/plugin-manager/config"
+	logger "github.com/VeritasOS/plugin-manager/utils/log"
 	osutils "github.com/VeritasOS/plugin-manager/utils/os"
 )
 
@@ -35,6 +35,8 @@ var dotCmdPresent = true
 func initGraphConfig(imgNamePrefix string) {
 	// Initialization should be done only once.
 	if g.fileNoExt == "" {
+		// Remove imgNamePrefix if it's end with ".log"
+		imgNamePrefix = strings.TrimSuffix(imgNamePrefix, ".log")
 		g.fileNoExt = imgNamePrefix + "." + time.Now().Format(time.RFC3339Nano)
 	}
 }
@@ -108,7 +110,8 @@ func initGraph(pluginType string, pluginsInfo map[string]*PluginAttributes) erro
 }
 
 // generateGraph generates an input `.dot` file based on the fileNoExt name,
-// and then generates an `.svg` image output file as fileNoExt.svg.
+//
+//	and then generates an `.svg` image output file as fileNoExt.svg.
 func generateGraph() error {
 	dotFile := getDotFilePath()
 	svgFile := getImagePath()
@@ -116,8 +119,7 @@ func generateGraph() error {
 	fhDigraph, openerr := osutils.OsOpenFile(dotFile, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0666)
 	if openerr != nil {
 		abspath, _ := filepath.Abs(dotFile)
-		log.Printf("OsOpenFile(%s) Abs path: %v, Error: %s",
-			dotFile, abspath, openerr.Error())
+		logger.Error.Printf("OsOpenFile(%s) Abs path: %v, err=%s", dotFile, abspath, openerr.Error())
 		return openerr
 	}
 	defer fhDigraph.Close()
@@ -135,7 +137,7 @@ func generateGraph() error {
 
 	_, writeerr := fhDigraph.WriteString(graphContent)
 	if writeerr != nil {
-		log.Printf("fhDigraph.WriteString(%s) Err: %s", graphContent, writeerr.Error())
+		logger.Error.Printf("fhDigraph.WriteString(%s), err=%s", graphContent, writeerr.Error())
 		return writeerr
 	}
 
@@ -154,10 +156,10 @@ func generateGraph() error {
 			dotCmdPresent = false
 			return nil
 		}
-		log.Printf("osutils.ExecCommand(%v, %v) Error: %s", cmd, cmdParams, err.Error())
+		logger.Error.Printf("osutils.ExecCommand(%v, %v), err=%s", cmd, cmdParams, err.Error())
 	}
 	if len(stdOutErr) != 0 {
-		log.Println("Stdout & Stderr:", string(stdOutErr))
+		logger.Debug.Println("Stdout & Stderr:", string(stdOutErr))
 	}
 
 	return err

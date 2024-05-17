@@ -1,4 +1,4 @@
-// Copyright (c) 2021 Veritas Technologies LLC. All rights reserved. IP63-2828-7171-04-15-9
+// Copyright (c) 2022 Veritas Technologies LLC. All rights reserved. IP63-2828-7171-04-15-9
 package pm
 
 import (
@@ -7,7 +7,7 @@ import (
 	"sort"
 	"testing"
 
-	"github.com/VeritasOS/plugin-manager/config"
+	logger "github.com/VeritasOS/plugin-manager/utils/log"
 )
 
 func Test_getStatusColor(t *testing.T) {
@@ -194,7 +194,7 @@ func Test_initGraph(t *testing.T) {
 		},
 	}
 	// Set log file name to "test", so that cleaning becomes easier.
-	config.SetPMLogFile("test")
+	logger.InitFileLogger("test.log", "INFO")
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			nPInfo := normalizePluginsInfo(tt.args.pluginsInfo)

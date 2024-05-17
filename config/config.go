@@ -1,16 +1,16 @@
-// Copyright (c) 2023 Veritas Technologies LLC. All rights reserved. IP63-2828-7171-04-15-9
+// Copyright (c) 2022 Veritas Technologies LLC. All rights reserved. IP63-2828-7171-04-15-9
 
 package config
 
 import (
 	"io/ioutil"
-	"log"
 	"os"
 	"path/filepath"
+	"strings"
+
+	logger "github.com/VeritasOS/plugin-manager/utils/log"
 
 	"gopkg.in/yaml.v3"
-
-	logutil "github.com/VeritasOS/plugin-manager/utils/log"
 )
 
 // Config is Plugin Manager's configuration information.
@@ -87,17 +87,16 @@ func GetPluginsLogDir() string {
 
 // Load config information
 func Load() error {
-	log.Println("Entering config.Load()")
-	defer log.Println("Exiting config.Load()")
+	logger.Debug.Println("Entering config.Load()")
+	defer logger.Debug.Println("Exiting config.Load()")
 
 	myConfigFile := os.Getenv(EnvConfFile)
 	if myConfigFile == "" {
-		log.Printf("%s env is not set. Using default config file.\n",
-			EnvConfFile)
+		logger.Info.Printf("%s env is not set. Using default config file.", EnvConfFile)
 		myConfigFile = DefaultConfigPath
 	}
 	myConfigFile = filepath.FromSlash(myConfigFile)
-	log.Printf("config file: %s\n", myConfigFile)
+	logger.Debug.Printf("config file: %s", myConfigFile)
 	var err error
 	myConfig, err = readConfigFile(myConfigFile)
 
@@ -106,7 +105,7 @@ func Load() error {
 	// 	(Currently Px is 1.x, and we can keep say until Px 3.x).
 	// 	If older versions of PM is out there, then PluginDir value will be read from config file,
 	// 	 and assigned to Library variable.
-	log.Printf("Plugin Manager Config: %+v", myConfig)
+	logger.Debug.Printf("Plugin Manager Config: %+v", myConfig)
 	if myConfig.PluginManager.Library == "" &&
 		myConfig.PluginManager.PluginDir != "" {
 		myConfig.PluginManager.Library = myConfig.PluginManager.PluginDir
@@ -116,24 +115,24 @@ func Load() error {
 }
 
 func readConfigFile(confFilePath string) (Config, error) {
-	log.Printf("Entering readConfigFile(%s)", confFilePath)
-	defer log.Println("Exiting readConfigFile")
+	logger.Debug.Printf("Entering readConfigFile(%s)", confFilePath)
+	defer logger.Debug.Println("Exiting readConfigFile")
 
 	var conf Config
 	bFileContents, err := ioutil.ReadFile(confFilePath)
 	if err != nil {
-		return conf, logutil.PrintNLogWarning("Failed to read \"" +
+		return conf, logger.ConsoleError.PrintNReturnError("Failed to read \"" +
 			confFilePath + "\" file.")
 	}
 
 	err = yaml.Unmarshal(bFileContents, &conf)
 	if err != nil {
-		log.Printf("yaml.Unmarshal(%s, %s); Error: %s",
+		logger.Error.Printf("Failed to call yaml.Unmarshal(%s, %s); err=%s",
 			bFileContents, &conf, err.Error())
-		return conf, logutil.PrintNLogError("Failed to parse %s config file.", confFilePath)
+		return conf, logger.ConsoleError.PrintNReturnError("Failed to parse %s config file.", confFilePath)
 	}
 
-	log.Printf("Config: %+v\n", conf)
+	logger.Debug.Printf("Config: %+v", conf)
 	return conf, nil
 }
 
@@ -176,6 +175,10 @@ func SetPluginsDir(library string) {
 
 // SetPMLogFile sets the file for storing Plugin Manager logs.
 func SetPMLogFile(logfile string) {
+	// add .log suffix if it doesn't exist.
+	if !strings.HasSuffix(logfile, ".log") {
+		logfile += ".log"
+	}
 	myConfig.PluginManager.LogFile = logfile
 }
 

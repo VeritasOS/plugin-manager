@@ -1,4 +1,4 @@
-// Copyright (c) 2021 Veritas Technologies LLC. All rights reserved. IP63-2828-7171-04-15-9
+// Copyright (c) 2022 Veritas Technologies LLC. All rights reserved. IP63-2828-7171-04-15-9
 
 package pm
 
@@ -20,7 +20,7 @@ func Test_getPluginFiles(t *testing.T) {
 	myConfigFile := os.Getenv(config.EnvConfFile)
 	if myConfigFile == "" {
 		// For case, where tests are run through IDE.
-		myConfigFile = filepath.FromSlash("./sample/pm.config.yaml")
+		myConfigFile = filepath.FromSlash("./docs/sample/pm.config.yaml")
 	}
 	wd, _ := os.Getwd()
 	t.Logf("PWD: %s;\nConfig file: %+v\n", wd, myConfigFile)
@@ -111,7 +111,7 @@ func Test_getPluginFiles_PluginDir(t *testing.T) {
 	myConfigFile := os.Getenv(config.EnvConfFile)
 	if myConfigFile == "" {
 		// For case, where tests are run through IDE.
-		myConfigFile = filepath.FromSlash("./sample/pm.config.deprecated.yaml")
+		myConfigFile = filepath.FromSlash("./docs/sample/pm.config.deprecated.yaml")
 	}
 	t.Logf("Config file: %+v\n", myConfigFile)
 	config.SetPluginsDir(filepath.FromSlash(filepath.Dir(myConfigFile) + "/library"))
@@ -796,6 +796,9 @@ func Test_executePlugins(t *testing.T) {
 	}
 
 	initGraphConfig(config.GetPMLogFile())
+	// Init logFilePtr so in Unit Test it goes through file logger
+	CmdOptions.logFilePtr = new(string)
+	*CmdOptions.logFilePtr = "test.log"
 	for _, tt := range tests {
 		// Test Sequential as well as sequential execution
 		for _, tt.sequential = range []bool{false, true} {

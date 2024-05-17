@@ -1,4 +1,4 @@
-// Copyright (c) 2023 Veritas Technologies LLC. All rights reserved. IP63-2828-7171-04-15-9
+// Copyright (c) 2022 Veritas Technologies LLC. All rights reserved. IP63-2828-7171-04-15-9
 
 // Package pm defines Plugin Manager (PM) functions like executing
 // all plugins of a particular plugin type.
@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"log/syslog"
 	"os"
 	"os/exec"
 	"path"
@@ -20,7 +21,7 @@ import (
 	"time"
 
 	"github.com/VeritasOS/plugin-manager/config"
-	logutil "github.com/VeritasOS/plugin-manager/utils/log"
+	logger "github.com/VeritasOS/plugin-manager/utils/log"
 	osutils "github.com/VeritasOS/plugin-manager/utils/os"
 	"github.com/VeritasOS/plugin-manager/utils/output"
 )
@@ -72,40 +73,38 @@ type PluginsStatus []PluginStatus
 // getPluginFiles retrieves the plugin files under each component matching
 // the specified pluginType.
 func getPluginFiles(pluginType string) ([]string, error) {
-	log.Println("Entering getPluginFiles")
-	defer log.Println("Exiting getPluginFiles")
+	logger.Debug.Println("Entering getPluginFiles")
+	defer logger.Debug.Println("Exiting getPluginFiles")
 
 	var pluginFiles []string
 
 	library := config.GetPluginsLibrary()
 	if _, err := os.Stat(library); os.IsNotExist(err) {
-		return pluginFiles, logutil.PrintNLogError("Library '%s' doesn't exist. "+
+		return pluginFiles, logger.ConsoleError.PrintNReturnError("Library '%s' doesn't exist. "+
 			"A valid plugins library path must be specified.", library)
 	}
 	var files []string
 	dirs, err := ioutil.ReadDir(library)
 	if err != nil {
-		log.Printf("ioutil.ReadDir(%s); Error: %s", library, err.Error())
-		return pluginFiles, logutil.PrintNLogError("Failed to get contents of %s plugins library.", library)
+		logger.Error.Printf("Failed to call ioutil.ReadDir(%s), err=%s", library, err.Error())
+		return pluginFiles, logger.ConsoleError.PrintNReturnError("Failed to get contents of %s plugins library.", library)
 	}
 
 	for _, dir := range dirs {
 		compPluginDir := filepath.FromSlash(library + "/" + dir.Name())
 		fi, err := os.Stat(compPluginDir)
 		if err != nil {
-			log.Printf("Unable to stat on %s directory. Error: %s\n",
-				dir, err.Error())
+			logger.Error.Printf("Unable to stat on %s directory, err=%s", dir, err.Error())
 			continue
 		}
 		if !fi.IsDir() {
-			log.Printf("%s is not a directory.\n", compPluginDir)
+			logger.Error.Printf("%s is not a directory.", compPluginDir)
 			continue
 		}
 
 		tfiles, err := ioutil.ReadDir(compPluginDir)
 		if err != nil {
-			log.Printf("Unable to read contents of %s directory. Error: %s\n",
-				compPluginDir, err.Error())
+			logger.Error.Printf("Unable to read contents of %s directory, err=%s", compPluginDir, err.Error())
 		}
 		for _, tf := range tfiles {
 			files = append(files, filepath.FromSlash(dir.Name()+"/"+tf.Name()))
@@ -115,7 +114,7 @@ func getPluginFiles(pluginType string) ([]string, error) {
 	for _, file := range files {
 		matched, err := regexp.MatchString("[.]"+pluginType+"$", file)
 		if err != nil {
-			log.Printf("regexp.MatchString(%s, %s); Error: %s", "[.]"+pluginType, file, err.Error())
+			logger.Error.Printf("Failed to call regexp.MatchString(%s, %s), err=%s", "[.]"+pluginType, file, err.Error())
 			continue
 		}
 		if matched == true {
@@ -140,22 +139,22 @@ func getPluginsInfo(pluginType string) (Plugins, error) {
 		fContents, rerr := readFile(filepath.FromSlash(
 			config.GetPluginsLibrary() + pluginFiles[file]))
 		if rerr != nil {
-			return pluginsInfo, logutil.PrintNLogError(rerr.Error())
+			return pluginsInfo, logger.ConsoleError.PrintNReturnError(rerr.Error())
 		}
-		// log.Printf("Plugin file %s contents: \n%s\n", pluginFiles[file], fContents)
+		// logger.Info.Printf("Plugin file %s contents: \n%s\n", pluginFiles[file], fContents)
 		pInfo, perr := parseUnitFile(fContents)
 		if perr != nil {
 			return pluginsInfo, perr
 		}
-		log.Printf("Plugin %s info: %+v\n", pluginFiles[file], pInfo)
+		logger.Info.Printf("Plugin %s info: %+v", pluginFiles[file], pInfo)
 		pluginsInfo[pluginFiles[file]] = &pInfo
 	}
 	return pluginsInfo, nil
 }
 
 func normalizePluginsInfo(pluginsInfo Plugins) Plugins {
-	log.Println("Entering normalizePluginsInfo")
-	defer log.Println("Exiting normalizePluginsInfo")
+	logger.Debug.Println("Entering normalizePluginsInfo")
+	defer logger.Debug.Println("Exiting normalizePluginsInfo")
 
 	nPInfo := Plugins{}
 	for pFile, pFContents := range pluginsInfo {
@@ -166,20 +165,20 @@ func normalizePluginsInfo(pluginsInfo Plugins) Plugins {
 		}
 		nPInfo[pFile].RequiredBy = append(nPInfo[pFile].Requires, pFContents.RequiredBy...)
 		nPInfo[pFile].Requires = append(nPInfo[pFile].Requires, pFContents.Requires...)
-		log.Printf("%s plugin dependencies: %v", pFile, nPInfo[pFile])
+		logger.Info.Printf("%s plugin dependencies: %v", pFile, nPInfo[pFile])
 	}
 	for p := range nPInfo {
-		log.Printf("nPInfo key(%s): %v", p, nPInfo[p])
+		logger.Debug.Printf("nPInfo key(%s): %v", p, nPInfo[p])
 		for _, rs := range nPInfo[p].Requires {
 			// Check whether it's already marked as RequiredBy dependency in `Requires` plugin.
-			// log.Printf("Check whether `in` (%s) already marked as RequiredBy dependency in `Requires`(%s) plugin: %v",
+			// logger.Info.Printf("Check whether `in` (%s) already marked as RequiredBy dependency in `Requires`(%s) plugin: %v",
 			// p, rs, nPInfo[rs])
 			present := false
 			// If dependencies are missing, then nPInfo[rs] value will not be defined.
 			if nPInfo[rs] != nil {
-				log.Printf("PluginInfo for %s is present: %v", rs, nPInfo[rs])
+				logger.Info.Printf("PluginInfo for %s is present: %v", rs, nPInfo[rs])
 				for _, rby := range nPInfo[rs].RequiredBy {
-					log.Printf("p(%s) == rby(%s)? %v", p, rby, p == rby)
+					logger.Debug.Printf("p(%s) == rby(%s)? %v", p, rby, p == rby)
 					if p == rby {
 						present = true
 						break
@@ -187,16 +186,16 @@ func normalizePluginsInfo(pluginsInfo Plugins) Plugins {
 				}
 				if !present {
 					nPInfo[rs].RequiredBy = append(nPInfo[rs].RequiredBy, p)
-					log.Printf("Added %s as RequiredBy dependency of %s: %+v", p, rs, nPInfo[rs])
+					logger.Info.Printf("Added %s as RequiredBy dependency of %s: %+v", p, rs, nPInfo[rs])
 				}
 			}
 		}
 
 		// Check whether RequiredBy dependencies are also marked as Requires dependency on other plugin.
-		log.Printf("Check whether RequiredBy dependencies are also marked as Requires dependency on other plugin.")
+		logger.Info.Println("Check whether RequiredBy dependencies are also marked as Requires dependency on other plugin.")
 		for _, rby := range nPInfo[p].RequiredBy {
-			log.Printf("RequiredBy of %s: %s", p, rby)
-			log.Printf("nPInfo of %s: %+v", rby, nPInfo[rby])
+			logger.Debug.Printf("RequiredBy of %s: %s", p, rby)
+			logger.Debug.Printf("nPInfo of %s: %+v", rby, nPInfo[rby])
 			// INFO: If one plugin type is added as dependent on another by
 			// any chance, then skip checking its contents as the other
 			// plugin type files were not parsed.
@@ -215,18 +214,18 @@ func normalizePluginsInfo(pluginsInfo Plugins) Plugins {
 			}
 			if !present {
 				nPInfo[rby].Requires = append(nPInfo[rby].Requires, p)
-				log.Printf("Added %s as Requires dependency of %s: %+v", p, rby, nPInfo[rby])
+				logger.Info.Printf("Added %s as Requires dependency of %s: %+v", p, rby, nPInfo[rby])
 			}
 		}
 	}
-	log.Printf("Plugins info after normalizing: \n%+v\n", nPInfo)
+	logger.Info.Printf("Plugins info after normalizing: \n%+v\n", nPInfo)
 	return nPInfo
 }
 
 // parseUnitFile parses the plugin file contents.
 func parseUnitFile(fileContents string) (PluginAttributes, error) {
-	log.Println("Entering parseUnitFile")
-	defer log.Println("Exiting parseUnitFile")
+	logger.Debug.Println("Entering parseUnitFile")
+	defer logger.Debug.Println("Exiting parseUnitFile")
 
 	pluginInfo := PluginAttributes{}
 	if len(fileContents) == 0 {
@@ -235,16 +234,14 @@ func parseUnitFile(fileContents string) (PluginAttributes, error) {
 	lines := strings.Split(fileContents, "\n")
 	for l := range lines {
 		line := strings.TrimSpace(lines[l])
-		// TODO: Log as debug message
-		// log.Println("line...", line)
+		logger.Debug.Println("line...", line)
 		line = strings.TrimSpace(line)
 		if len(line) == 0 {
 			continue
 		}
 		if strings.HasPrefix(line, "#") {
 			// No need to parse comments.
-			// TODO: Log as debug message
-			// log.Println("Skipping comment line...", line)
+			logger.Debug.Println("Skipping comment line...", line)
 			continue
 		}
 
@@ -268,8 +265,7 @@ func parseUnitFile(fileContents string) (PluginAttributes, error) {
 			pluginInfo.Requires = strings.Split(val, " ")
 			break
 		default:
-			// TODO: Log as debug message
-			// log.Printf("Non-standard line found: %s", line)
+			logger.Debug.Printf("Non-standard line found: %s", line)
 			break
 		}
 	}
@@ -278,8 +274,8 @@ func parseUnitFile(fileContents string) (PluginAttributes, error) {
 }
 
 func validateDependencies(nPInfo Plugins) ([]string, error) {
-	log.Println("Entering validateDependencies")
-	defer log.Println("Exiting validateDependencies")
+	logger.Debug.Println("Entering validateDependencies")
+	defer logger.Debug.Println("Exiting validateDependencies")
 
 	var pluginOrder []string
 	notPlacedPlugins := []string{}
@@ -293,12 +289,12 @@ func validateDependencies(nPInfo Plugins) ([]string, error) {
 	// though it's not required for solution to work.
 	// (Sorting takes care of unit tests as maps return keys/values in random order).
 	sort.Strings(sortedPFiles)
-	log.Printf("Plugin files in sorted order: %+v\n", sortedPFiles)
+	logger.Info.Printf("Plugin files in sorted order: %+v", sortedPFiles)
 
 	for pFileIndex := range sortedPFiles {
 		pFile := sortedPFiles[pFileIndex]
 		pFContents := nPInfo[pFile]
-		log.Printf("\nFile: %s \n%+v \n\n", pFile, pFContents)
+		logger.Debug.Printf("\nFile: %s \n%+v \n\n", pFile, pFContents)
 		if len(pFContents.Requires) == 0 {
 			dependencyMet[pFile] = true
 			pluginOrder = append(pluginOrder, pFile)
@@ -321,7 +317,7 @@ func validateDependencies(nPInfo Plugins) ([]string, error) {
 		pFile := notPlacedPlugins[0]
 		notPlacedPlugins = notPlacedPlugins[1:]
 		pDependencies := nPInfo[pFile].Requires
-		log.Printf("Plugin %s dependencies: %+v\n", pFile, pDependencies)
+		logger.Info.Printf("Plugin %s dependencies: %+v", pFile, pDependencies)
 
 		dependencyMet[pFile] = true
 		for w := range pDependencies {
@@ -329,7 +325,7 @@ func validateDependencies(nPInfo Plugins) ([]string, error) {
 			if false == val {
 				// If dependency met is false, then process it later again after all dependencies are met.
 				dependencyMet[pFile] = false
-				log.Printf("Adding %s back to list %s to process as %s plugin dependency is not met.\n",
+				logger.Warning.Printf("Adding %s back to list %s to process as %s plugin dependency is not met.",
 					pFile, notPlacedPlugins, pDependencies[w])
 				notPlacedPlugins = append(notPlacedPlugins, pFile)
 				break
@@ -338,19 +334,19 @@ func validateDependencies(nPInfo Plugins) ([]string, error) {
 		// If dependency met is not set to false, then it means all
 		// dependencies are met. So, add it to pluginOrder
 		if false != dependencyMet[pFile] {
-			log.Printf("Dependency met for %s: %v\n", pFile, dependencyMet[pFile])
+			logger.Debug.Printf("Dependency met for %s: %v.", pFile, dependencyMet[pFile])
 			pluginOrder = append(pluginOrder, pFile)
 		}
 
 		elementsLeft--
 		if elementsLeft == 0 {
-			log.Printf("PrevLen: %d; CurLen: %d\n", prevLen, curLen)
+			logger.Debug.Printf("PrevLen: %d; CurLen: %d.", prevLen, curLen)
 			curLen = len(notPlacedPlugins)
 			if prevLen == curLen {
 				// INFO: Clear out the pluginOrder as we cannot run all the
 				// 	plugins either due to missing dependencies or having
 				// 	circular dependency.
-				return []string{}, logutil.PrintNLogError(
+				return []string{}, logger.ConsoleError.PrintNReturnError(
 					"There is either a circular dependency between plugins, "+
 						"or some dependencies are missing in these plugins: %+v",
 					notPlacedPlugins)
@@ -365,26 +361,41 @@ func validateDependencies(nPInfo Plugins) ([]string, error) {
 
 func executePluginCmd(statusCh chan<- map[string]*PluginStatus, p string, pluginsInfo Plugins, failedDependency bool) {
 	pInfo := pluginsInfo[p]
-	log.Printf("\nChannel: Plugin %s info: \n%+v\n", p, pInfo)
+	logger.Debug.Printf("Channel: Plugin %s info: \n%+v", p, pInfo)
 	updateGraph(getPluginType(p), p, dStatusStart, "")
-	logutil.PrintNLog("\n%s: %s\n", pInfo.Description, dStatusStart)
-	// Get relative path to plugins log file from PM log dir, so that linking
-	// in plugin graph works even when the logs are copied to another system.
-	pluginLogFile := strings.Replace(config.GetPluginsLogDir(),
-		config.GetPMLogDir(), "", -1) +
-		strings.Replace(p, string(os.PathSeparator), ":", -1) +
-		"." + time.Now().Format(time.RFC3339Nano) + ".log"
-	logFile := config.GetPMLogDir() + pluginLogFile
-	fh, openerr := os.OpenFile(logFile, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
-	if openerr != nil {
-		log.Printf("os.OpenFile(%s) Error: %s", logFile, openerr.Error())
-		// Ignore error and continue as plugin log file creation is not fatal.
+	logger.ConsoleInfo.Printf("%s: %s", pInfo.Description, dStatusStart)
+	// Create chLog, by default it will use syslog, if user specified logFile, then use previous defined log generator
+	var chLog *log.Logger
+	if !logger.IsFileLogger() {
+		var logTag string
+		// Set log tag for
+		logTag = logger.SyslogTagPrefix + "pm-" + *CmdOptions.logTagPtr
+		logger.Debug.Printf("logTag = %s", logTag)
+		syslogHandle, err := syslog.New(syslog.LOG_LOCAL0|syslog.LOG_INFO, logTag)
+		if err != nil {
+			logger.Error.Printf("Failed to call syslog.New, err=%s", err.Error())
+		}
+		defer syslogHandle.Close()
+		chLog = log.New(syslogHandle, "", 0)
+	} else {
+		// Get relative path to plugins log file from PM log dir, so that linking
+		// in plugin graph works even when the logs are copied to another system.
+		pluginLogFile := strings.Replace(config.GetPluginsLogDir(), config.GetPMLogDir(), "", -1) +
+			strings.Replace(p, string(os.PathSeparator), ":", -1) +
+			"." + time.Now().Format(time.RFC3339Nano) + ".log"
+		logFile := config.GetPMLogDir() + pluginLogFile
+		fh, openerr := os.OpenFile(logFile, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0600)
+		if openerr != nil {
+			logger.Error.Printf("Failed to call os.OpenFile(%s), err=%s", logFile, openerr.Error())
+			// Ignore error and continue as plugin log file creation is not fatal.
+		}
+		defer fh.Close()
+		// chLog is a channel logger
+		chLog = log.New(fh, "", log.LstdFlags)
+		chLog.SetOutput(fh)
 	}
-	defer fh.Close()
-	// chLog is a channel logger
-	chLog := log.New(fh, "", log.LstdFlags)
-	chLog.SetOutput(fh)
-	chLog.Println("Plugin file:", p)
+
+	chLog.Println("INFO: Plugin file:", p)
 
 	// If already marked as failed/skipped due to dependency fail,
 	// then just return that status.
@@ -399,15 +410,15 @@ func executePluginCmd(statusCh chan<- map[string]*PluginStatus, p string, plugin
 	}
 
 	if myStatus != "" {
-		log.Println(myStatusMsg)
-		chLog.Println(myStatusMsg)
+		chLog.Println("INFO: ", myStatusMsg)
+		logger.Info.Printf("Plugin(%s): %s", p, myStatusMsg)
 		updateGraph(getPluginType(p), p, myStatus, "")
-		logutil.PrintNLog("%s: %s\n", pInfo.Description, myStatus)
+		logger.ConsoleInfo.Printf("%s: %s", pInfo.Description, myStatus)
 		statusCh <- map[string]*PluginStatus{p: {Status: myStatus}}
 		return
 	}
 
-	log.Printf("\nExecuting command: %s\n", pInfo.ExecStart)
+	logger.Info.Printf("Executing command, cmd=%s", pInfo.ExecStart)
 	cmdParam := strings.Split(pInfo.ExecStart, " ")
 	cmdStr := cmdParam[0]
 	cmdParams := os.ExpandEnv(strings.Join(cmdParam[1:], " "))
@@ -417,33 +428,33 @@ func executePluginCmd(statusCh chan<- map[string]*PluginStatus, p string, plugin
 	stdOutErr, err := cmd.CombinedOutput()
 
 	func() {
-		chLog.Println("Executing command:", pInfo.ExecStart)
+		chLog.Printf("INFO: Plugin(%s): Executing command: %s", p, pInfo.ExecStart)
 		if err != nil {
-			chLog.Println("Error:", err.Error())
-			updateGraph(getPluginType(p), p, dStatusFail, pluginLogFile)
+			chLog.Printf("ERROR: Plugin(%s): Failed to execute command, err=%s", p, err.Error())
+			updateGraph(getPluginType(p), p, dStatusFail, "")
 		} else {
-			chLog.Println("Stdout & Stderr:", string(stdOutErr))
-			updateGraph(getPluginType(p), p, dStatusOk, pluginLogFile)
+			chLog.Printf("INFO: Plugin(%s): Stdout & Stderr: %s", p, string(stdOutErr))
+			updateGraph(getPluginType(p), p, dStatusOk, "")
 		}
 	}()
 
-	log.Println("Stdout & Stderr:", string(stdOutErr))
+	logger.Debug.Println("Stdout & Stderr:", string(stdOutErr))
 	pStatus := PluginStatus{StdOutErr: string(stdOutErr)}
 	if err != nil {
 		pStatus.Status = dStatusFail
-		log.Printf("Failed to execute plugin %s. Error: %s\n", p, err.Error())
-		logutil.PrintNLog("%s: %s\n", pInfo.Description, dStatusFail)
+		logger.Error.Printf("Failed to execute plugin %s. err=%s\n", p, err.Error())
+		logger.ConsoleError.Printf("%s: %s\n", pInfo.Description, dStatusFail)
 		statusCh <- map[string]*PluginStatus{p: &pStatus}
 		return
 	}
 	pStatus.Status = dStatusOk
-	logutil.PrintNLog("%s: %s\n", pInfo.Description, dStatusOk)
+	logger.ConsoleInfo.Printf("%s: %s\n", pInfo.Description, dStatusOk)
 	statusCh <- map[string]*PluginStatus{p: &pStatus}
 }
 
 func executePlugins(psStatus *PluginsStatus, nPInfo Plugins, sequential bool) bool {
-	log.Println("Entering executePlugins")
-	defer log.Println("Exiting executePlugins")
+	logger.Debug.Println("Entering executePlugins")
+	defer logger.Debug.Println("Exiting executePlugins")
 
 	retStatus := true
 
@@ -467,7 +478,7 @@ func executePlugins(psStatus *PluginsStatus, nPInfo Plugins, sequential bool) bo
 	waitCount := map[string]int{}
 	for p := range nPInfo {
 		waitCount[p] = len(nPInfo[p].Requires)
-		log.Printf("%s plugin dependencies: %+v", p, nPInfo[p])
+		logger.Info.Printf("%s plugin dependencies: %+v", p, nPInfo[p])
 	}
 
 	executingCnt := 0
@@ -483,7 +494,7 @@ func executePlugins(psStatus *PluginsStatus, nPInfo Plugins, sequential bool) bo
 			// 	When sequential execution is not enforced, run plugins that are ready.
 			if waitCount[p] == 0 && ((sequential == false) ||
 				(sequential == true && executingCnt == 0)) {
-				log.Printf("Plugin %s is ready for execution: %v.", p, nPInfo[p])
+				logger.Info.Printf("Plugin %s is ready for execution: %v.", p, nPInfo[p])
 				waitCount[p]--
 
 				ps := PluginStatus{}
@@ -499,7 +510,7 @@ func executePlugins(psStatus *PluginsStatus, nPInfo Plugins, sequential bool) bo
 		exeStatus := <-exeCh
 		executingCnt--
 		for plugin, pStatus := range exeStatus {
-			log.Printf("%s status: %v", plugin, pStatus.Status)
+			logger.Info.Printf("%s status: %v", plugin, pStatus.Status)
 			pIdx := pluginIndexes[plugin]
 			ps := *psStatus
 			ps[pIdx].Status = pStatus.Status
@@ -551,6 +562,9 @@ var CmdOptions struct {
 
 	// logFilePtr indicates the log file name to write to in the logDirPtr location.
 	logFilePtr *string
+
+	// logTagPtr indicates the log tag to write into syslog.
+	logTagPtr *string
 }
 
 // List the plugin and its dependencies.
@@ -566,8 +580,7 @@ func List(pluginType string) error {
 		return err
 	}
 
-	logutil.PrintNLog("The list of plugins are mapped in %s\n",
-		getImagePath())
+	logger.ConsoleInfo.Printf("The list of plugins are mapped in %s", getImagePath())
 	return nil
 }
 
@@ -584,8 +597,8 @@ func readFile(filePath string) (string, error) {
 
 // RegisterCommandOptions registers the command options that are supported
 func RegisterCommandOptions(progname string) {
-	log.Println("Entering RegisterCommandOptions")
-	defer log.Println("Exiting RegisterCommandOptions")
+	logger.Debug.Println("Entering RegisterCommandOptions")
+	defer logger.Debug.Println("Exiting RegisterCommandOptions")
 
 	CmdOptions.versionCmd = flag.NewFlagSet(progname+" version", flag.ContinueOnError)
 	CmdOptions.versionPtr = CmdOptions.versionCmd.Bool("version", false, "print Plugin Manager (PM) version.")
@@ -613,8 +626,13 @@ func RegisterCommandOptions(progname string) {
 	)
 	CmdOptions.logFilePtr = CmdOptions.RunCmd.String(
 		"log-file",
-		"",
+		progname+".log",
 		"Name of the log file.",
+	)
+	CmdOptions.logTagPtr = CmdOptions.RunCmd.String(
+		"log-tag",
+		"",
+		"Log tag to use while writing into syslog.",
 	)
 	output.RegisterCommandOptions(CmdOptions.RunCmd, map[string]string{})
 
@@ -640,8 +658,14 @@ func RegisterCommandOptions(progname string) {
 	CmdOptions.ListCmd.StringVar(
 		CmdOptions.logFilePtr,
 		"log-file",
-		"",
+		progname+".log",
 		"Name of the log file.",
+	)
+	CmdOptions.ListCmd.StringVar(
+		CmdOptions.logTagPtr,
+		"log-tag",
+		"",
+		"Log tag to use while writing into syslog.",
 	)
 }
 
@@ -651,7 +675,7 @@ func Run(result *RunStatus, pluginType string) error {
 	status := true
 
 	if err := osutils.OsMkdirAll(config.GetPluginsLogDir(), 0755); nil != err {
-		err = logutil.PrintNLogError(
+		err = logger.ConsoleError.PrintNReturnError(
 			"Failed to create the plugins logs directory: %s. "+
 				"Error: %s", config.GetPluginsLogDir(), err.Error())
 		result.Status = dStatusFail
@@ -673,11 +697,11 @@ func Run(result *RunStatus, pluginType string) error {
 		result.Status = dStatusFail
 		err = fmt.Errorf("Running %s plugins: %s", pluginType, dStatusFail)
 		result.StdOutErr = err.Error()
-		logutil.PrintNLog("%s\n", err.Error())
+		logger.ConsoleError.Printf("%s\n", err.Error())
 		return err
 	}
 	result.Status = dStatusOk
-	logutil.PrintNLog("Running %s plugins: %s\n", pluginType, dStatusOk)
+	logger.ConsoleInfo.Printf("Running %s plugins: %s\n", pluginType, dStatusOk)
 	return nil
 }
 
@@ -689,8 +713,8 @@ func Run(result *RunStatus, pluginType string) error {
 //     "progname":  Name of the program along with any cmds (ex: asum pm)
 //     "cmd-index": Index to the cmd (ex: run)
 func ScanCommandOptions(options map[string]interface{}) error {
-	log.Printf("Entering ScanCommandOptions(%+v)...", options)
-	defer log.Println("Exiting ScanCommandOptions")
+	logger.Debug.Printf("Entering ScanCommandOptions(%+v)...", options)
+	defer logger.Debug.Println("Exiting ScanCommandOptions")
 
 	progname := filepath.Base(os.Args[0])
 	cmdIndex := 1
@@ -701,22 +725,22 @@ func ScanCommandOptions(options map[string]interface{}) error {
 		cmdIndex = valI.(int)
 	}
 	cmd := os.Args[cmdIndex]
-	log.Println("progname:", progname, "cmd with arguments: ", os.Args[cmdIndex:])
+	logger.Debug.Println("progname:", progname, "cmd with arguments: ", os.Args[cmdIndex:])
 
 	switch cmd {
 	case "version":
-		logutil.PrintNLog("Plugin Manager (PM) version %s\n", version)
+		logger.ConsoleInfo.Printf("Plugin Manager (PM) version %s", version)
 
 	case "list":
 		err := CmdOptions.ListCmd.Parse(os.Args[cmdIndex+1:])
 		if err != nil {
-			log.Fatalln(cmd, "command arguments parse error:", err.Error())
+			logger.Error.Printf("Command arguments parse error, cmd=%s, err=%s", cmd, err.Error())
 		}
 
 	case "run":
 		err := CmdOptions.RunCmd.Parse(os.Args[cmdIndex+1:])
 		if err != nil {
-			log.Fatalln(cmd, "command arguments parse error:", err.Error())
+			logger.Error.Printf("Command arguments parse error, cmd=%s, err=%s", cmd, err.Error())
 		}
 
 	case "help":
@@ -753,10 +777,19 @@ func ScanCommandOptions(options map[string]interface{}) error {
 	}
 	if logToNewFile {
 		myLogFile := config.GetPMLogDir() + config.GetPMLogFile()
-		log.Println("Logging to specified log file:", myLogFile)
-		logutil.SetLogging(myLogFile)
+		logger.Info.Println("Logging to specified log file:", myLogFile)
+		errList := logger.DeInitLogger()
+		if len(errList) > 0 {
+			fmt.Printf("Failed to deinitialize logger, err=[%v]", errList)
+			os.Exit(-1)
+		}
+		err := logger.InitFileLogger(myLogFile, "INFO")
+		if err != nil {
+			fmt.Printf("Failed to initialize logger, err=[%v]", err)
+			os.Exit(-1)
+		}
 	}
-
+	// By default, logToNewFile should be false, but log-tag option should be set.
 	if *CmdOptions.pluginTypePtr != "" {
 		pluginType := *CmdOptions.pluginTypePtr
 		var err error
