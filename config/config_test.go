@@ -1,4 +1,4 @@
-// Copyright (c) 2022 Veritas Technologies LLC. All rights reserved. IP63-2828-7171-04-15-9
+// Copyright (c) 2024 Veritas Technologies LLC. All rights reserved. IP63-2828-7171-04-15-9
 package config
 
 import (
@@ -46,7 +46,11 @@ func Test_Load(t *testing.T) {
 				EnvConfFile: "../docs/sample/pm.config.yaml",
 			},
 			want: Config{
-				PluginManager{
+				struct {
+					Library string `yaml:"library"`
+					LogDir  string `yaml:"log dir"`
+					LogFile string `yaml:"log file"`
+				}{
 					Library: "../docs/sample/library",
 					LogDir:  "./",
 					LogFile: "pm",
@@ -106,7 +110,11 @@ func Test_readConfigFile(t *testing.T) {
 				confFilePath: "../docs/sample/pm.config.yaml",
 			},
 			want: Config{
-				PluginManager{
+				struct {
+					Library string `yaml:"library"`
+					LogDir  string `yaml:"log dir"`
+					LogFile string `yaml:"log file"`
+				}{
 					Library: "../docs/sample/library",
 					LogDir:  "./",
 					LogFile: "pm",
@@ -120,7 +128,11 @@ func Test_readConfigFile(t *testing.T) {
 				confFilePath: "non-existing-dir/pm.config.yaml",
 			},
 			want: Config{
-				PluginManager{},
+				struct {
+					Library string `yaml:"library"`
+					LogDir  string `yaml:"log dir"`
+					LogFile string `yaml:"log file"`
+				}{},
 			},
 			wantErr: true,
 		},
@@ -130,7 +142,11 @@ func Test_readConfigFile(t *testing.T) {
 				confFilePath: "../../docs/sample/library/D/preupgrade.sh",
 			},
 			want: Config{
-				PluginManager{},
+				struct {
+					Library string `yaml:"library"`
+					LogDir  string `yaml:"log dir"`
+					LogFile string `yaml:"log file"`
+				}{},
 			},
 			wantErr: true,
 		},

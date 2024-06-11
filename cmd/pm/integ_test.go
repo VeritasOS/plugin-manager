@@ -1,4 +1,4 @@
-// Copyright (c) 2022 Veritas Technologies LLC. All rights reserved. IP63-2828-7171-04-15-9
+// Copyright (c) 2024 Veritas Technologies LLC. All rights reserved. IP63-2828-7171-04-15-9
 
 package main
 
@@ -27,8 +27,6 @@ type Config struct {
 		Library string `yaml:"library"`
 		LogDir  string `yaml:"log dir"`
 		LogFile string `yaml:"log file"`
-		// PluginDir is deprecated. Use Library instead.
-		PluginDir string `yaml:"plugin dir"`
 	}
 }
 
@@ -68,26 +66,6 @@ func setIntegrationEnvironment(topPath string) string {
 	newConfig.PluginManager.Library = filepath.FromSlash(topPath + "/docs/sample/library")
 	newConfig.PluginManager.LogDir = filepath.FromSlash(topPath)
 	newConfig.PluginManager.LogFile = "pm-integ"
-
-	saveConfig(newConfig, configFile)
-	os.Setenv(config.EnvConfFile, configFile)
-
-	return configFile
-}
-
-// setDeprecatedIntegrationEnvironment() sets the values that are now deprecated and tests to make sure that
-// there are no regressions until they are removed.
-// TODO: Delete this once PluginDir support is removed.
-func setDeprecatedIntegrationEnvironment(topPath string) string {
-	logger.Info.Println("Entering setIntegrationEnvironment")
-	defer logger.Info.Println("Exiting setIntegrationEnvironment")
-
-	configFile := filepath.FromSlash(topPath + "/pm.config-integ.yaml")
-
-	var newConfig Config
-	newConfig.PluginManager.LogDir = filepath.FromSlash(topPath)
-	newConfig.PluginManager.LogFile = "pm-integ"
-	newConfig.PluginManager.PluginDir = filepath.FromSlash(topPath + "/docs/sample/library")
 
 	saveConfig(newConfig, configFile)
 	os.Setenv(config.EnvConfFile, configFile)
@@ -141,17 +119,13 @@ func TestIntegration(t *testing.T) {
 	defer os.Remove(configFile)
 	defer os.Setenv(config.EnvConfFile, oriConfigFile)
 
-	integTest(t, pmBinary, tDir, "")
-
-	// setIntegrationEnvironment() for deprecated  scenario
-	setDeprecatedIntegrationEnvironment(tDir)
-	integTest(t, pmBinary, tDir, " deprecated")
+	integTest(t, pmBinary, tDir)
 
 	os.Setenv("INTEGRATION_TEST", "DONE")
 	os.Remove(pmBinary)
 }
 
-func integTest(t *testing.T, pmBinary, tDir, deprecated string) {
+func integTest(t *testing.T, pmBinary, tDir string) {
 	type args struct {
 		pluginType           string
 		sequential           bool
@@ -170,6 +144,7 @@ func integTest(t *testing.T, pmBinary, tDir, deprecated string) {
 				pluginType: "preupgrade",
 			},
 			want: []string{
+				"Failed to initialize SysLog [stat /etc/rsyslog.d/10-vxos-asum.conf: no such file or directory], use FileLog instead.",
 				"Checking for \"D\" settings...: " + dStatusStart,
 				"Checking for \"D\" settings...: " + dStatusOk,
 				"Checking for \"A\" settings: " + dStatusStart,
@@ -185,6 +160,7 @@ func integTest(t *testing.T, pmBinary, tDir, deprecated string) {
 				testPluginExitStatus: 1,
 			},
 			want: []string{
+				"Failed to initialize SysLog [stat /etc/rsyslog.d/10-vxos-asum.conf: no such file or directory], use FileLog instead.",
 				"Checking for \"D\" settings...: " + dStatusStart,
 				"Checking for \"D\" settings...: " + dStatusFail,
 				"Checking for \"A\" settings: " + dStatusStart,
@@ -198,7 +174,7 @@ func integTest(t *testing.T, pmBinary, tDir, deprecated string) {
 
 	for _, tc := range tests {
 		for _, tc.args.sequential = range []bool{false, true} {
-			t.Run(tc.name+fmt.Sprintf("(sequential=%v)", tc.args.sequential)+fmt.Sprintf("%v", deprecated), func(t *testing.T) {
+			t.Run(tc.name+fmt.Sprintf("(sequential=%v)", tc.args.sequential), func(t *testing.T) {
 				cmdStr := pmBinary
 				tmpfile, err := ioutil.TempFile(tDir+"/cover/", "cover.out")
 				if err != nil {

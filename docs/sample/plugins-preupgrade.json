@@ -1,0 +1,13 @@
+{
+    "A/a.preupgrade": {
+        "Description": "Checking for \"A\" settings",
+        "ExecStart": "/bin/echo \"Checking A...\"",
+        "Requires": [
+            "D/d.preupgrade"
+        ]
+    },
+    "D/d.preupgrade": {
+        "Description": "Checking for \"D\" settings...",
+        "ExecStart": "$PM_LIBRARY/D/preupgrade.sh"
+    }
+}

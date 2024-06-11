@@ -1,4 +1,4 @@
-// Copyright (c) 2022 Veritas Technologies LLC. All rights reserved. IP63-2828-7171-04-15-9
+// Copyright (c) 2024 Veritas Technologies LLC. All rights reserved. IP63-2828-7171-04-15-9
 
 package output
 
@@ -54,15 +54,13 @@ func RegisterCommandOptions(f *flag.FlagSet, defaultParams map[string]string) {
 		&cmdOptions.Format,
 		"output-format",
 		defaultOutputFormat,
-		"The format of output to display the results. "+
+		"The format of output to display the results.\n"+
 			"Supported output formats are 'json', 'yaml'.",
 	)
 }
 
-// Write writes the given data in the format {json|yaml} that was set in options.
-//
-//	into a specified file. If file is not specified, then it will print
-//	on STDOUT.
+// Write the given data in the format {json|yaml} that was set in options into
+// a specified file. If file is not specified, then it will print on STDOUT.
 func Write(data interface{}) error {
 	logger.Debug.Println("Entering Write")
 	defer logger.Debug.Println("Exiting Write")
@@ -76,10 +74,8 @@ func Write(data interface{}) error {
 	return writeToFile(data, cmdOptions.Format, cmdOptions.File)
 }
 
-// writeToFile writes the given data in the specified format {json|yaml}
-//
-//	into a specified file. If file is not specified, then it will print
-//	on STDOUT.
+// writeToFile writes the given data in the specified format {json|yaml} into
+// a specified file. If file is not specified, then it will print on STDOUT.
 func writeToFile(data interface{}, format string, filePath string) error {
 	logger.Debug.Println("Entering writeToFile")
 	defer logger.Debug.Println("Exiting writeToFile")

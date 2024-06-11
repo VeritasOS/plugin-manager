@@ -1,4 +1,4 @@
-// Copyright (c) 2022 Veritas Technologies LLC. All rights reserved. IP63-2828-7171-04-15-9
+// Copyright (c) 2024 Veritas Technologies LLC. All rights reserved. IP63-2828-7171-04-15-9
 
 package pm
 
@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/VeritasOS/plugin-manager/config"
+	logger "github.com/VeritasOS/plugin-manager/utils/log"
 )
 
 func Test_getPluginFiles(t *testing.T) {
@@ -89,73 +90,10 @@ func Test_getPluginFiles(t *testing.T) {
 		// },
 	}
 
+	library := config.GetPluginsLibrary()
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			resFiles, resStatus := getPluginFiles(tt.pluginType)
-			if resStatus != tt.output.err {
-				t.Errorf("Status: got %+v, want %+v", resStatus, tt.output.err)
-			}
-			if reflect.DeepEqual(resFiles, tt.output.pluginFiles) == false {
-				t.Errorf("File list: got %+v, want %+v", resFiles, tt.output.pluginFiles)
-			}
-		})
-	}
-}
-
-// TODO: PluginDir is deprecated. Delete below test once it's removed.
-func Test_getPluginFiles_PluginDir(t *testing.T) {
-	if os.Getenv("INTEGRATION_TEST") == "RUNNING" {
-		t.Skip("Not applicable while running integration tests.")
-		return
-	}
-	myConfigFile := os.Getenv(config.EnvConfFile)
-	if myConfigFile == "" {
-		// For case, where tests are run through IDE.
-		myConfigFile = filepath.FromSlash("./docs/sample/pm.config.deprecated.yaml")
-	}
-	t.Logf("Config file: %+v\n", myConfigFile)
-	config.SetPluginsDir(filepath.FromSlash(filepath.Dir(myConfigFile) + "/library"))
-	// t.Logf("Config: %+v\n", myConfig)
-	tests := []struct {
-		name       string
-		pluginType string
-		output     struct {
-			pluginFiles []string
-			err         error
-		}
-	}{
-		{
-			name:       "1 postreboot plugin file",
-			pluginType: "postreboot",
-			output: struct {
-				pluginFiles []string
-				err         error
-			}{
-				pluginFiles: []string{filepath.FromSlash("A/a.postreboot")},
-				err:         nil,
-			},
-		},
-		{
-			name:       "4 prereboot plugin files",
-			pluginType: "prereboot",
-			output: struct {
-				pluginFiles []string
-				err         error
-			}{
-				pluginFiles: []string{
-					filepath.FromSlash("A/a.prereboot"),
-					filepath.FromSlash("B/b.prereboot"),
-					filepath.FromSlash("C/c.prereboot"),
-					filepath.FromSlash("D/d.prereboot"),
-				},
-				err: nil,
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			resFiles, resStatus := getPluginFiles(tt.pluginType)
+			resFiles, resStatus := getPluginFiles(tt.pluginType, library)
 			if resStatus != tt.output.err {
 				t.Errorf("Status: got %+v, want %+v", resStatus, tt.output.err)
 			}
@@ -558,7 +496,7 @@ func Test_executePlugins(t *testing.T) {
 					PluginStatus{
 						PluginAttributes: PluginAttributes{
 							Description: "Applying \"A\" settings",
-							FileName:    "A/a.test",
+							Name:        "A/a.test",
 							ExecStart:   "/usr/bin/top -b -n 1",
 							RequiredBy:  []string{},
 							Requires:    []string{},
@@ -582,7 +520,7 @@ func Test_executePlugins(t *testing.T) {
 					PluginStatus{
 						PluginAttributes: PluginAttributes{
 							Description: "Applying \"A\" settings",
-							FileName:    "A/a.test",
+							Name:        "A/a.test",
 							ExecStart:   "",
 							RequiredBy:  []string{},
 							Requires:    []string{},
@@ -606,7 +544,7 @@ func Test_executePlugins(t *testing.T) {
 					PluginStatus{
 						PluginAttributes: PluginAttributes{
 							Description: "Applying \"A\" settings",
-							FileName:    "A/a.test",
+							Name:        "A/a.test",
 							ExecStart:   "exit 1",
 							RequiredBy:  []string{},
 							Requires:    []string{},
@@ -635,7 +573,7 @@ func Test_executePlugins(t *testing.T) {
 					PluginStatus{
 						PluginAttributes: PluginAttributes{
 							Description: "Applying \"A\" settings",
-							FileName:    "A/a.test",
+							Name:        "A/a.test",
 							ExecStart:   `/bin/echo "Running A..."`,
 							RequiredBy:  []string{"D/d.test"},
 							Requires:    []string{},
@@ -646,7 +584,7 @@ func Test_executePlugins(t *testing.T) {
 					PluginStatus{
 						PluginAttributes: PluginAttributes{
 							Description: "Applying \"D\" settings",
-							FileName:    "D/d.test",
+							Name:        "D/d.test",
 							ExecStart:   `/bin/echo "Running D..."`,
 							RequiredBy:  []string{},
 							Requires:    []string{"A/a.test"},
@@ -693,7 +631,7 @@ func Test_executePlugins(t *testing.T) {
 					PluginStatus{
 						PluginAttributes: PluginAttributes{
 							Description: "Applying \"A\" settings",
-							FileName:    "A/a.test",
+							Name:        "A/a.test",
 							ExecStart:   "/bin/echo \"Running A...!\"",
 							RequiredBy:  []string{"D/d.test"},
 							Requires:    []string{},
@@ -704,7 +642,7 @@ func Test_executePlugins(t *testing.T) {
 					PluginStatus{
 						PluginAttributes: PluginAttributes{
 							Description: "Applying \"D\" settings",
-							FileName:    "D/d.test",
+							Name:        "D/d.test",
 							ExecStart:   "/bin/echo \"Running D...!\"",
 							RequiredBy:  []string{},
 							Requires:    []string{"A/a.test"},
@@ -733,7 +671,7 @@ func Test_executePlugins(t *testing.T) {
 				psStatus: PluginsStatus{
 					PluginStatus{
 						PluginAttributes: PluginAttributes{
-							Description: "Applying \"A\" settings", FileName: "A/a.test",
+							Description: "Applying \"A\" settings", Name: "A/a.test",
 							ExecStart:  "/bin/echo \"Running A...!\"",
 							RequiredBy: []string{"D/d.test"},
 							Requires:   []string{},
@@ -744,7 +682,7 @@ func Test_executePlugins(t *testing.T) {
 					{
 						PluginAttributes: PluginAttributes{
 							Description: "Applying \"D\" settings",
-							FileName:    "D/d.test",
+							Name:        "D/d.test",
 							ExecStart:   "/bin/echo \"Running D...!\"",
 							RequiredBy:  []string{},
 							Requires:    []string{"A/a.test"},
@@ -774,7 +712,7 @@ func Test_executePlugins(t *testing.T) {
 					PluginStatus{
 						PluginAttributes: PluginAttributes{
 							Description: "Applying \"A\" settings",
-							FileName:    "A/a.test",
+							Name:        "A/a.test",
 							ExecStart:   "exit 1",
 							RequiredBy:  []string{"D/d.test"},
 						},
@@ -785,7 +723,7 @@ func Test_executePlugins(t *testing.T) {
 							Description: "Applying \"D\" settings",
 							Requires:    []string{"A/a.test"},
 							ExecStart:   "/bin/echo \"Running D...!\"",
-							FileName:    "D/d.test",
+							Name:        "D/d.test",
 							RequiredBy:  []string{},
 						},
 						Status: "Skipped",
@@ -806,7 +744,7 @@ func Test_executePlugins(t *testing.T) {
 				func(t *testing.T) {
 					npInfo := normalizePluginsInfo(tt.pluginInfo)
 					var result PluginsStatus
-					res := executePlugins(&result, npInfo, tt.sequential)
+					res := executePlugins(&result, npInfo, tt.sequential, map[string]string{})
 					// t.Logf("res: %+v, expected: %v", res, tt.want.returnStatus)
 					if res != tt.want.returnStatus {
 						t.Errorf("Return value: got %+v, want %+v",
@@ -829,7 +767,7 @@ func Test_executePlugins(t *testing.T) {
 						if reflect.DeepEqual(result[i].Status,
 							tt.want.psStatus[i].Status) == false {
 							t.Errorf("Plugins %s Status: got %+v, want %+v",
-								result[i].FileName,
+								result[i].Name,
 								result[i].Status, tt.want.psStatus[i].Status)
 						}
 						// if tt.want.psStatus[i].StdOutErr != "" &&
@@ -844,5 +782,123 @@ func Test_executePlugins(t *testing.T) {
 				},
 			)
 		}
+	}
+}
+
+func initTestLogging(t *testing.T) {
+	myLogFile := "pm.log"
+	if config.GetPMLogFile() != "" {
+		myLogFile = config.GetPMLogFile()
+	}
+	if config.GetPMLogDir() != "" {
+		myLogFile = config.GetPMLogDir() + myLogFile
+	}
+	t.Logf("Logging to specified log file: %s", myLogFile)
+	errList := logger.DeInitLogger()
+	if len(errList) > 0 {
+		fmt.Printf("Failed to deinitialize logger, err=[%v]", errList)
+		os.Exit(-1)
+	}
+	err := logger.InitFileLogger(myLogFile, "INFO")
+	if err != nil {
+		fmt.Printf("Failed to initialize logger, err=[%v]", err)
+		os.Exit(-1)
+	}
+}
+
+func Test_getPluginsInfoFromJSONStrOrFile(t *testing.T) {
+	if os.Getenv("INTEGRATION_TEST") == "RUNNING" {
+		t.Skip("Not applicable while running integration tests.")
+		return
+	}
+	initTestLogging(t)
+
+	type args struct {
+		jsonStrOrFile string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    Plugins
+		wantErr bool
+	}{
+		{
+			name: "Plugins in JSON String",
+			args: args{jsonStrOrFile: `{
+				"plugin1": {
+				  "Description": "plugin 1 description...",
+				  "ExecStart": "echo command to run..."
+				},
+				"plugin2": {
+				  "Description": "plugin 2 description...",
+				  "ExecStart": "echo command to run..."
+				},
+				"plugin3": {
+				  "Description": "Plugin 3 depends on 1 and 2",
+				  "ExecStart": "echo Running plugin 3",
+				  "Requires": [
+					"plugin1",
+					"plugin2"
+				  ]
+				}
+			  }`,
+			},
+			want: Plugins{
+				"plugin1": &PluginAttributes{
+					Description: "plugin 1 description...",
+					ExecStart:   "echo command to run...",
+				},
+				"plugin2": &PluginAttributes{
+					Description: "plugin 2 description...",
+					ExecStart:   "echo command to run...",
+				},
+				"plugin3": &PluginAttributes{
+					Description: "Plugin 3 depends on 1 and 2",
+					ExecStart:   "echo Running plugin 3",
+					Requires:    []string{"plugin1", "plugin2"},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "Plugins in JSON file",
+			args: args{jsonStrOrFile: "./docs/sample/plugins-prereboot.json"},
+			want: Plugins{
+				"A/a.prereboot": &PluginAttributes{
+					Description: "Applying \"A\" settings",
+					ExecStart:   "/usr/bin/ls -l -t",
+					Requires: []string{
+						"C/c.prereboot",
+						"D/d.prereboot",
+					},
+				},
+				"B/b.prereboot": &PluginAttributes{
+					Description: "Applying \"B\" settings...",
+					ExecStart:   "/bin/echo \"Running B...\"",
+				},
+				"C/c.prereboot": &PluginAttributes{
+					Description: "Applying \"C\" settings...",
+					ExecStart:   "/bin/echo \"Running C...\"",
+				},
+				"D/d.prereboot": &PluginAttributes{
+					Description: "Applying \"D\" settings...",
+					ExecStart:   "/bin/echo 'Running D...!'",
+					Requires:    []string{"B/b.prereboot"},
+				},
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := getPluginsInfoFromJSONStrOrFile(tt.args.jsonStrOrFile)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("getPluginsInfoFromJSONStrOrFile() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("getPluginsInfoFromJSONStrOrFile() = %v, want %v", got, tt.want)
+			}
+		})
 	}
 }

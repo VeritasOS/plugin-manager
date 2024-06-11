@@ -16,7 +16,10 @@ systemd.
       - [Example: Plugin Manager (PM) `list`](#example-plugin-manager-pm-list)
   - [Configuring Plugin Manager](#configuring-plugin-manager)
   - [Running Plugins](#running-plugins)
-    - [Example: Plugin Manager (PM) `run`](#example-plugin-manager-pm-run)
+    - [Example: Plugin Manager (PM) `run -plugins`](#example-plugin-manager-pm-run--plugins)
+      - [Specify `-plugins` details as a json string](#specify--plugins-details-as-a-json-string)
+      - [Specify `-plugins` details via json file](#specify--plugins-details-via-json-file)
+    - [Example: Plugin Manager (PM) `run -type`](#example-plugin-manager-pm-run--type)
     - [Example: Plugin Manager (PM) with `sequential` flag](#example-plugin-manager-pm-with-sequential-flag)
     - [Example: Overriding Plugin Manager (PM) configuration - `library`, `log-dir` and `log-file`](#example-overriding-plugin-manager-pm-configuration---library-log-dir-and-log-file)
     - [Example: Writing plugins result to a `output-file` in `output-format` {json, yaml} format](#example-writing-plugins-result-to-a-output-file-in-output-format-json-yaml-format)
@@ -87,6 +90,7 @@ The PM list command syntax / usage is as shown below:
 ```bash
 pm list -type <PluginType>
   [-library=<PluginsLibraryPath>]
+  [-log-tag=<TagOfSysLog>]
   [-log-dir=<LogDirectory>]
   [-log-file=<NameOfLogFile>]
 ```
@@ -96,6 +100,9 @@ where
 - **`type`**: Indicates the plugin type.
 - **`library`**: Indicates the location of plugins library.
     **Overrides** value present in PM configuration.
+- **`log-tag`**: Indicates the log tag written by rsyslog.
+    Note: rsyslog is used as default logger for both main and plugin logs.
+    It will be overwritten if `log-file` option set.
 - **`log-dir`**: Indicates the log directory path.
     **Overrides** value present in PM configuration.
 - **`log-file`**: Indicates the name of the log file.
@@ -113,7 +120,7 @@ The list of plugins are mapped in .//preupgrade.2020-01-13T15:56:46.725348-08:00
 
 Plugin Manager can be configured to look for plugins at a specific location,
 and to write logs to a specific file by specifying those details in the
-Plugin Manager configuration file `/etc/asum/pm.config.yml`.
+Plugin Manager configuration file `/opt/veritas/appliance/asum/pm.config.yml`.
 
 Instead of updating the default config file, one can choose to provide his/her
 own custom config file.
@@ -121,7 +128,7 @@ This can be done by setting the environment variable `PM_CONF_FILE` to the
 custom config file path as shown below.
 
 ```bash
-export PM_CONF_FILE=sample/pm.config.yaml
+export PM_CONF_FILE=docs/sample/pm.config.yaml
 ```
 
 The config file could be either a `yaml` or a `json` file.
@@ -132,7 +139,10 @@ $ cat pm.config.yaml
 ---
 PluginManager:
   # `library` is the location where plugin directories containing plugins are expected to be present
-  library: "./sample/library"
+  library: "./docs/sample/library"
+
+  # If log-tag is specified, rsyslog is used for writing logs into pm.log (regardless of whether log-file and log-dir are specified).
+
   log dir: "./"
   # `log file` indicates the name of the log file.
   #   The timestamp and '.log' extension would be appended to this name.
@@ -156,9 +166,11 @@ exit value of plugins, the PM exits with 1.
 The PM run command syntax / usage is as shown below:
 
 ```bash
-pm run -type <PluginType>
+pm run [-plugins <PluginInformation>]
+  [-type <PluginType>]
   [-library=<PluginsLibraryPath>]
   [-sequential[={true|1|false|0}]]
+  [-log-tag=<TagOfSysLog>]
   [-log-dir=<LogDirectory>]
   [-log-file=<NameOfLogFile>]
   [-output={json|yaml}]
@@ -167,13 +179,16 @@ pm run -type <PluginType>
 
 where
 
+- **`plugins`**: A json string or a json file containing plugins and its dependencies.
 - **`type`**: Indicates the plugin type.
 - **`library`**: Indicates the location of plugins library.
     **Overrides** value present in PM configuration.
+    **NOTE** The specified value gets set as an environment variable `PM_LIBRARY` for the plugins being run. The plugin file can access any scripts in the same folder via `PM_LIBRARY` variable.
 - **`-sequential`**: Indicates PM to execute only one plugin at a time
     regardless of how many plugins' dependencies are met.
     **Default: Disabled**. To enable, specify `-sequential=true` or just
     `-sequential` while running PM.
+- **`log-tag`**: Indicates the log tag written by rsyslog. The `log-tag` option will supercede `log-dir` and `log-file` options.
 - **`log-dir`**: Indicates the log directory path.
     **Overrides** value present in PM configuration.
 - **`log-file`**: Indicates the name of the log file.
@@ -185,7 +200,71 @@ where
     If `output` format is specified, and `output-file` is not specified,
     then result will be displayed on console.
 
-### Example: Plugin Manager (PM) `run`
+### Example: Plugin Manager (PM) `run -plugins`
+
+```json
+$ jq -n "$plugins" | tee docs/sample/plugins-prereboot.json
+{
+  "A/a.prereboot": {
+    "Description": "Applying \"A\" settings",
+    "ExecStart": "/usr/bin/ls -l -t",
+    "Requires": [
+      "C/c.prereboot",
+      "D/d.prereboot"
+    ]
+  },
+  "B/b.prereboot": {
+    "Description": "Applying \"B\" settings...",
+    "ExecStart": "/bin/echo \"Running B...\""
+  },
+  "C/c.prereboot": {
+    "Description": "Applying \"C\" settings...",
+    "ExecStart": "/bin/echo \"Running C...\""
+  },
+  "D/d.prereboot": {
+    "Description": "Applying \"D\" settings...",
+    "ExecStart": "/bin/echo 'Running D...!'",
+    "Requires": [
+      "B/b.prereboot"
+    ]
+  }
+}
+$
+```
+
+#### Specify `-plugins` details as a json string
+
+```bash
+$ $GOBIN/pm run -plugins "$plugins"
+Applying "B" settings...: Starting
+Applying "C" settings...: Starting
+Applying "B" settings...: Succeeded
+Applying "D" settings...: Starting
+Applying "C" settings...: Succeeded
+Applying "D" settings...: Succeeded
+Applying "A" settings: Starting
+Applying "A" settings: Succeeded
+Running  plugins: Succeeded
+bash-5.1$
+```
+
+#### Specify `-plugins` details via json file
+
+```bash
+$ $GOBIN/pm run -plugins "./docs/sample/plugins-prereboot.json" -library docs/sample/library/
+Applying "C" settings...: Starting
+Applying "B" settings...: Starting
+Applying "C" settings...: Succeeded
+Applying "B" settings...: Succeeded
+Applying "D" settings...: Starting
+Applying "D" settings...: Succeeded
+Applying "A" settings: Starting
+Applying "A" settings: Succeeded
+Running  plugins: Succeeded
+$ 
+```
+
+### Example: Plugin Manager (PM) `run -type`
 
 ```bash
 $ $GOBIN/pm run -type=prereboot
@@ -252,8 +331,8 @@ $
 ### Example: Writing plugins result to a `output-file` in `output-format` {json, yaml} format
 
 ```bash
-$ $GOBIN/pm run -type preupgrade -output-format=json -output-file=a.json -library ./sample/library/
-Log: /log/asum/pm.2021-01-29T17:46:57.6904918-08:00.log
+$ $GOBIN/pm run -type preupgrade -output-format=json -output-file=a.json -library ./docs/sample/library/
+Log: /var/log/asum/pm.2021-01-29T17:46:57.6904918-08:00.log
 
 Checking for "D" settings...: Starting
 Checking for "D" settings...: Succeeded
@@ -271,18 +350,18 @@ $ cat a.json
   "Plugins": [
     {
       "Description": "Checking for \"D\" settings...",
-      "FileName": "D/d.preupgrade",
+      "Name": "D/d.preupgrade",
       "ExecStart": "$PM_LIBRARY/D/preupgrade.sh",
       "RequiredBy": [
         "A/a.preupgrade"
       ],
       "Requires": null,
       "Status": "Succeeded",
-      "StdOutErr": "Running preupgrade.sh (path: sample/library//D/preupgrade.sh) with status(0)...\nDisplaying Plugin Manager (PM) Config file path: \nDone(0)!\n"
+      "StdOutErr": "Running preupgrade.sh (path: docs/sample/library//D/preupgrade.sh) with status(0)...\nDisplaying Plugin Manager (PM) Config file path: \nDone(0)!\n"
     },
     {
       "Description": "Checking for \"A\" settings",
-      "FileName": "A/a.preupgrade",
+      "Name": "A/a.preupgrade",
       "ExecStart": "/bin/echo \"Checking A...\"",
       "RequiredBy": null,
       "Requires": [
@@ -298,8 +377,8 @@ $ cat a.json
 ```
 
 ```bash
-$ $GOBIN/pm run -type preupgrade -output-format=yaml -output-file=a.yaml -library ./sample/library/
-Log: /log/asum/pm.2021-01-29T17:53:15.8128937-08:00.log
+$ $GOBIN/pm run -type preupgrade -output-format=yaml -output-file=a.yaml -library ./docs/sample/library/
+Log: /var/log/asum/pm.2021-01-29T17:53:15.8128937-08:00.log
 
 Checking for "D" settings...: Starting
 Checking for "D" settings...: Failed
@@ -312,13 +391,13 @@ $ cat a.yaml
 type: preupgrade
 plugins:
 - description: Checking for "D" settings...
-  filename: D/d.preupgrade
+  name: D/d.preupgrade
   execstart: $PM_LIBRARY/D/preupgrade.sh
   requiredby:
   - A/a.preupgrade
   requires: []
   status: Failed
-  stdouterr: "Running preupgrade.sh (path: sample/library//D/preupgrade.sh) with
+  stdouterr: "Running preupgrade.sh (path: docs/sample/library//D/preupgrade.sh) with
     status(1)...\nDisplaying Plugin Manager (PM) Config file path: \nFail(1)\n"
 status: Failed
 stdouterr: 'Running preupgrade plugins: Failed'

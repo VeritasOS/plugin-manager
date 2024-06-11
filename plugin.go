@@ -1,10 +1,11 @@
-// Copyright (c) 2022 Veritas Technologies LLC. All rights reserved. IP63-2828-7171-04-15-9
+// Copyright (c) 2024 Veritas Technologies LLC. All rights reserved. IP63-2828-7171-04-15-9
 
 // Package pm defines Plugin Manager (PM) functions like executing
 // all plugins of a particular plugin type.
 package pm
 
 import (
+	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
@@ -28,7 +29,7 @@ import (
 
 var (
 	// Version of the Plugin Manager (PM).
-	version = "4.6"
+	version = "4.8"
 )
 
 // Status of plugin execution used for displaying to user on console.
@@ -42,7 +43,7 @@ const (
 // PluginAttributes that are supported in a plugin file.
 type PluginAttributes struct {
 	Description string
-	FileName    string
+	Name        string
 	ExecStart   string
 	RequiredBy  []string
 	Requires    []string
@@ -72,13 +73,11 @@ type PluginsStatus []PluginStatus
 
 // getPluginFiles retrieves the plugin files under each component matching
 // the specified pluginType.
-func getPluginFiles(pluginType string) ([]string, error) {
+func getPluginFiles(pluginType, library string) ([]string, error) {
 	logger.Debug.Println("Entering getPluginFiles")
 	defer logger.Debug.Println("Exiting getPluginFiles")
 
 	var pluginFiles []string
-
-	library := config.GetPluginsLibrary()
 	if _, err := os.Stat(library); os.IsNotExist(err) {
 		return pluginFiles, logger.ConsoleError.PrintNReturnError("Library '%s' doesn't exist. "+
 			"A valid plugins library path must be specified.", library)
@@ -129,15 +128,58 @@ func getPluginType(file string) string {
 	return strings.Replace(path.Ext(file), ".", ``, -1)
 }
 
-func getPluginsInfo(pluginType string) (Plugins, error) {
+func getPluginsInfoFromJSONStrOrFile(jsonStrOrFile string) (Plugins, error) {
+	var err error
+	var pluginsInfo Plugins
+	pluginsJSONStr := jsonStrOrFile
+
+	// If Plugins information is in file...
+	fi, err := os.Stat(jsonStrOrFile)
+	if err != nil {
+		logger.Debug.Printf("Specified input is not a file. Err: %s",
+			err.Error())
+	} else {
+		if fi.IsDir() {
+			return pluginsInfo,
+				logger.ConsoleError.PrintNReturnError(
+					"Specified path %s is directory. Plugins info should be specified either as a json string or in a json file.",
+					jsonStrOrFile)
+		}
+
+		pluginsFile := jsonStrOrFile
+		fh, err := os.Open(pluginsFile)
+		if err != nil {
+			logger.ConsoleError.PrintNReturnError("%s", err)
+			return pluginsInfo, err
+		}
+		defer fh.Close()
+
+		pluginsJSONStr, err = readFile(filepath.FromSlash(pluginsFile))
+		if err != nil {
+			return pluginsInfo,
+				logger.ConsoleError.PrintNReturnError(err.Error())
+		}
+	}
+	err = json.Unmarshal([]byte(pluginsJSONStr), &pluginsInfo)
+	if err != nil {
+		logger.Error.Printf("Failed to call json.Unmarshal(%s, %v); err=%s",
+			pluginsJSONStr, &pluginsInfo, err.Error())
+		return pluginsInfo,
+			logger.ConsoleError.PrintNReturnError(
+				"Plugins is not in expected format. Error: %s", err.Error())
+	}
+	return pluginsInfo, nil
+}
+
+func getPluginsInfoFromLibrary(pluginType, library string) (Plugins, error) {
 	var pluginsInfo = make(Plugins)
-	pluginFiles, err := getPluginFiles(pluginType)
+	pluginFiles, err := getPluginFiles(pluginType, library)
 	if err != nil {
 		return pluginsInfo, err
 	}
 	for file := range pluginFiles {
 		fContents, rerr := readFile(filepath.FromSlash(
-			config.GetPluginsLibrary() + pluginFiles[file]))
+			library + pluginFiles[file]))
 		if rerr != nil {
 			return pluginsInfo, logger.ConsoleError.PrintNReturnError(rerr.Error())
 		}
@@ -161,7 +203,7 @@ func normalizePluginsInfo(pluginsInfo Plugins) Plugins {
 		nPInfo[pFile] = &PluginAttributes{
 			Description: pFContents.Description,
 			ExecStart:   pFContents.ExecStart,
-			FileName:    pFile,
+			Name:        pFile,
 		}
 		nPInfo[pFile].RequiredBy = append(nPInfo[pFile].Requires, pFContents.RequiredBy...)
 		nPInfo[pFile].Requires = append(nPInfo[pFile].Requires, pFContents.Requires...)
@@ -359,7 +401,7 @@ func validateDependencies(nPInfo Plugins) ([]string, error) {
 	return pluginOrder, nil
 }
 
-func executePluginCmd(statusCh chan<- map[string]*PluginStatus, p string, pluginsInfo Plugins, failedDependency bool) {
+func executePluginCmd(statusCh chan<- map[string]*PluginStatus, p string, pluginsInfo Plugins, failedDependency bool, env map[string]string) {
 	pInfo := pluginsInfo[p]
 	logger.Debug.Printf("Channel: Plugin %s info: \n%+v", p, pInfo)
 	updateGraph(getPluginType(p), p, dStatusStart, "")
@@ -418,13 +460,37 @@ func executePluginCmd(statusCh chan<- map[string]*PluginStatus, p string, plugin
 		return
 	}
 
-	logger.Info.Printf("Executing command, cmd=%s", pInfo.ExecStart)
-	cmdParam := strings.Split(pInfo.ExecStart, " ")
-	cmdStr := cmdParam[0]
-	cmdParams := os.ExpandEnv(strings.Join(cmdParam[1:], " "))
-	cmdParamsExpanded := strings.Split(cmdParams, " ")
+	// INFO: First initialize with existing OS env, and then overwrite any
+	// 	existing keys with user specified values. I.e., Even if PM_LIBRARY
+	//  env is set in shell, it'll be overwritten by Library parameter passed
+	//  by user.
+	envList := osutils.OsEnviron()
+	envMap := osutils.EnvMap()
+	for envKey, envValue := range env {
+		envList = append(envList, envKey+"="+envValue)
+		envMap[envKey] = envValue
+	}
 
-	cmd := exec.Command(os.ExpandEnv(cmdStr), cmdParamsExpanded...)
+	getEnvVal := func(name string) string {
+		// logger.Debug.Printf("In getEnvVal(%v)...", name)
+		// logger.Debug.Printf("env: %+v", envMap)
+		if val, ok := envMap[name]; ok {
+			// logger.Debug.Printf("Key:%v = Value:%v", name, val)
+			return val
+		}
+		return ""
+	}
+
+	logger.Info.Printf("Executing command, cmd=%s", pInfo.ExecStart)
+	// INFO: Expand environment values like "PM_LIBRARY" so that ...
+	// 	1. Binaries or scripts placed in the same directory as that of plugins
+	// 		can be accessed as ${PM_LIBRARY}/<binary|script> path.
+	// 	2. Envs that are set by caller of calling plugin manager gets expanded.
+	cmdParam := strings.Split(os.Expand(pInfo.ExecStart, getEnvVal), " ")
+	cmdStr := cmdParam[0]
+	cmdParams := cmdParam[1:]
+	cmd := exec.Command(cmdStr, cmdParams...)
+	cmd.Env = envList
 	stdOutErr, err := cmd.CombinedOutput()
 
 	func() {
@@ -452,8 +518,8 @@ func executePluginCmd(statusCh chan<- map[string]*PluginStatus, p string, plugin
 	statusCh <- map[string]*PluginStatus{p: &pStatus}
 }
 
-func executePlugins(psStatus *PluginsStatus, nPInfo Plugins, sequential bool) bool {
-	logger.Debug.Println("Entering executePlugins")
+func executePlugins(psStatus *PluginsStatus, nPInfo Plugins, sequential bool, env map[string]string) bool {
+	logger.Debug.Printf("Entering executePlugins(, %+v, %v, %+v)...", nPInfo, sequential, env)
 	defer logger.Debug.Println("Exiting executePlugins")
 
 	retStatus := true
@@ -462,18 +528,6 @@ func executePlugins(psStatus *PluginsStatus, nPInfo Plugins, sequential bool) bo
 	if err != nil {
 		return false
 	}
-
-	// INFO: Set the PM_LIBRARY env variable so that binaries/scripts placed
-	// in the same directory as that of plugins can be accessed using
-	// ${PM_LIBRARY}/<binary|script> path.
-	os.Setenv("PM_LIBRARY", config.GetPluginsLibrary())
-
-	// INFO: PM_PLUGIN_DIR is deprecated. Use PM_LIBRARY instead.
-	// Keeping it for backward compatibility for couple of releases.
-	// 	(Currently Px is 1.x, and we can keep say until Px 3.x).
-	// If older versions of PM is out there, then PM_PLUGIN_DIR env value
-	// 	will be expected in plugins.
-	os.Setenv("PM_PLUGIN_DIR", config.GetPluginsLibrary())
 
 	waitCount := map[string]int{}
 	for p := range nPInfo {
@@ -502,7 +556,7 @@ func executePlugins(psStatus *PluginsStatus, nPInfo Plugins, sequential bool) bo
 				*psStatus = append(*psStatus, ps)
 				pluginIndexes[p] = len(*psStatus) - 1
 
-				go executePluginCmd(exeCh, p, nPInfo, failedDependency[p])
+				go executePluginCmd(exeCh, p, nPInfo, failedDependency[p], env)
 				executingCnt++
 			}
 		}
@@ -547,6 +601,10 @@ var CmdOptions struct {
 	// (If sequential is disabled, plugins whose dependencies are met would be executed in parallel).
 	sequential *bool
 
+	// pluginsPtr specifies plugins Name and its Description, ExecStart and any dependencies (Requires, RequiredBy).
+	// For input format, check 'Plugins' struct.
+	pluginsPtr *string
+
 	// pluginTypePtr indicates type of the plugin to run.
 	pluginTypePtr *string
 
@@ -567,12 +625,49 @@ var CmdOptions struct {
 	logTagPtr *string
 }
 
-// List the plugin and its dependencies.
-func List(pluginType string) error {
-	var pluginsInfo, err = getPluginsInfo(pluginType)
+// ListOptions are optional parameters related to list function.
+type ListOptions struct {
+	Type string
+}
+
+// RunOptions are optional parameters related to run function.
+type RunOptions struct {
+	Plugins    Plugins
+	Library    string
+	Type       string
+	Sequential bool
+}
+
+// ListFromLibrary lists the plugin and its dependencies from the plugins
+// library path.
+func ListFromLibrary(pluginType, library string) error {
+	pluginsInfo, err := getPluginsInfoFromLibrary(pluginType, library)
 	if err != nil {
 		return err
 	}
+
+	listOptions := ListOptions{
+		Type: pluginType,
+	}
+	return list(pluginsInfo, listOptions)
+}
+
+// ListFromJSONStrOrFile lists the plugin and its dependencies from a json
+// string or a json file.
+func ListFromJSONStrOrFile(jsonStrOrFile string, listOptions ListOptions) error {
+	pluginsInfo, err := getPluginsInfoFromJSONStrOrFile(jsonStrOrFile)
+	if err != nil {
+		return err
+	}
+
+	return list(pluginsInfo, listOptions)
+}
+
+// List the plugin and its dependencies.
+func list(pluginsInfo Plugins, listOptions ListOptions) error {
+	pluginType := listOptions.Type
+
+	var err error
 	nPInfo := normalizePluginsInfo(pluginsInfo)
 
 	err = initGraph(pluginType, nPInfo)
@@ -604,6 +699,11 @@ func RegisterCommandOptions(progname string) {
 	CmdOptions.versionPtr = CmdOptions.versionCmd.Bool("version", false, "print Plugin Manager (PM) version.")
 
 	CmdOptions.RunCmd = flag.NewFlagSet(progname+" run", flag.PanicOnError)
+	CmdOptions.pluginsPtr = CmdOptions.RunCmd.String(
+		"plugins",
+		"",
+		"Plugins and its dependencies in json format as a string or in a file (Ex: './plugins.json').\nWhen specified, plugin files are not looked up in specified -library path.",
+	)
 	CmdOptions.pluginTypePtr = CmdOptions.RunCmd.String(
 		"type",
 		"",
@@ -612,7 +712,9 @@ func RegisterCommandOptions(progname string) {
 	CmdOptions.libraryPtr = CmdOptions.RunCmd.String(
 		"library",
 		"",
-		"Path of the plugins library.",
+		"Path of the plugins library.\nSets PM_LIBRARY env value.\n"+
+			"When '-plugins' is specified, only PM_LIBRARY env value is set. "+
+			"The plugin files are not read from library path.",
 	)
 	CmdOptions.sequential = CmdOptions.RunCmd.Bool(
 		"sequential",
@@ -632,11 +734,17 @@ func RegisterCommandOptions(progname string) {
 	CmdOptions.logTagPtr = CmdOptions.RunCmd.String(
 		"log-tag",
 		"",
-		"Log tag to use while writing into syslog.",
+		"Name of Syslog tag.\nWhen 'log-tag' option is specified, the 'log-dir' and 'log-file' values are ignored.",
 	)
 	output.RegisterCommandOptions(CmdOptions.RunCmd, map[string]string{})
 
 	CmdOptions.ListCmd = flag.NewFlagSet(progname+" list", flag.PanicOnError)
+	CmdOptions.ListCmd.StringVar(
+		CmdOptions.pluginsPtr,
+		"plugins",
+		"",
+		"Plugins and its dependencies in json format as a string or in a file (Ex: './plugins.json')",
+	)
 	CmdOptions.ListCmd.StringVar(
 		CmdOptions.pluginTypePtr,
 		"type",
@@ -665,14 +773,44 @@ func RegisterCommandOptions(progname string) {
 		CmdOptions.logTagPtr,
 		"log-tag",
 		"",
-		"Log tag to use while writing into syslog.",
+		"Name of Syslog tag.\nWhen 'log-tag' option is specified, the 'log-dir' and 'log-file' values are ignored.",
 	)
 }
 
-// Run the specified plugin type plugins.
-func Run(result *RunStatus, pluginType string) error {
+// RunFromJSONStrOrFile runs the plugins based on dependencies specified in a
+// json string or a json file.
+func RunFromJSONStrOrFile(result *RunStatus, jsonStrOrFile string, runOptions RunOptions) error {
+	pluginsInfo, err := getPluginsInfoFromJSONStrOrFile(jsonStrOrFile)
+	if err != nil {
+		result.Status = dStatusFail
+		result.StdOutErr = err.Error()
+		return err
+	}
+
+	return run(result, pluginsInfo, runOptions)
+}
+
+// RunFromLibrary runs the specified plugin type plugins from the library.
+func RunFromLibrary(result *RunStatus, pluginType string, runOptions RunOptions) error {
 	result.Type = pluginType
-	status := true
+
+	var pluginsInfo, err = getPluginsInfoFromLibrary(pluginType, runOptions.Library)
+	if err != nil {
+		result.Status = dStatusFail
+		result.StdOutErr = err.Error()
+		return err
+	}
+
+	runOptions.Type = pluginType
+	return run(result, pluginsInfo, runOptions)
+}
+
+// run the specified plugins.
+func run(result *RunStatus, pluginsInfo Plugins, runOptions RunOptions) error {
+	logger.Debug.Printf("Entering run( , %+v, %+v)...", pluginsInfo, runOptions)
+	defer logger.Debug.Println("Exiting run")
+	pluginType := runOptions.Type
+	sequential := runOptions.Sequential
 
 	if err := osutils.OsMkdirAll(config.GetPluginsLogDir(), 0755); nil != err {
 		err = logger.ConsoleError.PrintNReturnError(
@@ -683,19 +821,17 @@ func Run(result *RunStatus, pluginType string) error {
 		return err
 	}
 
-	var pluginsInfo, err = getPluginsInfo(pluginType)
-	if err != nil {
-		result.Status = dStatusFail
-		result.StdOutErr = err.Error()
-		return err
-	}
 	nPInfo := normalizePluginsInfo(pluginsInfo)
 	initGraph(pluginType, nPInfo)
 
-	status = executePlugins(&result.Plugins, nPInfo, *CmdOptions.sequential)
+	env := map[string]string{}
+	if runOptions.Library != "" {
+		env["PM_LIBRARY"] = runOptions.Library
+	}
+	status := executePlugins(&result.Plugins, nPInfo, sequential, env)
 	if status != true {
 		result.Status = dStatusFail
-		err = fmt.Errorf("Running %s plugins: %s", pluginType, dStatusFail)
+		err := fmt.Errorf("Running %s plugins: %s", pluginType, dStatusFail)
 		result.StdOutErr = err.Error()
 		logger.ConsoleError.Printf("%s\n", err.Error())
 		return err
@@ -760,9 +896,6 @@ func ScanCommandOptions(options map[string]interface{}) error {
 	}
 
 	// Override `pm.config.yaml` value with command-line arguments.
-	if *CmdOptions.libraryPtr != "" {
-		config.SetPluginsLibrary(*CmdOptions.libraryPtr)
-	}
 	logToNewFile := false
 	if *CmdOptions.logDirPtr != "" {
 		config.SetPMLogDir(*CmdOptions.logDirPtr)
@@ -771,42 +904,81 @@ func ScanCommandOptions(options map[string]interface{}) error {
 	// Info: Call set PM log-dir to clean extra slashes, and to append path
 	// 	separator at the end.
 	config.SetPMLogDir(config.GetPMLogDir())
-	if *CmdOptions.logFilePtr != "" {
-		config.SetPMLogFile(*CmdOptions.logFilePtr)
-		logToNewFile = true
-	}
-	if logToNewFile {
-		myLogFile := config.GetPMLogDir() + config.GetPMLogFile()
-		logger.Info.Println("Logging to specified log file:", myLogFile)
-		errList := logger.DeInitLogger()
-		if len(errList) > 0 {
-			fmt.Printf("Failed to deinitialize logger, err=[%v]", errList)
-			os.Exit(-1)
-		}
-		err := logger.InitFileLogger(myLogFile, "INFO")
+
+	// Reinit logging if required.
+	if *CmdOptions.logTagPtr != "" {
+		// Use Syslog whenever logTagPtr is specified.
+		err := logger.InitSysLogger("pm-main", "INFO")
 		if err != nil {
-			fmt.Printf("Failed to initialize logger, err=[%v]", err)
+			fmt.Printf("Failed to initialize SysLog [%v]. Exiting...\n", err)
 			os.Exit(-1)
 		}
+	} else {
+		if *CmdOptions.logFilePtr != "" {
+			config.SetPMLogFile(*CmdOptions.logFilePtr)
+			logToNewFile = true
+		}
+		if logToNewFile {
+			myLogFile := config.GetPMLogDir() + config.GetPMLogFile()
+			logger.Info.Println("Logging to specified log file:", myLogFile)
+			errList := logger.DeInitLogger()
+			if len(errList) > 0 {
+				fmt.Printf("Failed to deinitialize logger, err=[%v]", errList)
+				os.Exit(-1)
+			}
+			err := logger.InitFileLogger(myLogFile, "INFO")
+			if err != nil {
+				fmt.Printf("Failed to initialize logger, err=[%v]", err)
+				os.Exit(-1)
+			}
+		}
 	}
-	// By default, logToNewFile should be false, but log-tag option should be set.
-	if *CmdOptions.pluginTypePtr != "" {
-		pluginType := *CmdOptions.pluginTypePtr
-		var err error
+
+	var err error
+	pluginType := *CmdOptions.pluginTypePtr
+	if *CmdOptions.pluginsPtr != "" {
+		jsonStrOrFile := *CmdOptions.pluginsPtr
 		switch cmd {
 		case "list":
-			err = List(pluginType)
+			err = ListFromJSONStrOrFile(jsonStrOrFile,
+				ListOptions{Type: pluginType})
 
 		case "run":
 			pmstatus := RunStatus{}
-			err = Run(&pmstatus, pluginType)
+			runOptions := RunOptions{
+				Type:       pluginType,
+				Sequential: *CmdOptions.sequential,
+			}
+			// NOTE: When '-plugins' info is passed as str or file, don't use
+			// 	Library from config.
+			// 	The config file is expected to have some library path, and that
+			//  may not be applicable for this set of inputs. So, set/use
+			//  "Library" value only if it's passed as cmdline argument.
+			if *CmdOptions.libraryPtr != "" {
+				runOptions.Library = filepath.FromSlash(
+					filepath.Clean(*CmdOptions.libraryPtr) + string(os.PathSeparator))
+			}
+			err = RunFromJSONStrOrFile(&pmstatus, jsonStrOrFile, runOptions)
 			output.Write(pmstatus)
 		}
-		if err != nil {
-			return err
+	} else if pluginType != "" {
+		if *CmdOptions.libraryPtr != "" {
+			config.SetPluginsLibrary(*CmdOptions.libraryPtr)
+		}
+		library := filepath.FromSlash(filepath.Clean(*CmdOptions.libraryPtr) + string(os.PathSeparator))
+		switch cmd {
+		case "list":
+			err = ListFromLibrary(pluginType, library)
+
+		case "run":
+			pmstatus := RunStatus{}
+			err = RunFromLibrary(&pmstatus, pluginType,
+				RunOptions{Library: library,
+					Sequential: *CmdOptions.sequential})
+			output.Write(pmstatus)
 		}
 	}
-	return nil
+	return err
 }
 
 // Usage of Plugin Manager (pm) command.

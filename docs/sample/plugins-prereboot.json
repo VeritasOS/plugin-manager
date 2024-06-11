@@ -1,0 +1,25 @@
+{
+    "A/a.prereboot": {
+        "Description": "Applying \"A\" settings",
+        "ExecStart": "/usr/bin/ls -l -t",
+        "Requires": [
+            "C/c.prereboot",
+            "D/d.prereboot"
+        ]
+    },
+    "B/b.prereboot": {
+        "Description": "Applying \"B\" settings...",
+        "ExecStart": "/bin/echo \"Running B...\""
+    },
+    "C/c.prereboot": {
+        "Description": "Applying \"C\" settings...",
+        "ExecStart": "/bin/echo \"Running C...\""
+    },
+    "D/d.prereboot": {
+        "Description": "Applying \"D\" settings...",
+        "ExecStart": "/bin/echo 'Running D...!'",
+        "Requires": [
+            "B/b.prereboot"
+        ]
+    }
+}

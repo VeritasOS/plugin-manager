@@ -1,4 +1,4 @@
-// Copyright (c) 2022 Veritas Technologies LLC. All rights reserved. IP63-2828-7171-04-15-9
+// Copyright (c) 2024 Veritas Technologies LLC. All rights reserved. IP63-2828-7171-04-15-9
 
 package config
 
@@ -9,7 +9,6 @@ import (
 	"strings"
 
 	logger "github.com/VeritasOS/plugin-manager/utils/log"
-
 	"gopkg.in/yaml.v3"
 )
 
@@ -21,8 +20,6 @@ type Config struct {
 		Library string `yaml:"library"`
 		LogDir  string `yaml:"log dir"`
 		LogFile string `yaml:"log file"`
-		// PluginDir is deprecated. Use Library instead.
-		PluginDir string `yaml:"plugin dir"`
 	}
 }
 
@@ -55,14 +52,6 @@ func GetLogFile() string {
 // GetPluginsLibrary gets location of plugins library.
 func GetPluginsLibrary() string {
 	return filepath.FromSlash(filepath.Clean(myConfig.PluginManager.Library) +
-		string(os.PathSeparator))
-}
-
-// GetPluginsDir gets location of plugins directory.
-//
-//	NOTE: This is deprecated, Use GetPluginsLibrary() instead.
-func GetPluginsDir() string {
-	return filepath.FromSlash(filepath.Clean(myConfig.PluginManager.PluginDir) +
 		string(os.PathSeparator))
 }
 
@@ -99,18 +88,7 @@ func Load() error {
 	logger.Debug.Printf("config file: %s", myConfigFile)
 	var err error
 	myConfig, err = readConfigFile(myConfigFile)
-
-	// INFO: Library replaces PluginDir.
-	// 	Keeping PluginDir for backward compatibility for couple of releases.
-	// 	(Currently Px is 1.x, and we can keep say until Px 3.x).
-	// 	If older versions of PM is out there, then PluginDir value will be read from config file,
-	// 	 and assigned to Library variable.
 	logger.Debug.Printf("Plugin Manager Config: %+v", myConfig)
-	if myConfig.PluginManager.Library == "" &&
-		myConfig.PluginManager.PluginDir != "" {
-		myConfig.PluginManager.Library = myConfig.PluginManager.PluginDir
-	}
-
 	return err
 }
 
@@ -163,14 +141,6 @@ func SetLogFile(logFile string) {
 func SetPluginsLibrary(library string) {
 	myConfig.PluginManager.Library = filepath.FromSlash(
 		filepath.Clean(library) + string(os.PathSeparator))
-}
-
-// SetPluginsDir sets location of plugins directory.
-//
-//	NOTE: This is deprecated, Use SetPluginsLibrary() instead.
-func SetPluginsDir(library string) {
-	myConfig.PluginManager.PluginDir = filepath.FromSlash(filepath.Clean(library) +
-		string(os.PathSeparator))
 }
 
 // SetPMLogFile sets the file for storing Plugin Manager logs.
