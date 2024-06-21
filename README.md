@@ -140,9 +140,6 @@ $ cat pm.config.yaml
 PluginManager:
   # `library` is the location where plugin directories containing plugins are expected to be present
   library: "./docs/sample/library"
-
-  # If log-tag is specified, rsyslog is used for writing logs into pm.log (regardless of whether log-file and log-dir are specified).
-
   log dir: "./"
   # `log file` indicates the name of the log file.
   #   The timestamp and '.log' extension would be appended to this name.
@@ -205,29 +202,44 @@ where
 ```json
 $ jq -n "$plugins" | tee docs/sample/plugins-prereboot.json
 {
-  "A/a.prereboot": {
-    "Description": "Applying \"A\" settings",
-    "ExecStart": "/usr/bin/ls -l -t",
-    "Requires": [
-      "C/c.prereboot",
-      "D/d.prereboot"
-    ]
-  },
-  "B/b.prereboot": {
-    "Description": "Applying \"B\" settings...",
-    "ExecStart": "/bin/echo \"Running B...\""
-  },
-  "C/c.prereboot": {
-    "Description": "Applying \"C\" settings...",
-    "ExecStart": "/bin/echo \"Running C...\""
-  },
-  "D/d.prereboot": {
-    "Description": "Applying \"D\" settings...",
-    "ExecStart": "/bin/echo 'Running D...!'",
-    "Requires": [
-      "B/b.prereboot"
-    ]
-  }
+  "Plugins": [
+    {
+      "Name": "A/a.prereboot",
+      "Description": "Applying \"A\" settings",
+      "ExecStart": "/usr/bin/ls -l -t",
+      "Requires": [
+        "C/c.prereboot",
+        "D/d.prereboot"
+      ]
+    },
+    {
+      "Name": "B/b.prereboot",
+      "Description": "Applying \"B\" settings...",
+      "ExecStart": "/bin/echo \"Running B...\"",
+      "RequiredBy": [
+        "D/d.prereboot"
+      ]
+    },
+    {
+      "Name": "C/c.prereboot",
+      "Description": "Applying \"C\" settings...",
+      "ExecStart": "/bin/echo \"Running C...\"",
+      "RequiredBy": [
+        "A/a.prereboot"
+      ]
+    },
+    {
+      "Name": "D/d.prereboot",
+      "Description": "Applying \"D\" settings...",
+      "ExecStart": "/bin/echo 'Running D...!'",
+      "RequiredBy": [
+        "A/a.prereboot"
+      ],
+      "Requires": [
+        "B/b.prereboot"
+      ]
+    }
+  ]
 }
 $
 ```
@@ -316,7 +328,7 @@ To override the values in the PM configuration, specify one or many of the
 following optional arguments: `library`, `log-dir` and `log-file`
 
 ```bash
-$ $GOBIN/pm run -type postreboot -library=sample/library/ -log-dir=testlogs/ -log-file=test.log
+$ $GOBIN/pm run -type postreboot -library=docs/sample/library/ -log-dir=testlogs/ -log-file=test.log
 Log: pm.2019-07-12T15:39:08.1145946-07:00.log
 Log: testlogs/test.2019-07-12T15:39:08.1209416-07:00.log
 

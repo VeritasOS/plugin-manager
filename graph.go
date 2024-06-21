@@ -50,7 +50,7 @@ func getDotFilePath() string {
 }
 
 // initGraph initliazes the graph data structure and invokes generateGraph.
-func initGraph(pluginType string, pluginsInfo map[string]*PluginAttributes) error {
+func initGraph(pluginType string, pluginsInfo Plugins) error {
 	initGraphConfig(config.GetPMLogFile())
 
 	// DOT guide: https://graphviz.gitlab.io/_pages/pdf/dotguide.pdf
@@ -61,46 +61,49 @@ func initGraph(pluginType string, pluginsInfo map[string]*PluginAttributes) erro
 	//  the dependency file generated will keep changing and appears in
 	// 	git staged list.
 	orderedPluginsList := []string{}
-	for p := range pluginsInfo {
-		orderedPluginsList = append(orderedPluginsList, p)
+	pluginsIdx := map[string]int{}
+	for pIdx, p := range pluginsInfo {
+		orderedPluginsList = append(orderedPluginsList, p.Name)
+		pluginsIdx[p.Name] = pIdx
 	}
 	sort.Strings(orderedPluginsList)
-	for _, p := range orderedPluginsList {
-		pFileString := "\"" + p + "\""
+	for _, pName := range orderedPluginsList {
+		pIdx := pluginsIdx[pName]
+		pFileString := "\"" + pName + "\""
 		absLogPath, _ := filepath.Abs(config.GetPMLogDir())
 		absLibraryPath, _ := filepath.Abs(config.GetPluginsLibrary())
 		relPath, _ := filepath.Rel(absLogPath, absLibraryPath)
-		pURL := "\"" + filepath.FromSlash(relPath+string(os.PathSeparator)+p) + "\""
+		pURL := "\"" + filepath.FromSlash(relPath+string(os.PathSeparator)+pName) + "\""
 		rows := []string{}
 		rowsInterface, ok := g.subgraph.Load(pluginType)
 		if ok {
 			rows = rowsInterface.([]string)
 		}
 		rows = append(rows, pFileString+" [label=\""+
-			strings.Replace(pluginsInfo[p].Description, "\"", `\"`, -1)+
+			strings.Replace(pluginsInfo[pIdx].Description, "\"", `\"`, -1)+
 			"\",style=filled,fillcolor=lightgrey,URL="+pURL+"]")
-		rows = append(rows, "\""+p+"\"")
-		rbyLen := len(pluginsInfo[p].RequiredBy)
+		rows = append(rows, "\""+pName+"\"")
+		rbyLen := len(pluginsInfo[pIdx].RequiredBy)
 		if rbyLen != 0 {
-			graphRow := "\"" + p + "\" -> "
-			for rby := range pluginsInfo[p].RequiredBy {
-				graphRow += "\"" + pluginsInfo[p].RequiredBy[rby] + "\""
+			graphRow := "\"" + pName + "\" -> "
+			for rby := range pluginsInfo[pIdx].RequiredBy {
+				graphRow += "\"" + pluginsInfo[pIdx].RequiredBy[rby] + "\""
 				if rby != rbyLen-1 {
 					graphRow += ", "
 				}
 			}
 			rows = append(rows, graphRow)
 		}
-		rsLen := len(pluginsInfo[p].Requires)
+		rsLen := len(pluginsInfo[pIdx].Requires)
 		if rsLen != 0 {
 			graphRow := ""
-			for rs := range pluginsInfo[p].Requires {
-				graphRow += "\"" + pluginsInfo[p].Requires[rs] + "\""
+			for rs := range pluginsInfo[pIdx].Requires {
+				graphRow += "\"" + pluginsInfo[pIdx].Requires[rs] + "\""
 				if rs != rsLen-1 {
 					graphRow += ", "
 				}
 			}
-			graphRow += " -> \"" + p + "\""
+			graphRow += " -> \"" + pName + "\""
 			rows = append(rows, graphRow)
 		}
 		g.subgraph.Store(pluginType, rows)
@@ -110,8 +113,7 @@ func initGraph(pluginType string, pluginsInfo map[string]*PluginAttributes) erro
 }
 
 // generateGraph generates an input `.dot` file based on the fileNoExt name,
-//
-//	and then generates an `.svg` image output file as fileNoExt.svg.
+// and then generates an `.svg` image output file as fileNoExt.svg.
 func generateGraph() error {
 	dotFile := getDotFilePath()
 	svgFile := getImagePath()

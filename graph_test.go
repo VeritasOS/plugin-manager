@@ -1,4 +1,4 @@
-// Copyright (c) 2022 Veritas Technologies LLC. All rights reserved. IP63-2828-7171-04-15-9
+// Copyright (c) 2024 Veritas Technologies LLC. All rights reserved. IP63-2828-7171-04-15-9
 package pm
 
 import (
@@ -127,10 +127,13 @@ func Test_initGraph(t *testing.T) {
 			args: args{
 				pluginType: "test1",
 				pluginsInfo: Plugins{
-					"A/a.test1": {
-						Description: "A's description",
-						Requires:    []string{},
-						ExecStart:   "/bin/echo 'Running A...!'",
+					Plugin{
+						PluginAttributes: PluginAttributes{
+							Name:        "A/a.test1",
+							Description: "A's description",
+							Requires:    []string{},
+							ExecStart:   "/bin/echo 'Running A...!'",
+						},
 					},
 				},
 			},
@@ -145,15 +148,21 @@ func Test_initGraph(t *testing.T) {
 			args: args{
 				pluginType: "test2",
 				pluginsInfo: Plugins{
-					"A/a.test2": {
-						Description: "A's description",
-						Requires:    []string{},
-						ExecStart:   "/bin/echo 'Running A...!'",
+					{
+						PluginAttributes: PluginAttributes{
+							Name:        "A/a.test2",
+							Description: "A's description",
+							Requires:    []string{},
+							ExecStart:   "/bin/echo 'Running A...!'",
+						},
 					},
-					"B/b.test2": {
-						Description: "B's description",
-						Requires:    []string{},
-						ExecStart:   "/bin/echo 'Running B...!'",
+					{
+						PluginAttributes: PluginAttributes{
+							Name:        "B/b.test2",
+							Description: "B's description",
+							Requires:    []string{},
+							ExecStart:   "/bin/echo 'Running B...!'",
+						},
 					},
 				},
 			},
@@ -170,16 +179,18 @@ func Test_initGraph(t *testing.T) {
 			args: args{
 				pluginType: "test3",
 				pluginsInfo: Plugins{
-					"A/a.test3": {
+					{PluginAttributes: PluginAttributes{
+						Name:        "A/a.test3",
 						Description: "A's description",
 						Requires:    []string{},
 						ExecStart:   "/bin/echo 'Running A...!'",
-					},
-					"B/b.test3": {
+					}},
+					{PluginAttributes: PluginAttributes{
+						Name:        "B/b.test3",
 						Description: "B's description",
 						Requires:    []string{"A/a.test3"},
 						ExecStart:   "/bin/echo 'Running B...!'",
-					},
+					}},
 				},
 			},
 			wantrows: []string{
@@ -187,7 +198,6 @@ func Test_initGraph(t *testing.T) {
 				`"A/a.test3"`,
 				`"B/b.test3" [label="B's description",style=filled,fillcolor=lightgrey,URL="./B/b.test3"]`,
 				`"B/b.test3"`,
-				`"A/a.test3" -> "B/b.test3"`,
 				`"A/a.test3" -> "B/b.test3"`,
 			},
 			wantErr: false,
@@ -197,8 +207,7 @@ func Test_initGraph(t *testing.T) {
 	logger.InitFileLogger("test.log", "INFO")
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			nPInfo := normalizePluginsInfo(tt.args.pluginsInfo)
-			if err := initGraph(tt.args.pluginType, nPInfo); (err != nil) != tt.wantErr {
+			if err := initGraph(tt.args.pluginType, tt.args.pluginsInfo); (err != nil) != tt.wantErr {
 				t.Errorf("initGraph() error = %v, wantErr %v", err, tt.wantErr)
 			}
 			rowsI, _ := g.subgraph.Load(tt.args.pluginType)

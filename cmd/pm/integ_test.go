@@ -144,7 +144,6 @@ func integTest(t *testing.T, pmBinary, tDir string) {
 				pluginType: "preupgrade",
 			},
 			want: []string{
-				"Failed to initialize SysLog [stat /etc/rsyslog.d/10-vxos-asum.conf: no such file or directory], use FileLog instead.",
 				"Checking for \"D\" settings...: " + dStatusStart,
 				"Checking for \"D\" settings...: " + dStatusOk,
 				"Checking for \"A\" settings: " + dStatusStart,
@@ -160,7 +159,6 @@ func integTest(t *testing.T, pmBinary, tDir string) {
 				testPluginExitStatus: 1,
 			},
 			want: []string{
-				"Failed to initialize SysLog [stat /etc/rsyslog.d/10-vxos-asum.conf: no such file or directory], use FileLog instead.",
 				"Checking for \"D\" settings...: " + dStatusStart,
 				"Checking for \"D\" settings...: " + dStatusFail,
 				"Checking for \"A\" settings: " + dStatusStart,
@@ -187,7 +185,7 @@ func integTest(t *testing.T, pmBinary, tDir string) {
 					cmdParams = append(cmdParams, "run")
 					cmdParams = append(cmdParams, "-type")
 					cmdParams = append(cmdParams, tc.args.pluginType)
-					cmdParams = append(cmdParams, "-log-file=integ_test.log")
+					// cmdParams = append(cmdParams, "-log-file=integ_test.log")
 				}
 				// TODO: Update test cases & output to handle sequential execution.
 				cmdParams = append(cmdParams, "-sequential="+strconv.FormatBool(tc.args.sequential))
@@ -204,6 +202,9 @@ func integTest(t *testing.T, pmBinary, tDir string) {
 				stdOutErr, err := cmd.CombinedOutput()
 				t.Log("Stdout & Stderr:", string(stdOutErr))
 				got := strings.Split(string(stdOutErr), "\n")
+				for len(got) > 1 && strings.Contains(got[0], "Using file logging as Syslog configuration is not present.") {
+					got = got[1:]
+				}
 				for len(got) > 1 && strings.Contains(got[0], "Log: ") {
 					got = got[1:]
 				}

@@ -1,4 +1,4 @@
-// Copyright (c) 2024 Veritas Technologies LLC. All rights reserved. IP63-2828-7171-04-15-9
+// Copyright (c) 2022 Veritas Technologies LLC. All rights reserved. IP63-2828-7171-04-15-9
 
 // Package main provides a commandline tool interface for interacting with
 // Plugin Manager (PM).
@@ -30,21 +30,34 @@ func init() {
 	// DefaultConfigPath is default path for config file used when EnvConfFile is not set.
 	config.DefaultConfigPath = "/opt/veritas/appliance/asum/pm.config.yaml"
 	// DefaultLogPath is default path for log file.
-	config.DefaultLogPath = "./" + progname
-	// config.DefaultLogPath = "/var/log/asum/pm.log"
+	config.DefaultLogPath = "/var/log/asum/pm.log"
+	// Use Syslog until the config file is read.
+	useFileLog := true
+	if logger.IsSysLogConfigPresent() {
+		err := logger.InitSysLogger("pm-main", "INFO")
+		if err != nil {
+			fmt.Printf("Failed to initialize SysLog for logging [%#v]. Proceeding with file logging...\n", err)
+			// During initialization, if initiate syslog fails, we use FileLog and specify default location
+			useFileLog = false
+		}
+	}
+	if useFileLog {
+		err := logger.InitFileLogger(config.DefaultLogPath, "INFO")
+		if err != nil {
+			fmt.Printf("Failed to initialize file logger [%#v].\n", err)
+			os.Exit(1)
+		}
+	}
 
 	// NOTE: while running tests, the path of binary would be in `/tmp/<go-build*>`,
 	// so, using relative logging path w.r.t. binary wouldn't be accessible on Jenkins.
-	// So, use path which also has write permissions (like current source directory).
-	// Use file logging by default, unless we see log-tag is specified to use syslog.
-	err := logger.InitFileLogger(config.DefaultLogPath, "INFO")
-	if err != nil {
-		fmt.Printf("Failed to initialize logger [%v]. Exiting...\n", err)
-		os.Exit(-1)
-	}
+	// So, use absolute path which also has write permissions (like current source directory).
 }
 
 func main() {
+	logger.Debug.Println("Entering main::main with", os.Args[:])
+	defer logger.Debug.Println("Exiting main::main")
+
 	cmd := os.Args[1]
 	if cmd == "version" {
 		logger.ConsoleInfo.Printf("%s version %s %s", progname, version, buildDate)

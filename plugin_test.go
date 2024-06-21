@@ -13,6 +13,31 @@ import (
 	logger "github.com/VeritasOS/plugin-manager/utils/log"
 )
 
+func initTestLogging( /*t *testing.T*/ ) {
+	myLogFile := "pm.log"
+	if config.GetPMLogFile() != "" {
+		myLogFile = config.GetPMLogFile()
+	}
+	if config.GetPMLogDir() != "" {
+		myLogFile = config.GetPMLogDir() + myLogFile
+	}
+	// t.Logf("Logging to specified log file: %s", myLogFile)
+	errList := logger.DeInitLogger()
+	if len(errList) > 0 {
+		fmt.Printf("Failed to deinitialize logger, err=[%v]", errList)
+		os.Exit(-1)
+	}
+	err := logger.InitFileLogger(myLogFile, "INFO")
+	if err != nil {
+		fmt.Printf("Failed to initialize logger, err=[%v]", err)
+		os.Exit(-1)
+	}
+}
+
+func init() {
+	initTestLogging()
+}
+
 func Test_getPluginFiles(t *testing.T) {
 	if os.Getenv("INTEGRATION_TEST") == "RUNNING" {
 		t.Skip("Not applicable while running integration tests.")
@@ -123,15 +148,21 @@ func Test_validateDependencies(t *testing.T) {
 			name: "No dependencies",
 			args: args{
 				pluginsInfo: Plugins{
-					"A/a.test": {
-						Description: "Applying \"A\" settings",
-						Requires:    []string{},
-						ExecStart:   "/bin/echo 'Running A...!'",
+					{
+						PluginAttributes: PluginAttributes{
+							Name:        "A/a.test",
+							Description: "Applying \"A\" settings",
+							Requires:    []string{},
+							ExecStart:   "/bin/echo 'Running A...!'",
+						},
 					},
-					"B/b.test": {
-						Description: "Applying \"B\" settings",
-						Requires:    []string{},
-						ExecStart:   "/bin/echo \"Running B...\"",
+					{
+						PluginAttributes: PluginAttributes{
+							Name:        "B/b.test",
+							Description: "Applying \"B\" settings",
+							Requires:    []string{},
+							ExecStart:   "/bin/echo \"Running B...\"",
+						},
 					},
 				},
 			},
@@ -145,17 +176,23 @@ func Test_validateDependencies(t *testing.T) {
 			name: "Single dependency",
 			args: args{
 				pluginsInfo: Plugins{
-					"A/a.test": {
-						Description: "Applying \"A\" settings",
-						Requires:    []string{},
-						ExecStart:   "/bin/echo 'Running A...!'",
-					},
-					"B/b.test": {
-						Description: "Applying \"B\" settings",
-						Requires: []string{
-							"A/a.test",
+					{
+						PluginAttributes: PluginAttributes{
+							Name:        "A/a.test",
+							Description: "Applying \"A\" settings",
+							Requires:    []string{},
+							ExecStart:   "/bin/echo 'Running A...!'",
 						},
-						ExecStart: "/bin/echo \"Running B...\"",
+					},
+					{
+						PluginAttributes: PluginAttributes{
+							Name:        "B/b.test",
+							Description: "Applying \"B\" settings",
+							Requires: []string{
+								"A/a.test",
+							},
+							ExecStart: "/bin/echo \"Running B...\"",
+						},
 					},
 				},
 			},
@@ -169,24 +206,27 @@ func Test_validateDependencies(t *testing.T) {
 			name: "Multiple dependencies",
 			args: args{
 				pluginsInfo: Plugins{
-					"A/a.test": {
+					{PluginAttributes: PluginAttributes{
+						Name:        "A/a.test",
 						Description: "Applying \"A\" settings",
 						Requires:    []string{},
 						ExecStart:   "/bin/echo 'Running A...!'",
-					},
-					"B/b.test": {
+					}},
+					{PluginAttributes: PluginAttributes{
+						Name:        "B/b.test",
 						Description: "Applying \"B\" settings",
 						Requires:    []string{},
 						ExecStart:   "/bin/echo \"Running B...\"",
-					},
-					"C/c.test": {
+					}},
+					{PluginAttributes: PluginAttributes{
+						Name:        "C/c.test",
 						Description: "Applying \"C\" settings",
 						Requires: []string{
 							"A/a.test",
 							"B/b.test",
 						},
 						ExecStart: "/bin/echo \"Running C...\"",
-					},
+					}},
 				},
 			},
 			want: []string{
@@ -200,30 +240,42 @@ func Test_validateDependencies(t *testing.T) {
 			name: "Multi-level dependencies",
 			args: args{
 				pluginsInfo: Plugins{
-					"A/a.test": {
-						Description: "Applying \"A\" settings",
-						Requires: []string{
-							"D/d.test",
-							"C/c.test",
+					{
+						PluginAttributes: PluginAttributes{
+							Name:        "A/a.test",
+							Description: "Applying \"A\" settings",
+							Requires: []string{
+								"D/d.test",
+								"C/c.test",
+							},
+							ExecStart: "/bin/echo 'Running A...!'",
 						},
-						ExecStart: "/bin/echo 'Running A...!'",
 					},
-					"B/b.test": {
-						Description: "Applying \"B\" settings",
-						Requires:    []string{},
-						ExecStart:   "/bin/echo \"Running B...\"",
-					},
-					"C/c.test": {
-						Description: "Applying \"C\" settings",
-						Requires:    []string{},
-						ExecStart:   "/bin/echo \"Running C...\"",
-					},
-					"D/d.test": {
-						Description: "Applying \"D\" settings",
-						Requires: []string{
-							"B/b.test",
+					{
+						PluginAttributes: PluginAttributes{
+							Name:        "B/b.test",
+							Description: "Applying \"B\" settings",
+							Requires:    []string{},
+							ExecStart:   "/bin/echo \"Running B...\"",
 						},
-						ExecStart: "/bin/echo 'Running D...!'",
+					},
+					{
+						PluginAttributes: PluginAttributes{
+							Name:        "C/c.test",
+							Description: "Applying \"C\" settings",
+							Requires:    []string{},
+							ExecStart:   "/bin/echo \"Running C...\"",
+						},
+					},
+					{
+						PluginAttributes: PluginAttributes{
+							Name:        "D/d.test",
+							Description: "Applying \"D\" settings",
+							Requires: []string{
+								"B/b.test",
+							},
+							ExecStart: "/bin/echo 'Running D...!'",
+						},
 					},
 				},
 			},
@@ -239,19 +291,25 @@ func Test_validateDependencies(t *testing.T) {
 			name: "Direct circular dependency",
 			args: args{
 				pluginsInfo: Plugins{
-					"A/a.test": {
-						Description: "Applying \"A\" settings",
-						Requires: []string{
-							"B/b.test",
+					{
+						PluginAttributes: PluginAttributes{
+							Name:        "A/a.test",
+							Description: "Applying \"A\" settings",
+							Requires: []string{
+								"B/b.test",
+							},
+							ExecStart: "/bin/echo 'Running A...!'",
 						},
-						ExecStart: "/bin/echo 'Running A...!'",
 					},
-					"B/b.test": {
-						Description: "Applying \"B\" settings",
-						Requires: []string{
-							"A/a.test",
+					{
+						PluginAttributes: PluginAttributes{
+							Name:        "B/b.test",
+							Description: "Applying \"B\" settings",
+							Requires: []string{
+								"A/a.test",
+							},
+							ExecStart: "/bin/echo \"Running B...\"",
 						},
-						ExecStart: "/bin/echo \"Running B...\"",
 					},
 				},
 			},
@@ -262,19 +320,25 @@ func Test_validateDependencies(t *testing.T) {
 			name: "Requires & Required-by circular dependency",
 			args: args{
 				pluginsInfo: Plugins{
-					"A/a.circular": {
-						Description: "Applying \"A\" settings",
-						Requires: []string{
-							"B/b.circular",
+					{
+						PluginAttributes: PluginAttributes{
+							Name:        "A/a.circular",
+							Description: "Applying \"A\" settings",
+							Requires: []string{
+								"B/b.circular",
+							},
+							RequiredBy: []string{
+								"B/b.circular",
+							},
+							ExecStart: "/bin/echo 'Running A...!'",
 						},
-						RequiredBy: []string{
-							"B/b.circular",
-						},
-						ExecStart: "/bin/echo 'Running A...!'",
 					},
-					"B/b.circular": {
-						Description: "Applying \"B\" settings",
-						ExecStart:   "/bin/echo \"Running B...\"",
+					{
+						PluginAttributes: PluginAttributes{
+							Name:        "B/b.circular",
+							Description: "Applying \"B\" settings",
+							ExecStart:   "/bin/echo \"Running B...\"",
+						},
 					},
 				},
 			},
@@ -285,26 +349,35 @@ func Test_validateDependencies(t *testing.T) {
 			name: "Indirect circular dependency",
 			args: args{
 				pluginsInfo: Plugins{
-					"A/a.test": {
-						Description: "Applying \"A\" settings",
-						Requires: []string{
-							"B/b.test",
+					{
+						PluginAttributes: PluginAttributes{
+							Name:        "A/a.test",
+							Description: "Applying \"A\" settings",
+							Requires: []string{
+								"B/b.test",
+							},
+							ExecStart: "/bin/echo 'Running A...!'",
 						},
-						ExecStart: "/bin/echo 'Running A...!'",
 					},
-					"B/b.test": {
-						Description: "Applying \"B\" settings",
-						Requires: []string{
-							"C/c.test",
+					{
+						PluginAttributes: PluginAttributes{
+							Name:        "B/b.test",
+							Description: "Applying \"B\" settings",
+							Requires: []string{
+								"C/c.test",
+							},
+							ExecStart: "/bin/echo \"Running B...\"",
 						},
-						ExecStart: "/bin/echo \"Running B...\"",
 					},
-					"C/c.test": {
-						Description: "Applying \"C\" settings",
-						Requires: []string{
-							"A/a.test",
+					{
+						PluginAttributes: PluginAttributes{
+							Name:        "C/c.test",
+							Description: "Applying \"C\" settings",
+							Requires: []string{
+								"A/a.test",
+							},
+							ExecStart: "/bin/echo \"Running C...\"",
 						},
-						ExecStart: "/bin/echo \"Running C...\"",
 					},
 				},
 			},
@@ -315,12 +388,15 @@ func Test_validateDependencies(t *testing.T) {
 			name: "Dependency not met",
 			args: args{
 				pluginsInfo: Plugins{
-					"A/a.test": {
-						Description: "Applying \"A\" settings",
-						Requires: []string{
-							"B/b.test",
+					{
+						PluginAttributes: PluginAttributes{
+							Name:        "A/a.test",
+							Description: "Applying \"A\" settings",
+							Requires: []string{
+								"B/b.test",
+							},
+							ExecStart: "/bin/echo 'Running A...!'",
 						},
-						ExecStart: "/bin/echo 'Running A...!'",
 					},
 				},
 			},
@@ -331,19 +407,25 @@ func Test_validateDependencies(t *testing.T) {
 			name: "Dependencies not met",
 			args: args{
 				pluginsInfo: Plugins{
-					"A/a.test": {
-						Description: "Applying \"A\" settings",
-						Requires: []string{
-							"C/c.test",
+					{
+						PluginAttributes: PluginAttributes{
+							Name:        "A/a.test",
+							Description: "Applying \"A\" settings",
+							Requires: []string{
+								"C/c.test",
+							},
+							ExecStart: "/bin/echo 'Running A...!'",
 						},
-						ExecStart: "/bin/echo 'Running A...!'",
 					},
-					"B/b.test": {
-						Description: "Applying \"B\" settings",
-						Requires: []string{
-							"C/c.test",
+					{
+						PluginAttributes: PluginAttributes{
+							Name:        "B/b.test",
+							Description: "Applying \"B\" settings",
+							Requires: []string{
+								"C/c.test",
+							},
+							ExecStart: "/bin/echo \"Running B...\"",
 						},
-						ExecStart: "/bin/echo \"Running B...\"",
 					},
 				},
 			},
@@ -467,7 +549,7 @@ func Test_executePlugins(t *testing.T) {
 	}
 	type want struct {
 		returnStatus bool
-		psStatus     PluginsStatus
+		psStatus     Plugins
 	}
 
 	tests := []struct {
@@ -481,19 +563,24 @@ func Test_executePlugins(t *testing.T) {
 			pluginInfo: Plugins{},
 			want: want{
 				returnStatus: true,
-				// psStatus:     PluginsStatus{},
+				// psStatus:     Plugins{},
 			},
 		},
 		{
 			name: "One plugin only with multiple arguments to ExecStart",
-			pluginInfo: Plugins{"A/a.test": {
-				Description: "Applying \"A\" settings",
-				ExecStart:   "/usr/bin/top -b -n 1",
-			}},
+			pluginInfo: Plugins{
+				Plugin{
+					PluginAttributes: PluginAttributes{
+						Name:        "A/a.test",
+						Description: "Applying \"A\" settings",
+						ExecStart:   "/usr/bin/top -b -n 1",
+					},
+				},
+			},
 			want: want{
 				returnStatus: true,
-				psStatus: PluginsStatus{
-					PluginStatus{
+				psStatus: Plugins{
+					Plugin{
 						PluginAttributes: PluginAttributes{
 							Description: "Applying \"A\" settings",
 							Name:        "A/a.test",
@@ -509,15 +596,18 @@ func Test_executePlugins(t *testing.T) {
 		{
 			name: "One plugin without ExecStart value",
 			pluginInfo: Plugins{
-				"A/a.test": {
-					Description: "Applying \"A\" settings",
-					ExecStart:   "",
+				Plugin{
+					PluginAttributes: PluginAttributes{
+						Name:        "A/a.test",
+						Description: "Applying \"A\" settings",
+						ExecStart:   "",
+					},
 				},
 			},
 			want: want{
 				returnStatus: true,
-				psStatus: PluginsStatus{
-					PluginStatus{
+				psStatus: Plugins{
+					Plugin{
 						PluginAttributes: PluginAttributes{
 							Description: "Applying \"A\" settings",
 							Name:        "A/a.test",
@@ -533,15 +623,18 @@ func Test_executePlugins(t *testing.T) {
 		{
 			name: "Only one failing plugin",
 			pluginInfo: Plugins{
-				"A/a.test": {
-					Description: "Applying \"A\" settings",
-					ExecStart:   "exit 1",
+				Plugin{
+					PluginAttributes: PluginAttributes{
+						Name:        "A/a.test",
+						Description: "Applying \"A\" settings",
+						ExecStart:   "exit 1",
+					},
 				},
 			},
 			want: want{
 				returnStatus: false,
-				psStatus: PluginsStatus{
-					PluginStatus{
+				psStatus: Plugins{
+					Plugin{
 						PluginAttributes: PluginAttributes{
 							Description: "Applying \"A\" settings",
 							Name:        "A/a.test",
@@ -557,20 +650,26 @@ func Test_executePlugins(t *testing.T) {
 		{
 			name: "Plugin with dependency",
 			pluginInfo: Plugins{
-				"D/d.test": {
-					Description: "Applying \"D\" settings",
-					Requires:    []string{"A/a.test"},
-					ExecStart:   `/bin/echo "Running D..."`,
+				Plugin{
+					PluginAttributes: PluginAttributes{
+						Name:        "D/d.test",
+						Description: "Applying \"D\" settings",
+						Requires:    []string{"A/a.test"},
+						ExecStart:   `/bin/echo "Running D..."`,
+					},
 				},
-				"A/a.test": {
-					Description: "Applying \"A\" settings",
-					ExecStart:   `/bin/echo "Running A..."`,
+				Plugin{
+					PluginAttributes: PluginAttributes{
+						Name:        "A/a.test",
+						Description: "Applying \"A\" settings",
+						ExecStart:   `/bin/echo "Running A..."`,
+					},
 				},
 			},
 			want: want{
 				returnStatus: true,
-				psStatus: PluginsStatus{
-					PluginStatus{
+				psStatus: Plugins{
+					Plugin{
 						PluginAttributes: PluginAttributes{
 							Description: "Applying \"A\" settings",
 							Name:        "A/a.test",
@@ -581,7 +680,7 @@ func Test_executePlugins(t *testing.T) {
 						Status:    "Succeeded",
 						StdOutErr: `Running A...`,
 					},
-					PluginStatus{
+					Plugin{
 						PluginAttributes: PluginAttributes{
 							Description: "Applying \"D\" settings",
 							Name:        "D/d.test",
@@ -598,37 +697,66 @@ func Test_executePlugins(t *testing.T) {
 		{
 			name: "Plugin with RequiredBy & Requires circular dependency",
 			pluginInfo: Plugins{
-				"D/d.test": {
-					Description: "Applying \"D\" settings",
-					Requires:    []string{"A/a.test"},
-					RequiredBy:  []string{"A/a.test"},
-					ExecStart:   "/bin/echo \"Running D...!\"",
+				Plugin{
+					PluginAttributes: PluginAttributes{
+						Name:        "D/d.test",
+						Description: "Applying \"D\" settings",
+						Requires:    []string{"A/a.test"},
+						RequiredBy:  []string{"A/a.test"},
+						ExecStart:   "/bin/echo \"Running D...!\"",
+					},
 				},
-				"A/a.test": {
-					Description: "Applying \"A\" settings",
-					ExecStart:   "/bin/echo \"Running A...!\"",
+				Plugin{
+					PluginAttributes: PluginAttributes{
+						Name:        "A/a.test",
+						Description: "Applying \"A\" settings",
+						ExecStart:   "/bin/echo \"Running A...!\"",
+					},
 				},
 			},
-			want: want{returnStatus: false, psStatus: PluginsStatus{}},
+			want: want{returnStatus: false, psStatus: Plugins{
+				Plugin{
+					PluginAttributes: PluginAttributes{
+						Name:        "D/d.test",
+						Description: "Applying \"D\" settings",
+						Requires:    []string{"A/a.test"},
+						RequiredBy:  []string{"A/a.test"},
+						ExecStart:   "/bin/echo \"Running D...!\"",
+					},
+				},
+				Plugin{
+					PluginAttributes: PluginAttributes{
+						Name:        "A/a.test",
+						Description: "Applying \"A\" settings",
+						ExecStart:   "/bin/echo \"Running A...!\"",
+					},
+				},
+			}},
 		},
 		{
 			name: "Plugin with RequiredBy & Requires dependency",
 			pluginInfo: Plugins{
-				"D/d.test": {
-					Description: "Applying \"D\" settings",
-					Requires:    []string{"A/a.test"},
-					ExecStart:   "/bin/echo \"Running D...!\"",
+				Plugin{
+					PluginAttributes: PluginAttributes{
+						Name:        "D/d.test",
+						Description: "Applying \"D\" settings",
+						Requires:    []string{"A/a.test"},
+						ExecStart:   "/bin/echo \"Running D...!\"",
+					},
 				},
-				"A/a.test": {
-					Description: "Applying \"A\" settings",
-					RequiredBy:  []string{"D/d.test"},
-					ExecStart:   "/bin/echo \"Running A...!\"",
+				Plugin{
+					PluginAttributes: PluginAttributes{
+						Name:        "A/a.test",
+						Description: "Applying \"A\" settings",
+						RequiredBy:  []string{"D/d.test"},
+						ExecStart:   "/bin/echo \"Running A...!\"",
+					},
 				},
 			},
 			want: want{
 				returnStatus: true,
-				psStatus: PluginsStatus{
-					PluginStatus{
+				psStatus: Plugins{
+					Plugin{
 						PluginAttributes: PluginAttributes{
 							Description: "Applying \"A\" settings",
 							Name:        "A/a.test",
@@ -639,7 +767,7 @@ func Test_executePlugins(t *testing.T) {
 						Status:    "Succeeded",
 						StdOutErr: "Running A...!\"\"",
 					},
-					PluginStatus{
+					Plugin{
 						PluginAttributes: PluginAttributes{
 							Description: "Applying \"D\" settings",
 							Name:        "D/d.test",
@@ -656,20 +784,26 @@ func Test_executePlugins(t *testing.T) {
 		{
 			name: "Plugin with RequiredBy dependency",
 			pluginInfo: Plugins{
-				"D/d.test": {
-					Description: "Applying \"D\" settings",
-					ExecStart:   "/bin/echo \"Running D...!\"",
+				Plugin{
+					PluginAttributes: PluginAttributes{
+						Name:        "D/d.test",
+						Description: "Applying \"D\" settings",
+						ExecStart:   "/bin/echo \"Running D...!\"",
+					},
 				},
-				"A/a.test": {
-					Description: "Applying \"A\" settings",
-					RequiredBy:  []string{"D/d.test"},
-					ExecStart:   "/bin/echo \"Running A...!\"",
+				Plugin{
+					PluginAttributes: PluginAttributes{
+						Name:        "A/a.test",
+						Description: "Applying \"A\" settings",
+						RequiredBy:  []string{"D/d.test"},
+						ExecStart:   "/bin/echo \"Running A...!\"",
+					},
 				},
 			},
 			want: want{
 				returnStatus: true,
-				psStatus: PluginsStatus{
-					PluginStatus{
+				psStatus: Plugins{
+					Plugin{
 						PluginAttributes: PluginAttributes{
 							Description: "Applying \"A\" settings", Name: "A/a.test",
 							ExecStart:  "/bin/echo \"Running A...!\"",
@@ -696,20 +830,26 @@ func Test_executePlugins(t *testing.T) {
 		{
 			name: "Skip when dependency fails and mark overall status as Failed",
 			pluginInfo: Plugins{
-				"D/d.test": {
-					Description: "Applying \"D\" settings",
-					Requires:    []string{"A/a.test"},
-					ExecStart:   "/bin/echo \"Running D...!\"",
+				Plugin{
+					PluginAttributes: PluginAttributes{
+						Name:        "A/a.test",
+						Description: "Applying \"A\" settings",
+						ExecStart:   "exit 1",
+					},
 				},
-				"A/a.test": {
-					Description: "Applying \"A\" settings",
-					ExecStart:   "exit 1",
+				Plugin{
+					PluginAttributes: PluginAttributes{
+						Name:        "D/d.test",
+						Description: "Applying \"D\" settings",
+						Requires:    []string{"A/a.test"},
+						ExecStart:   "/bin/echo \"Running D...!\"",
+					},
 				},
 			},
 			want: want{
 				returnStatus: false,
-				psStatus: PluginsStatus{
-					PluginStatus{
+				psStatus: Plugins{
+					Plugin{
 						PluginAttributes: PluginAttributes{
 							Description: "Applying \"A\" settings",
 							Name:        "A/a.test",
@@ -718,7 +858,7 @@ func Test_executePlugins(t *testing.T) {
 						},
 						Status: "Failed",
 					},
-					PluginStatus{
+					Plugin{
 						PluginAttributes: PluginAttributes{
 							Description: "Applying \"D\" settings",
 							Requires:    []string{"A/a.test"},
@@ -742,9 +882,8 @@ func Test_executePlugins(t *testing.T) {
 		for _, tt.sequential = range []bool{false, true} {
 			t.Run(tt.name+fmt.Sprintf("(sequential=%v)", tt.sequential),
 				func(t *testing.T) {
-					npInfo := normalizePluginsInfo(tt.pluginInfo)
-					var result PluginsStatus
-					res := executePlugins(&result, npInfo, tt.sequential, map[string]string{})
+					// result := tt.pluginInfo
+					res := executePlugins(&tt.pluginInfo, tt.sequential, map[string]string{})
 					// t.Logf("res: %+v, expected: %v", res, tt.want.returnStatus)
 					if res != tt.want.returnStatus {
 						t.Errorf("Return value: got %+v, want %+v",
@@ -752,8 +891,8 @@ func Test_executePlugins(t *testing.T) {
 						return
 					}
 					// if len(result) != 0 {
-					t.Logf("result of all plugins: %+v", result)
-					for i := range result {
+					t.Logf("result of all plugins: %+v", tt.pluginInfo)
+					for i := range tt.pluginInfo {
 						// TODO: Currently even though the expected and
 						// 	obtained values are same, it's still failing.
 						// 	Explore more on why that's the case for below
@@ -764,11 +903,11 @@ func Test_executePlugins(t *testing.T) {
 						// 		result[i].PluginAttributes,
 						// 		tt.want.psStatus[i].PluginAttributes)
 						// }
-						if reflect.DeepEqual(result[i].Status,
+						if reflect.DeepEqual(tt.pluginInfo[i].Status,
 							tt.want.psStatus[i].Status) == false {
 							t.Errorf("Plugins %s Status: got %+v, want %+v",
-								result[i].Name,
-								result[i].Status, tt.want.psStatus[i].Status)
+								tt.pluginInfo[i].Name,
+								tt.pluginInfo[i].Status, tt.want.psStatus[i].Status)
 						}
 						// if tt.want.psStatus[i].StdOutErr != "" &&
 						// 	reflect.DeepEqual(result[i].StdOutErr,
@@ -785,33 +924,11 @@ func Test_executePlugins(t *testing.T) {
 	}
 }
 
-func initTestLogging(t *testing.T) {
-	myLogFile := "pm.log"
-	if config.GetPMLogFile() != "" {
-		myLogFile = config.GetPMLogFile()
-	}
-	if config.GetPMLogDir() != "" {
-		myLogFile = config.GetPMLogDir() + myLogFile
-	}
-	t.Logf("Logging to specified log file: %s", myLogFile)
-	errList := logger.DeInitLogger()
-	if len(errList) > 0 {
-		fmt.Printf("Failed to deinitialize logger, err=[%v]", errList)
-		os.Exit(-1)
-	}
-	err := logger.InitFileLogger(myLogFile, "INFO")
-	if err != nil {
-		fmt.Printf("Failed to initialize logger, err=[%v]", err)
-		os.Exit(-1)
-	}
-}
-
 func Test_getPluginsInfoFromJSONStrOrFile(t *testing.T) {
 	if os.Getenv("INTEGRATION_TEST") == "RUNNING" {
 		t.Skip("Not applicable while running integration tests.")
 		return
 	}
-	initTestLogging(t)
 
 	type args struct {
 		jsonStrOrFile string
@@ -819,43 +936,60 @@ func Test_getPluginsInfoFromJSONStrOrFile(t *testing.T) {
 	tests := []struct {
 		name    string
 		args    args
-		want    Plugins
+		want    RunStatus
 		wantErr bool
 	}{
 		{
 			name: "Plugins in JSON String",
-			args: args{jsonStrOrFile: `{
-				"plugin1": {
-				  "Description": "plugin 1 description...",
-				  "ExecStart": "echo command to run..."
-				},
-				"plugin2": {
-				  "Description": "plugin 2 description...",
-				  "ExecStart": "echo command to run..."
-				},
-				"plugin3": {
-				  "Description": "Plugin 3 depends on 1 and 2",
-				  "ExecStart": "echo Running plugin 3",
-				  "Requires": [
-					"plugin1",
-					"plugin2"
-				  ]
-				}
-			  }`,
+			args: args{jsonStrOrFile: `
+				{
+					"Plugins": [
+						{
+							"Name": "plugin1",
+							"Description": "plugin 1 description...",
+							"ExecStart": "echo command to run..."
+						},
+						{
+							"Name": "plugin2",
+							"Description": "plugin 2 description...",
+							"ExecStart": "echo command to run..."
+						},
+						{
+							"Name": "plugin3",
+							"Description": "Plugin 3 depends on 1 and 2",
+							"ExecStart": "echo Running plugin 3",
+							"Requires": [
+								"plugin1",
+								"plugin2"
+							]
+						}
+					]
+				}`,
 			},
-			want: Plugins{
-				"plugin1": &PluginAttributes{
-					Description: "plugin 1 description...",
-					ExecStart:   "echo command to run...",
-				},
-				"plugin2": &PluginAttributes{
-					Description: "plugin 2 description...",
-					ExecStart:   "echo command to run...",
-				},
-				"plugin3": &PluginAttributes{
-					Description: "Plugin 3 depends on 1 and 2",
-					ExecStart:   "echo Running plugin 3",
-					Requires:    []string{"plugin1", "plugin2"},
+			want: RunStatus{
+				Plugins: Plugins{
+					{
+						PluginAttributes: PluginAttributes{
+							Name:        "plugin1",
+							Description: "plugin 1 description...",
+							ExecStart:   "echo command to run...",
+						},
+					},
+					{
+						PluginAttributes: PluginAttributes{
+							Name:        "plugin2",
+							Description: "plugin 2 description...",
+							ExecStart:   "echo command to run...",
+						},
+					},
+					{
+						PluginAttributes: PluginAttributes{
+							Name:        "plugin3",
+							Description: "Plugin 3 depends on 1 and 2",
+							ExecStart:   "echo Running plugin 3",
+							Requires:    []string{"plugin1", "plugin2"},
+						},
+					},
 				},
 			},
 			wantErr: false,
@@ -863,27 +997,41 @@ func Test_getPluginsInfoFromJSONStrOrFile(t *testing.T) {
 		{
 			name: "Plugins in JSON file",
 			args: args{jsonStrOrFile: "./docs/sample/plugins-prereboot.json"},
-			want: Plugins{
-				"A/a.prereboot": &PluginAttributes{
-					Description: "Applying \"A\" settings",
-					ExecStart:   "/usr/bin/ls -l -t",
-					Requires: []string{
-						"C/c.prereboot",
-						"D/d.prereboot",
+			want: RunStatus{
+				Plugins: Plugins{
+					{
+						PluginAttributes: PluginAttributes{
+							Name:        "A/a.prereboot",
+							Description: "Applying \"A\" settings",
+							ExecStart:   "/usr/bin/ls -l -t",
+							Requires: []string{
+								"C/c.prereboot",
+								"D/d.prereboot",
+							},
+						},
 					},
-				},
-				"B/b.prereboot": &PluginAttributes{
-					Description: "Applying \"B\" settings...",
-					ExecStart:   "/bin/echo \"Running B...\"",
-				},
-				"C/c.prereboot": &PluginAttributes{
-					Description: "Applying \"C\" settings...",
-					ExecStart:   "/bin/echo \"Running C...\"",
-				},
-				"D/d.prereboot": &PluginAttributes{
-					Description: "Applying \"D\" settings...",
-					ExecStart:   "/bin/echo 'Running D...!'",
-					Requires:    []string{"B/b.prereboot"},
+					{
+						PluginAttributes: PluginAttributes{
+							Name:        "B/b.prereboot",
+							Description: "Applying \"B\" settings...",
+							ExecStart:   "/bin/echo \"Running B...\"",
+						},
+					},
+					{
+						PluginAttributes: PluginAttributes{
+							Name:        "C/c.prereboot",
+							Description: "Applying \"C\" settings...",
+							ExecStart:   "/bin/echo \"Running C...\"",
+						},
+					},
+					{
+						PluginAttributes: PluginAttributes{
+							Name:        "D/d.prereboot",
+							Description: "Applying \"D\" settings...",
+							ExecStart:   "/bin/echo 'Running D...!'",
+							Requires:    []string{"B/b.prereboot"},
+						},
+					},
 				},
 			},
 			wantErr: false,

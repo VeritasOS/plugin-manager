@@ -1,4 +1,4 @@
-// Copyright (c) 2024 Veritas Technologies LLC. All rights reserved. IP63-2828-7171-04-15-9
+// Copyright (c) 2022 Veritas Technologies LLC. All rights reserved. IP63-2828-7171-04-15-9
 
 package logger
 
@@ -359,12 +359,19 @@ func InitFileLogger(logFile, logLevel string) error {
 	return InitializeLogger(FileLogConfig(logLevel, logFile, ""))
 }
 
+func IsSysLogConfigPresent() bool {
+	_, err := os.Stat("/etc/rsyslog.d/10-vxos-asum.conf")
+	if err != nil {
+		return false
+	}
+	return true
+}
+
 // InitSysLogger initializes logger with given log level.
 func InitSysLogger(module, logLevel string) error {
 	// Make sure the config file exist
-	_, err := os.Stat("/etc/rsyslog.d/10-vxos-asum.conf")
-	if err != nil {
-		return err
+	if !IsSysLogConfigPresent() {
+		return fmt.Errorf("Syslog config file is not present.")
 	}
 	return InitializeLogger(SyslogConfig(logLevel, module))
 }

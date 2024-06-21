@@ -2,6 +2,7 @@
 package config
 
 import (
+	"fmt"
 	"os"
 	"reflect"
 	"testing"
@@ -9,7 +10,28 @@ import (
 	logger "github.com/VeritasOS/plugin-manager/utils/log"
 )
 
+func initTestLogging() {
+	myLogFile := "pm.log"
+	if GetPMLogFile() != "" {
+		myLogFile = GetPMLogFile()
+	}
+	if GetPMLogDir() != "" {
+		myLogFile = GetPMLogDir() + myLogFile
+	}
+	errList := logger.DeInitLogger()
+	if len(errList) > 0 {
+		fmt.Printf("Failed to deinitialize logger, err=[%v]", errList)
+		os.Exit(-1)
+	}
+	err := logger.InitFileLogger(myLogFile, "INFO")
+	if err != nil {
+		fmt.Printf("Failed to initialize logger, err=[%v]", err)
+		os.Exit(-1)
+	}
+}
+
 func init() {
+	initTestLogging()
 	// EnvConfFile is environment variable containing config file path.
 	// NOTE: "PM_CONF_FILE" value would be set in Makefile.
 	EnvConfFile = "PM_CONF_FILE"
@@ -30,10 +52,9 @@ func Test_Load(t *testing.T) {
 		EnvConfFile string
 	}
 	type PluginManager struct {
-		Library   string `yaml:"library"`
-		LogDir    string `yaml:"log dir"`
-		LogFile   string `yaml:"log file"`
-		PluginDir string `yaml:"plugin dir"`
+		Library string `yaml:"library"`
+		LogDir  string `yaml:"log dir"`
+		LogFile string `yaml:"log file"`
 	}
 	tests := []struct {
 		name string
@@ -46,10 +67,10 @@ func Test_Load(t *testing.T) {
 				EnvConfFile: "../docs/sample/pm.config.yaml",
 			},
 			want: Config{
-				struct {
-					Library string `yaml:"library"`
-					LogDir  string `yaml:"log dir"`
-					LogFile string `yaml:"log file"`
+				PluginManager: struct {
+					Library string "yaml:\"library\""
+					LogDir  string "yaml:\"log dir\""
+					LogFile string "yaml:\"log file\""
 				}{
 					Library: "../docs/sample/library",
 					LogDir:  "./",
@@ -65,8 +86,7 @@ func Test_Load(t *testing.T) {
 			want: Config{},
 		},
 	}
-	// Set log file name to "test", so that cleaning becomes easier.
-	logger.InitFileLogger("test.log", "INFO")
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if err := os.Setenv(EnvConfFile, tt.args.EnvConfFile); nil != err {
@@ -110,10 +130,10 @@ func Test_readConfigFile(t *testing.T) {
 				confFilePath: "../docs/sample/pm.config.yaml",
 			},
 			want: Config{
-				struct {
-					Library string `yaml:"library"`
-					LogDir  string `yaml:"log dir"`
-					LogFile string `yaml:"log file"`
+				PluginManager: struct {
+					Library string "yaml:\"library\""
+					LogDir  string "yaml:\"log dir\""
+					LogFile string "yaml:\"log file\""
 				}{
 					Library: "../docs/sample/library",
 					LogDir:  "./",
@@ -128,10 +148,10 @@ func Test_readConfigFile(t *testing.T) {
 				confFilePath: "non-existing-dir/pm.config.yaml",
 			},
 			want: Config{
-				struct {
-					Library string `yaml:"library"`
-					LogDir  string `yaml:"log dir"`
-					LogFile string `yaml:"log file"`
+				PluginManager: struct {
+					Library string "yaml:\"library\""
+					LogDir  string "yaml:\"log dir\""
+					LogFile string "yaml:\"log file\""
 				}{},
 			},
 			wantErr: true,
@@ -142,10 +162,10 @@ func Test_readConfigFile(t *testing.T) {
 				confFilePath: "../../docs/sample/library/D/preupgrade.sh",
 			},
 			want: Config{
-				struct {
-					Library string `yaml:"library"`
-					LogDir  string `yaml:"log dir"`
-					LogFile string `yaml:"log file"`
+				PluginManager: struct {
+					Library string "yaml:\"library\""
+					LogDir  string "yaml:\"log dir\""
+					LogFile string "yaml:\"log file\""
 				}{},
 			},
 			wantErr: true,
