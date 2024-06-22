@@ -1,4 +1,4 @@
-// Copyright (c) 2022 Veritas Technologies LLC. All rights reserved. IP63-2828-7171-04-15-9
+// Copyright (c) 2024 Veritas Technologies LLC. All rights reserved. IP63-2828-7171-04-15-9
 
 package logger
 
@@ -26,6 +26,7 @@ const (
 )
 
 const syslogFacility = syslog.LOG_LOCAL0
+const syslogConfig = "/etc/rsyslog.d/10-vxos-asum.conf"
 
 // SyslogTagPrefix defines tag name for syslog.
 const SyslogTagPrefix = "vxos-asum@"
@@ -359,8 +360,9 @@ func InitFileLogger(logFile, logLevel string) error {
 	return InitializeLogger(FileLogConfig(logLevel, logFile, ""))
 }
 
+// IsSysLogConfigPresent indicates whether syslog config is present.
 func IsSysLogConfigPresent() bool {
-	_, err := os.Stat("/etc/rsyslog.d/10-vxos-asum.conf")
+	_, err := os.Stat(syslogConfig)
 	if err != nil {
 		return false
 	}
@@ -371,7 +373,7 @@ func IsSysLogConfigPresent() bool {
 func InitSysLogger(module, logLevel string) error {
 	// Make sure the config file exist
 	if !IsSysLogConfigPresent() {
-		return fmt.Errorf("Syslog config file is not present.")
+		return fmt.Errorf("syslog config file %v is not present", syslogConfig)
 	}
 	return InitializeLogger(SyslogConfig(logLevel, module))
 }
