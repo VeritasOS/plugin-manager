@@ -128,7 +128,7 @@ This can be done by setting the environment variable `PM_CONF_FILE` to the
 custom config file path as shown below.
 
 ```bash
-export PM_CONF_FILE=docs/sample/pm.config.yaml
+export PM_CONF_FILE=sample/pm.config.yaml
 ```
 
 The config file could be either a `yaml` or a `json` file.
@@ -139,7 +139,7 @@ $ cat pm.config.yaml
 ---
 PluginManager:
   # `library` is the location where plugin directories containing plugins are expected to be present
-  library: "./docs/sample/library"
+  library: "./sample/library"
   log dir: "./"
   # `log file` indicates the name of the log file.
   #   The timestamp and '.log' extension would be appended to this name.
@@ -200,7 +200,7 @@ where
 ### Example: Plugin Manager (PM) `run -plugins`
 
 ```json
-$ jq -n "$plugins" | tee docs/sample/plugins-prereboot.json
+$ jq -n "$plugins" | tee sample/plugins-prereboot.json
 {
   "Plugins": [
     {
@@ -263,7 +263,7 @@ bash-5.1$
 #### Specify `-plugins` details via json file
 
 ```bash
-$ $GOBIN/pm run -plugins "./docs/sample/plugins-prereboot.json" -library docs/sample/library/
+$ $GOBIN/pm run -plugins "./sample/plugins-prereboot.json" -library sample/library/
 Applying "C" settings...: Starting
 Applying "B" settings...: Starting
 Applying "C" settings...: Succeeded
@@ -328,7 +328,7 @@ To override the values in the PM configuration, specify one or many of the
 following optional arguments: `library`, `log-dir` and `log-file`
 
 ```bash
-$ $GOBIN/pm run -type postreboot -library=docs/sample/library/ -log-dir=testlogs/ -log-file=test.log
+$ $GOBIN/pm run -type postreboot -library=sample/library/ -log-dir=testlogs/ -log-file=test.log
 Log: pm.2019-07-12T15:39:08.1145946-07:00.log
 Log: testlogs/test.2019-07-12T15:39:08.1209416-07:00.log
 
@@ -343,7 +343,7 @@ $
 ### Example: Writing plugins result to a `output-file` in `output-format` {json, yaml} format
 
 ```bash
-$ $GOBIN/pm run -type preupgrade -output-format=json -output-file=a.json -library ./docs/sample/library/
+$ $GOBIN/pm run -type preupgrade -output-format=json -output-file=a.json -library ./sample/library/
 Log: /var/log/asum/pm.2021-01-29T17:46:57.6904918-08:00.log
 
 Checking for "D" settings...: Starting
@@ -369,7 +369,7 @@ $ cat a.json
       ],
       "Requires": null,
       "Status": "Succeeded",
-      "StdOutErr": "Running preupgrade.sh (path: docs/sample/library//D/preupgrade.sh) with status(0)...\nDisplaying Plugin Manager (PM) Config file path: \nDone(0)!\n"
+      "StdOutErr": "Running preupgrade.sh (path: sample/library//D/preupgrade.sh) with status(0)...\nDisplaying Plugin Manager (PM) Config file path: \nDone(0)!\n"
     },
     {
       "Description": "Checking for \"A\" settings",
@@ -389,7 +389,7 @@ $ cat a.json
 ```
 
 ```bash
-$ $GOBIN/pm run -type preupgrade -output-format=yaml -output-file=a.yaml -library ./docs/sample/library/
+$ $GOBIN/pm run -type preupgrade -output-format=yaml -output-file=a.yaml -library ./sample/library/
 Log: /var/log/asum/pm.2021-01-29T17:53:15.8128937-08:00.log
 
 Checking for "D" settings...: Starting
@@ -409,7 +409,7 @@ plugins:
   - A/a.preupgrade
   requires: []
   status: Failed
-  stdouterr: "Running preupgrade.sh (path: docs/sample/library//D/preupgrade.sh) with
+  stdouterr: "Running preupgrade.sh (path: sample/library//D/preupgrade.sh) with
     status(1)...\nDisplaying Plugin Manager (PM) Config file path: \nFail(1)\n"
 status: Failed
 stdouterr: 'Running preupgrade plugins: Failed'

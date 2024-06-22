@@ -2,7 +2,7 @@
 # Copyright (c) 2020 Veritas Technologies LLC. All rights reserved. IP63-2828-7171-04-15-9
 pluginmanager:
   # `library` is the location where plugins directories containing plugins are expected to be present
-  library: "../docs/sample/library"
+  library: "../sample/library"
   log dir: "./"
   # `log file` indicates the name of the log file.
   #   The timestamp and '.log' extension would be appended to this name.

@@ -46,7 +46,7 @@ func Test_getPluginFiles(t *testing.T) {
 	myConfigFile := os.Getenv(config.EnvConfFile)
 	if myConfigFile == "" {
 		// For case, where tests are run through IDE.
-		myConfigFile = filepath.FromSlash("./docs/sample/pm.config.yaml")
+		myConfigFile = filepath.FromSlash("./sample/pm.config.yaml")
 	}
 	wd, _ := os.Getwd()
 	t.Logf("PWD: %s;\nConfig file: %+v\n", wd, myConfigFile)
@@ -996,7 +996,7 @@ func Test_getPluginsInfoFromJSONStrOrFile(t *testing.T) {
 		},
 		{
 			name: "Plugins in JSON file",
-			args: args{jsonStrOrFile: "./docs/sample/plugins-prereboot.json"},
+			args: args{jsonStrOrFile: "./sample/plugins-prereboot.json"},
 			want: RunStatus{
 				Plugins: Plugins{
 					{

@@ -64,7 +64,7 @@ func Test_Load(t *testing.T) {
 		{
 			name: "Valid pm.config file",
 			args: args{
-				EnvConfFile: "../docs/sample/pm.config.yaml",
+				EnvConfFile: "../sample/pm.config.yaml",
 			},
 			want: Config{
 				PluginManager: struct {
@@ -72,7 +72,7 @@ func Test_Load(t *testing.T) {
 					LogDir  string "yaml:\"log dir\""
 					LogFile string "yaml:\"log file\""
 				}{
-					Library: "../docs/sample/library",
+					Library: "../sample/library",
 					LogDir:  "./",
 					LogFile: "pm",
 				},
@@ -127,7 +127,7 @@ func Test_readConfigFile(t *testing.T) {
 		{
 			name: "Valid conf file",
 			args: args{
-				confFilePath: "../docs/sample/pm.config.yaml",
+				confFilePath: "../sample/pm.config.yaml",
 			},
 			want: Config{
 				PluginManager: struct {
@@ -135,7 +135,7 @@ func Test_readConfigFile(t *testing.T) {
 					LogDir  string "yaml:\"log dir\""
 					LogFile string "yaml:\"log file\""
 				}{
-					Library: "../docs/sample/library",
+					Library: "../sample/library",
 					LogDir:  "./",
 					LogFile: "pm",
 				},
@@ -159,7 +159,7 @@ func Test_readConfigFile(t *testing.T) {
 		{
 			name: "Invalid conf file",
 			args: args{
-				confFilePath: "../../docs/sample/library/D/preupgrade.sh",
+				confFilePath: "../../sample/library/D/preupgrade.sh",
 			},
 			want: Config{
 				PluginManager: struct {

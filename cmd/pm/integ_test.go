@@ -63,7 +63,7 @@ func setIntegrationEnvironment(topPath string) string {
 	configFile := filepath.FromSlash(topPath + "/pm.config-integ.yaml")
 
 	var newConfig Config
-	newConfig.PluginManager.Library = filepath.FromSlash(topPath + "/docs/sample/library")
+	newConfig.PluginManager.Library = filepath.FromSlash(topPath + "/sample/library")
 	newConfig.PluginManager.LogDir = filepath.FromSlash(topPath)
 	newConfig.PluginManager.LogFile = "pm-integ"
 

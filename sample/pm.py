@@ -1,7 +1,6 @@
 # Copyright (c) 2024 Veritas Technologies LLC. All rights reserved. IP63-2828-7171-04-15-9
 
 # A python library for invoking Plugin Manager (PM) to run plugins in parallel while specifying dependencies between plugins.
-# Additional details can be found here: https://stash.veritas.com/projects/AS/repos/vxos-common-rpms/browse/compiled_rpms/asum/plugin-manager/docs/pm.md
 
 import logging
 import os
