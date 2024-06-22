@@ -202,9 +202,6 @@ func integTest(t *testing.T, pmBinary, tDir string) {
 				stdOutErr, err := cmd.CombinedOutput()
 				t.Log("Stdout & Stderr:", string(stdOutErr))
 				got := strings.Split(string(stdOutErr), "\n")
-				for len(got) > 1 && strings.Contains(got[0], "Using file logging as Syslog configuration is not present.") {
-					got = got[1:]
-				}
 				for len(got) > 1 && strings.Contains(got[0], "Log: ") {
 					got = got[1:]
 				}

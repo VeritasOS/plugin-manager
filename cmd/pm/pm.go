@@ -30,18 +30,21 @@ func init() {
 	// DefaultConfigPath is default path for config file used when EnvConfFile is not set.
 	config.DefaultConfigPath = "/opt/veritas/appliance/asum/pm.config.yaml"
 	// DefaultLogPath is default path for log file.
-	config.DefaultLogPath = "/var/log/asum/pm.log"
-	// Use Syslog until the config file is read.
+	config.DefaultLogPath = "./" + progname
+	// Use syslog until the config file is read.
+	// If syslog initialization fails, file logging will be used.
 	useFileLog := true
 	if logger.IsSysLogConfigPresent() {
 		err := logger.InitSysLogger("pm-main", "INFO")
 		if err != nil {
-			fmt.Printf("Failed to initialize SysLog for logging [%#v]. Proceeding with file logging...\n", err)
-			// During initialization, if initiate syslog fails, we use FileLog and specify default location
+			fmt.Printf("Failed to initialize SysLog for logging [%#v]. Proceeding with FileLog...\n", err)
 			useFileLog = false
 		}
 	}
 	if useFileLog {
+		// NOTE: while running tests, the path of binary would be in `/tmp/<go-build*>`,
+		// so, using relative logging path w.r.t. binary wouldn't be accessible on Jenkins.
+		// So, use absolute path which also has write permissions (like current source directory).
 		err := logger.InitFileLogger(config.DefaultLogPath, "INFO")
 		if err != nil {
 			fmt.Printf("Failed to initialize file logger [%#v].\n", err)
@@ -49,9 +52,6 @@ func init() {
 		}
 	}
 
-	// NOTE: while running tests, the path of binary would be in `/tmp/<go-build*>`,
-	// so, using relative logging path w.r.t. binary wouldn't be accessible on Jenkins.
-	// So, use absolute path which also has write permissions (like current source directory).
 }
 
 func main() {
