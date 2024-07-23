@@ -29,7 +29,7 @@ func init() {
 	// DefaultConfigPath is default path for config file used when EnvConfFile is not set.
 	config.DefaultConfigPath = "/opt/veritas/appliance/asum/pm.config.yaml"
 	// DefaultLogPath is default path for log file.
-	config.DefaultLogPath = "/var/log/asum/pm.log"
+	config.DefaultLogPath = "./pm.log"
 	// Use syslog until the config file is read.
 	// If syslog initialization fails, file logging will be used.
 	useFileLog := true
