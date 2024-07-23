@@ -329,6 +329,7 @@ following optional arguments: `library`, `log-dir` and `log-file`
 
 ```bash
 $ $GOBIN/pm run -type postreboot -library=sample/library/ -log-dir=testlogs/ -log-file=test.log
+Log: pm.2019-07-12T15:39:08.1145946-07:00.log
 Log: testlogs/test.2019-07-12T15:39:08.1209416-07:00.log
 
 Validating "A's" configuration: Starting

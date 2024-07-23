@@ -158,13 +158,10 @@ func getPluginsInfoFromJSONStrOrFile(strOrFile string) (RunStatus, error) {
 			jsonFormat = false
 		}
 	}
-	// INFO: Use RunStatus to unmarshal to keep input consistent with current
-	//  output json, so that rerun failed could be done using result json.
-	var pluginsData RunStatus
 	if jsonFormat {
-		err = json.Unmarshal([]byte(rawData), &pluginsData)
+		err = json.Unmarshal([]byte(rawData), &pluginsInfo)
 	} else {
-		err = yaml.Unmarshal([]byte(rawData), &pluginsData)
+		err = yaml.Unmarshal([]byte(rawData), &pluginsInfo)
 	}
 	if err != nil {
 		logger.Error.Printf("Failed to call Unmarshal(%s, %v); err=%#v",
@@ -173,7 +170,7 @@ func getPluginsInfoFromJSONStrOrFile(strOrFile string) (RunStatus, error) {
 			logger.ConsoleError.PrintNReturnError(
 				"Plugins is not in expected format. Error: %s", err.Error())
 	}
-	return pluginsData, nil
+	return pluginsInfo, nil
 }
 
 func getPluginsInfoFromLibrary(pluginType, library string) (Plugins, error) {
