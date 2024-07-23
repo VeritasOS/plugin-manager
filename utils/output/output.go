@@ -1,4 +1,4 @@
-// Copyright (c) 2023 Veritas Technologies LLC. All rights reserved. IP63-2828-7171-04-15-9
+// Copyright (c) 2024 Veritas Technologies LLC. All rights reserved. IP63-2828-7171-04-15-9
 
 package output
 
@@ -7,8 +7,9 @@ import (
 	"flag"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"path/filepath"
+
+	logger "github.com/VeritasOS/plugin-manager/utils/log"
 
 	"gopkg.in/yaml.v3"
 )
@@ -53,35 +54,31 @@ func RegisterCommandOptions(f *flag.FlagSet, defaultParams map[string]string) {
 		&cmdOptions.Format,
 		"output-format",
 		defaultOutputFormat,
-		"The format of output to display the results. "+
+		"The format of output to display the results.\n"+
 			"Supported output formats are 'json', 'yaml'.",
 	)
 }
 
-// Write writes the given data in the format {json|yaml} that was set in options.
-//
-//	into a specified file. If file is not specified, then it will print
-//	on STDOUT.
+// Write the given data in the format {json|yaml} that was set in options into
+// a specified file. If file is not specified, then it will print on STDOUT.
 func Write(data interface{}) error {
-	log.Println("Entering Write")
-	defer log.Println("Exiting Write")
+	logger.Debug.Println("Entering Write")
+	defer logger.Debug.Println("Exiting Write")
 
 	if cmdOptions.Format == "" {
 		// log.Printf("Skipping the Write() as output format is not set.")
 		return nil
 	}
-	log.Printf("Writing output in %s to file name: %s",
+	logger.Info.Printf("Writing output in %s to file name: %s",
 		cmdOptions.Format, cmdOptions.File)
 	return writeToFile(data, cmdOptions.Format, cmdOptions.File)
 }
 
-// writeToFile writes the given data in the specified format {json|yaml}
-//
-//	into a specified file. If file is not specified, then it will print
-//	on STDOUT.
+// writeToFile writes the given data in the specified format {json|yaml} into
+// a specified file. If file is not specified, then it will print on STDOUT.
 func writeToFile(data interface{}, format string, filePath string) error {
-	log.Println("Entering writeToFile")
-	defer log.Println("Exiting writeToFile")
+	logger.Debug.Println("Entering writeToFile")
+	defer logger.Debug.Println("Exiting writeToFile")
 
 	var err error
 	var out []byte
@@ -92,8 +89,7 @@ func writeToFile(data interface{}, format string, filePath string) error {
 		out, err = yaml.Marshal(data)
 	}
 	if err != nil {
-		log.Printf("Unable to marshal %s data into %s. Error: %v",
-			data, format, err)
+		logger.Error.Printf("Unable to marshal %s data into %s, err=%v", data, format, err)
 		return err
 	}
 
@@ -105,11 +101,10 @@ func writeToFile(data interface{}, format string, filePath string) error {
 	}
 
 	filePath = filepath.FromSlash(filePath)
-	log.Printf("Output file: %s\n", filePath)
+	logger.Debug.Printf("Output file: %s", filePath)
 	err = ioutil.WriteFile(filePath, out, 0764)
 	if err != nil {
-		log.Printf("Unable to write to specified file %s. Error: %v",
-			filePath, err)
+		logger.Info.Printf("Unable to write to specified file %s. Error: %v", filePath, err)
 		return err
 	}
 

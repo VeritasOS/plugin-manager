@@ -1,0 +1,31 @@
+{
+  "Plugins": [
+    {
+      "Name": "A/a.prereboot",
+      "Description": "Applying \"A\" settings",
+      "ExecStart": "/usr/bin/ls -l -t",
+      "Requires": [
+        "C/c.prereboot",
+        "D/d.prereboot"
+      ]
+    },
+    {
+      "Name": "B/b.prereboot",
+      "Description": "Applying \"B\" settings...",
+      "ExecStart": "/bin/echo \"Running B...\""
+    },
+    {
+      "Name": "C/c.prereboot",
+      "Description": "Applying \"C\" settings...",
+      "ExecStart": "/bin/echo \"Running C...\""
+    },
+    {
+      "Name": "D/d.prereboot",
+      "Description": "Applying \"D\" settings...",
+      "ExecStart": "/bin/echo 'Running D...!'",
+      "Requires": [
+        "B/b.prereboot"
+      ]
+    }
+  ]
+}
