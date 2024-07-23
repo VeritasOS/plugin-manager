@@ -4,6 +4,7 @@ package logger
 
 import (
 	"errors"
+	"flag"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -16,6 +17,21 @@ import (
 	"time"
 )
 
+// options contains command line or config file parameters/options/fields related to logging.
+var options struct {
+	// logDir indicates the location for writing log file.
+	logDir string
+
+	// logFile indicates the log file name to write to in the logDir location.
+	logFile string
+
+	// logLevel indicates the type (ERROR, WARNING, INFO, DEBUG) of log messages to be logged. Setting a particular log-level say "INFO", logs all messages of that type (i.e., "INFO") as well as the previous messages types (i.e., ERROR and WARNING).
+	logLevel string
+
+	// syslogTag indicates the log tag to write into syslog.
+	syslogTag string
+}
+
 // Type is used to track logger type
 type Type int
 
@@ -25,8 +41,10 @@ const (
 	SysLog
 )
 
-const syslogFacility = syslog.LOG_LOCAL0
+// DefaultLogLevel used in case if it's not specified in config or cmdline.
+const DefaultLogLevel = "INFO"
 const syslogConfig = "/etc/rsyslog.d/10-vxos-asum.conf"
+const syslogFacility = syslog.LOG_LOCAL0
 
 // SyslogTagPrefix defines tag name for syslog.
 const SyslogTagPrefix = "vxos-asum@"
@@ -414,4 +432,77 @@ func DeInitLogger() []error {
 	syslogErrorHandle = nil
 
 	return errList
+}
+
+// RegisterCommandOptions registers the command options related to the log options.
+func RegisterCommandOptions(f *flag.FlagSet, defaultParams map[string]string) {
+	defaultLogDir, ok := defaultParams["log-dir"]
+	if !ok {
+		defaultLogDir = ""
+	}
+	defaultLogFile, ok := defaultParams["log-file"]
+	if !ok {
+		defaultLogFile = ""
+	}
+	defaultLogLevel, ok := defaultParams["log-level"]
+	if !ok {
+		defaultLogLevel = DefaultLogLevel
+	}
+	f.StringVar(
+		&options.logDir,
+		"log-dir",
+		defaultLogDir,
+		"Directory for the log file.",
+	)
+	f.StringVar(
+		&options.logFile,
+		"log-file",
+		defaultLogFile,
+		"Name of the log file.",
+	)
+	f.StringVar(
+		&options.logLevel,
+		"log-level",
+		defaultLogLevel,
+		"Log level ('ERROR', 'WARNING', 'INFO', 'DEBUG').",
+	)
+	f.StringVar(
+		&options.syslogTag,
+		"log-tag",
+		"",
+		"Syslog tag name.",
+	)
+}
+
+// GetLogDir provides location for storing logs.
+func GetLogDir() string {
+	// Clean path only if it's not empty, as otherwise it'll convert empty value to current directory.
+	if options.logDir != "" {
+		return filepath.FromSlash(filepath.Clean(options.logDir) +
+			string(os.PathSeparator))
+	}
+	return ""
+}
+
+// GetLogFile provides name of logfile.
+func GetLogFile() string {
+	return options.logFile
+}
+
+// GetLogLevel provides log level.
+func GetLogLevel() string {
+	switch options.logLevel {
+	case "ERROR":
+	case "WARNING":
+	case "INFO":
+	case "DEBUG":
+	default:
+		options.logLevel = DefaultLogLevel
+	}
+	return options.logLevel
+}
+
+// GetLogTag provides syslog tag name.
+func GetLogTag() string {
+	return options.syslogTag
 }

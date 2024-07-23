@@ -145,7 +145,7 @@ PluginManager:
   #   The timestamp and '.log' extension would be appended to this name.
   #   I.e., The format of the log file generated would be: "<log file>.<timestamp>.log"
   #   Example: The below value results in following log file: pm.2020-01-13T16:11:58.6006565-08:00.log
-  log file: "pm"
+  log file: "pm.log"
 ...
 ```
 
@@ -329,7 +329,6 @@ following optional arguments: `library`, `log-dir` and `log-file`
 
 ```bash
 $ $GOBIN/pm run -type postreboot -library=sample/library/ -log-dir=testlogs/ -log-file=test.log
-Log: pm.2019-07-12T15:39:08.1145946-07:00.log
 Log: testlogs/test.2019-07-12T15:39:08.1209416-07:00.log
 
 Validating "A's" configuration: Starting

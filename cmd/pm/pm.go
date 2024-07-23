@@ -1,4 +1,4 @@
-// Copyright (c) 2022 Veritas Technologies LLC. All rights reserved. IP63-2828-7171-04-15-9
+// Copyright (c) 2024 Veritas Technologies LLC. All rights reserved. IP63-2828-7171-04-15-9
 
 // Package main provides a commandline tool interface for interacting with
 // Plugin Manager (PM).
@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 
 	logger "github.com/VeritasOS/plugin-manager/utils/log"
 
@@ -30,12 +29,12 @@ func init() {
 	// DefaultConfigPath is default path for config file used when EnvConfFile is not set.
 	config.DefaultConfigPath = "/opt/veritas/appliance/asum/pm.config.yaml"
 	// DefaultLogPath is default path for log file.
-	config.DefaultLogPath = "./" + progname
+	config.DefaultLogPath = "/var/log/asum/pm.log"
 	// Use syslog until the config file is read.
 	// If syslog initialization fails, file logging will be used.
 	useFileLog := true
 	if logger.IsSysLogConfigPresent() {
-		err := logger.InitSysLogger("pm-main", "INFO")
+		err := logger.InitSysLogger("pm-main", logger.DefaultLogLevel)
 		if err != nil {
 			fmt.Printf("Failed to initialize SysLog for logging [%#v]. Proceeding with FileLog...\n", err)
 			useFileLog = false
@@ -45,7 +44,7 @@ func init() {
 		// NOTE: while running tests, the path of binary would be in `/tmp/<go-build*>`,
 		// so, using relative logging path w.r.t. binary wouldn't be accessible on Jenkins.
 		// So, use absolute path which also has write permissions (like current source directory).
-		err := logger.InitFileLogger(config.DefaultLogPath, "INFO")
+		err := logger.InitFileLogger(config.DefaultLogPath, logger.DefaultLogLevel)
 		if err != nil {
 			fmt.Printf("Failed to initialize file logger [%#v].\n", err)
 			os.Exit(1)
@@ -66,24 +65,6 @@ func main() {
 
 	if err := config.Load(); err != nil {
 		logger.ConsoleWarning.Printf("Failed to load config file. Using default values and proceeding with the operation")
-	}
-	if config.GetPMLogDir() != "" && config.GetPMLogFile() != "" {
-		myLogFile := config.GetPMLogDir() + config.GetPMLogFile()
-		if !strings.HasSuffix(myLogFile, ".log") {
-			myLogFile += ".log"
-		}
-		if myLogFile != config.DefaultLogPath {
-			errList := logger.DeInitLogger()
-			if len(errList) > 0 {
-				fmt.Printf("Failed to deinitialize logger, err=[%v]", errList)
-				os.Exit(-1)
-			}
-			err := logger.InitFileLogger(myLogFile, "INFO")
-			if err != nil {
-				fmt.Printf("Failed to initialize logger, err=[%v]", err)
-				os.Exit(-1)
-			}
-		}
 	}
 
 	pm.RegisterCommandOptions(progname)

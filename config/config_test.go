@@ -68,13 +68,15 @@ func Test_Load(t *testing.T) {
 			},
 			want: Config{
 				PluginManager: struct {
-					Library string "yaml:\"library\""
-					LogDir  string "yaml:\"log dir\""
-					LogFile string "yaml:\"log file\""
+					Library  string "yaml:\"library\""
+					LogDir   string "yaml:\"log dir\""
+					LogFile  string "yaml:\"log file\""
+					LogLevel string "yaml:\"log level\""
 				}{
-					Library: "../sample/library",
-					LogDir:  "./",
-					LogFile: "pm",
+					Library:  "../sample/library",
+					LogDir:   "./",
+					LogFile:  "pm",
+					LogLevel: "DEBUG",
 				},
 			},
 		},
@@ -131,13 +133,15 @@ func Test_readConfigFile(t *testing.T) {
 			},
 			want: Config{
 				PluginManager: struct {
-					Library string "yaml:\"library\""
-					LogDir  string "yaml:\"log dir\""
-					LogFile string "yaml:\"log file\""
+					Library  string "yaml:\"library\""
+					LogDir   string "yaml:\"log dir\""
+					LogFile  string "yaml:\"log file\""
+					LogLevel string "yaml:\"log level\""
 				}{
-					Library: "../sample/library",
-					LogDir:  "./",
-					LogFile: "pm",
+					Library:  "../sample/library",
+					LogDir:   "./",
+					LogFile:  "pm",
+					LogLevel: "DEBUG",
 				},
 			},
 			wantErr: false,
@@ -149,9 +153,10 @@ func Test_readConfigFile(t *testing.T) {
 			},
 			want: Config{
 				PluginManager: struct {
-					Library string "yaml:\"library\""
-					LogDir  string "yaml:\"log dir\""
-					LogFile string "yaml:\"log file\""
+					Library  string "yaml:\"library\""
+					LogDir   string "yaml:\"log dir\""
+					LogFile  string "yaml:\"log file\""
+					LogLevel string "yaml:\"log level\""
 				}{},
 			},
 			wantErr: true,
@@ -163,9 +168,10 @@ func Test_readConfigFile(t *testing.T) {
 			},
 			want: Config{
 				PluginManager: struct {
-					Library string "yaml:\"library\""
-					LogDir  string "yaml:\"log dir\""
-					LogFile string "yaml:\"log file\""
+					Library  string "yaml:\"library\""
+					LogDir   string "yaml:\"log dir\""
+					LogFile  string "yaml:\"log file\""
+					LogLevel string "yaml:\"log level\""
 				}{},
 			},
 			wantErr: true,

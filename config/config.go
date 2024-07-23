@@ -17,9 +17,10 @@ type Config struct {
 	// PluginManager configuration information.
 	PluginManager struct {
 		// Library is the path where plugin directories containing plugin files are present.
-		Library string `yaml:"library"`
-		LogDir  string `yaml:"log dir"`
-		LogFile string `yaml:"log file"`
+		Library  string `yaml:"library"`
+		LogDir   string `yaml:"log dir"`
+		LogFile  string `yaml:"log file"`
+		LogLevel string `yaml:"log level"`
 	}
 }
 
@@ -47,6 +48,11 @@ func GetLogFile() string {
 	// TODO: Move log parameters one level up in config as it's common to asum,
 	// and not specific to PM.
 	return myConfig.PluginManager.LogFile
+}
+
+// GetLogLevel provides name of loglevel.
+func GetLogLevel() string {
+	return myConfig.PluginManager.LogLevel
 }
 
 // GetPluginsLibrary gets location of plugins library.
@@ -135,6 +141,11 @@ func SetLogFile(logFile string) {
 	// TODO: Move log parameters one level up in config as it's common to asum,
 	// and not specific to PM.
 	myConfig.PluginManager.LogFile = logFile
+}
+
+// SetLogLevel sets the log level.
+func SetLogLevel(logLevel string) {
+	myConfig.PluginManager.LogLevel = logLevel
 }
 
 // SetPluginsLibrary sets the plugins library location.

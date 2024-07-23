@@ -7,9 +7,6 @@ import os
 import sys
 from pathlib import Path
 
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "../../../", "opt/veritas/appliance/bin"))
-import pm
-
 DEFAULT_LOG_DIR = "/var/log/asum/"
 
 logger = logging.getLogger()
@@ -82,12 +79,24 @@ if __name__ == "__main__":
     parser.add_argument("--plugins",
                         type=str,
                         help="Plugins' and its dependencies in json format as a string or in a file (Ex: './plugins.json')")
+    parser.add_argument("--library",
+                        default=os.path.dirname(os.path.abspath(__file__)),
+                        type=str,
+                        help="Path to plugins library.")
     parser.add_argument("--type",
                         help="Type of plugin.")
+    parser.add_argument("--display-stdout",
+                        action=argparse.BooleanOptionalAction,
+                        help="Display plugins details and status on console/stdout.")
     parser.add_argument("--log-file",
                         default=DEFAULT_LOG_DIR + Path(__file__).stem + ".log",
                         type=str,
                         help="Path to the log file.")
+    parser.add_argument("--log-level",
+                        choices=['ERROR', 'WARNING', 'INFO', 'DEBUG'],
+                        default="INFO",
+                        type=str,
+                        help="Log level.")
     parser.add_argument("--output-file",
                         help="Name of the file to write the results.")
     parser.add_argument("--output-format",
@@ -101,10 +110,17 @@ if __name__ == "__main__":
     logger.debug("Args:")
     logger.debug(args)
 
+    sys.path.insert(0, os.path.join(os.path.dirname(
+        os.path.abspath(__file__)), "../../", "opt/veritas/appliance/bin"))
+    import pm
+
     status, plugins_result = pm.run(
+        display_stdout=args.display_stdout,
         plugins=args.plugins,
         type=args.type,
+        library=args.library,
         log_file=args.log_file,
+        log_level=args.log_level,
         output_file=args.output_file,
         output_format=args.output_format)
     logger.debug("Status:")

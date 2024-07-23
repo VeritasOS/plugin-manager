@@ -127,13 +127,11 @@ func Test_initGraph(t *testing.T) {
 			args: args{
 				pluginType: "test1",
 				pluginsInfo: Plugins{
-					Plugin{
-						PluginAttributes: PluginAttributes{
-							Name:        "A/a.test1",
-							Description: "A's description",
-							Requires:    []string{},
-							ExecStart:   "/bin/echo 'Running A...!'",
-						},
+					{
+						Name:        "A/a.test1",
+						Description: "A's description",
+						Requires:    []string{},
+						ExecStart:   "/bin/echo 'Running A...!'",
 					},
 				},
 			},
@@ -149,20 +147,18 @@ func Test_initGraph(t *testing.T) {
 				pluginType: "test2",
 				pluginsInfo: Plugins{
 					{
-						PluginAttributes: PluginAttributes{
-							Name:        "A/a.test2",
-							Description: "A's description",
-							Requires:    []string{},
-							ExecStart:   "/bin/echo 'Running A...!'",
-						},
+
+						Name:        "A/a.test2",
+						Description: "A's description",
+						Requires:    []string{},
+						ExecStart:   "/bin/echo 'Running A...!'",
 					},
 					{
-						PluginAttributes: PluginAttributes{
-							Name:        "B/b.test2",
-							Description: "B's description",
-							Requires:    []string{},
-							ExecStart:   "/bin/echo 'Running B...!'",
-						},
+
+						Name:        "B/b.test2",
+						Description: "B's description",
+						Requires:    []string{},
+						ExecStart:   "/bin/echo 'Running B...!'",
 					},
 				},
 			},
@@ -179,18 +175,18 @@ func Test_initGraph(t *testing.T) {
 			args: args{
 				pluginType: "test3",
 				pluginsInfo: Plugins{
-					{PluginAttributes: PluginAttributes{
+					{
 						Name:        "A/a.test3",
 						Description: "A's description",
 						Requires:    []string{},
 						ExecStart:   "/bin/echo 'Running A...!'",
-					}},
-					{PluginAttributes: PluginAttributes{
+					},
+					{
 						Name:        "B/b.test3",
 						Description: "B's description",
 						Requires:    []string{"A/a.test3"},
 						ExecStart:   "/bin/echo 'Running B...!'",
-					}},
+					},
 				},
 			},
 			wantrows: []string{

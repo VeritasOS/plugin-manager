@@ -1,0 +1,10 @@
+type: preupgrade
+plugins:
+    - name: A/a.preupgrade
+      description: Checking for "A" settings
+      execstart: /bin/echo "Checking A..."
+      requires:
+        - D/d.preupgrade
+    - name: D/d.preupgrade
+      description: Checking for "D" settings...
+      execstart: $PM_LIBRARY/D/preupgrade.sh
