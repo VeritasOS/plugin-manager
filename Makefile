@@ -1,4 +1,4 @@
-# Copyright (c) 2023 Veritas Technologies LLC. All rights reserved. IP63-2828-7171-04-15-9
+# Copyright (c) 2024 Veritas Technologies LLC. All rights reserved. IP63-2828-7171-04-15-9
 
 # A Self-Documenting Makefile: http://marmelab.com/blog/2016/02/29/auto-documented-makefile.html
 .DEFAULT_GOAL := help
@@ -127,24 +127,24 @@ update-go-tools:
 
 .PHONY: install-go
 install-go:
-	wget -c https://go.dev/dl/go1.22.2.linux-amd64.tar.gz -P /tmp
+	wget -c https://go.dev/dl/go1.23.1.linux-amd64.tar.gz -P /tmp
 	ret=$$?; \
 	if [ $${ret} -ne 0 ]; then \
 		echo "Failed to download go install files. Return: $${d}."; \
 		exit 1; \
 	fi ;
-	rm -rf /usr/local/go && tar -C /usr/local -xzf go1.22.2.linux-amd64.tar.gz
+	rm -rf /usr/local/go && tar -C /usr/local -xzf /tmp/go*.linux-amd64.tar.gz
 	export PATH=/usr/local/go/bin:$PATH
 
 .PHONY: install-proto-deps
 install-proto-deps:
-	wget -c https://github.com/protocolbuffers/protobuf/releases/download/v26.1/protoc-26.1-linux-x86_64.zip -P $(PROTOBUF_PATH)
+	wget -c https://github.com/protocolbuffers/protobuf/releases/download/v28.0/protoc-28.0-linux-x86_64.zip -P $(PROTOBUF_PATH)
 	ret=$$?; \
 	if [ $${ret} -ne 0 ]; then \
 		echo "Failed to download protobuf protoc. Return: $${d}."; \
 		exit 1; \
 	fi ;
-	cd $(PROTOBUF_PATH); unzip protoc-26.1-linux-x86_64.zip;
+	cd $(PROTOBUF_PATH); unzip protoc-*-linux-x86_64.zip;
 	ret=$$?; \
 	if [ $${ret} -ne 0 ]; then \
 		echo "Failed to unzip protoc*.zip. Return: $${d}."; \
