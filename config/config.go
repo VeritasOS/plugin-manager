@@ -31,8 +31,6 @@ var (
 	EnvConfFile string
 	// DefaultConfigPath is default path for config file used when EnvConfFile is not set.
 	DefaultConfigPath string
-	// DefaultLogPath is default path for log file.
-	DefaultLogPath string
 )
 
 // GetLogDir provides location for storing logs.

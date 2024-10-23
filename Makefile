@@ -1,10 +1,10 @@
-# Copyright (c) 2023 Veritas Technologies LLC. All rights reserved. IP63-2828-7171-04-15-9
+# Copyright (c) 2024 Veritas Technologies LLC. All rights reserved. IP63-2828-7171-04-15-9
 
 # A Self-Documenting Makefile: http://marmelab.com/blog/2016/02/29/auto-documented-makefile.html
 .DEFAULT_GOAL := help
 .PHONY: help
 help:	## Display this help message.
-	@grep -E '^[a-zA-Z0-9_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
+	@grep -Eh '^[a-zA-Z0-9_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
 
 TOP=$(CURDIR)
 include $(TOP)/Makefile.conf
@@ -29,8 +29,7 @@ clean: 	## Clean Plugin Manager go build & test artifacts
 	cd $(GOSRC); \
 	go clean -i -mod=vendor ./...;
 	@echo "Cleaning Go test artifacts... ";
-	-@rm $(GOSRC)/{,.}*{dot,html,log,svg,xml};
-	-@rm $(GOSRC)/cmd/pm/{,.}*{dot,log,svg};
+	-@find $(GOSRC) -name "*.dot" -o -name "*.html" -o -name "*.log" -o -name "*.svg" -o -name "*.xml" | xargs -i rm -f {}
 	-@rm -rf $(GOSRC)/plugins/
 	-@rm -rf $(GOCOVERDIR);
 
@@ -112,5 +111,14 @@ go-race: 	## Run Go tests with race detector enabled
 	cd $(GOSRC); \
 	export PM_CONF_FILE=$(GOSRC)/sample/pm.config.yaml; \
 	go test -mod=vendor -v -race ./...;
+
+.PHONY: update-go-tools
+update-go-tools: ## Update Go thirdparty tools to current go version  
+	export GOBIN=$(GOTOOLSBIN); \
+	go install github.com/axw/gocov/gocov@latest; \
+	go install github.com/AlekSi/gocov-xml@latest; \
+	go install github.com/matm/gocov-html/cmd/gocov-html@latest; \
+	go install github.com/jstemmer/go-junit-report/v2@latest; \
+	go install golang.org/x/lint/golint@latest
 
 .NOTPARALLEL:

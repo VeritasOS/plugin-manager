@@ -6,8 +6,6 @@ import (
 	"reflect"
 	"sort"
 	"testing"
-
-	logger "github.com/VeritasOS/plugin-manager/utils/log"
 )
 
 func Test_getStatusColor(t *testing.T) {
@@ -199,8 +197,7 @@ func Test_initGraph(t *testing.T) {
 			wantErr: false,
 		},
 	}
-	// Set log file name to "test", so that cleaning becomes easier.
-	logger.InitFileLogger("test.log", "INFO")
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if err := initGraph(tt.args.pluginType, tt.args.pluginsInfo); (err != nil) != tt.wantErr {

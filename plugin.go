@@ -5,6 +5,7 @@
 package pm
 
 import (
+	"bufio"
 	"encoding/json"
 	"errors"
 	"flag"
@@ -29,7 +30,7 @@ import (
 
 var (
 	// Version of the Plugin Manager (PM).
-	version = "4.8"
+	version = "4.9"
 )
 
 // Status of plugin execution used for displaying to user on console.
@@ -48,7 +49,7 @@ type Plugin struct {
 	RequiredBy  []string
 	Requires    []string
 	Status      string
-	StdOutErr   string
+	StdOutErr   []string
 }
 
 // Plugins is a list of plugins' info.
@@ -56,7 +57,8 @@ type Plugins []Plugin
 
 // RunStatus is the pm run status.
 type RunStatus struct {
-	Type string
+	Type    string
+	Library string
 	// TODO: Add Percentage to get no. of pending vs. completed run of plugins.
 	Plugins   Plugins `yaml:",omitempty"`
 	Status    string
@@ -158,10 +160,13 @@ func getPluginsInfoFromJSONStrOrFile(strOrFile string) (RunStatus, error) {
 			jsonFormat = false
 		}
 	}
+	// INFO: Use RunStatus to unmarshal to keep input consistent with current
+	//  output json, so that rerun failed could be done using result json.
+	var pluginsData RunStatus
 	if jsonFormat {
-		err = json.Unmarshal([]byte(rawData), &pluginsInfo)
+		err = json.Unmarshal([]byte(rawData), &pluginsData)
 	} else {
-		err = yaml.Unmarshal([]byte(rawData), &pluginsInfo)
+		err = yaml.Unmarshal([]byte(rawData), &pluginsData)
 	}
 	if err != nil {
 		logger.Error.Printf("Failed to call Unmarshal(%s, %v); err=%#v",
@@ -170,7 +175,7 @@ func getPluginsInfoFromJSONStrOrFile(strOrFile string) (RunStatus, error) {
 			logger.ConsoleError.PrintNReturnError(
 				"Plugins is not in expected format. Error: %s", err.Error())
 	}
-	return pluginsInfo, nil
+	return pluginsData, nil
 }
 
 func getPluginsInfoFromLibrary(pluginType, library string) (Plugins, error) {
@@ -411,7 +416,6 @@ func executePluginCmd(statusCh chan<- map[string]*Plugin, pInfo Plugin, failedDe
 	updateGraph(getPluginType(p), p, dStatusStart, "")
 	logger.ConsoleInfo.Printf("%s: %s", pInfo.Description, dStatusStart)
 	pluginLogFile := ""
-	// Create chLog, by default it will use syslog, if user specified logFile, then use previous defined log generator
 	var chLog *log.Logger
 	if !logger.IsFileLogger() {
 		var logTag string
@@ -496,7 +500,31 @@ func executePluginCmd(statusCh chan<- map[string]*Plugin, pInfo Plugin, failedDe
 	cmdParams := cmdParam[1:]
 	cmd := exec.Command(cmdStr, cmdParams...)
 	cmd.Env = envList
-	stdOutErr, err := cmd.CombinedOutput()
+	iostdout, err := cmd.StdoutPipe()
+	if err != nil {
+		pInfo.Status = dStatusFail
+		logger.Error.Printf("Failed to execute plugin %s. Error: %s\n", pInfo.Name, err.Error())
+		pInfo.StdOutErr = []string{err.Error()}
+		logger.ConsoleInfo.Printf("%s: %s\n", pInfo.Description, pInfo.Status)
+		statusCh <- map[string]*Plugin{p: &pInfo}
+		return
+	}
+	cmd.Stderr = cmd.Stdout
+
+	chLog.Println("Executing command:", pInfo.ExecStart)
+	err = cmd.Start()
+	var stdOutErr []string
+	if err == nil {
+		scanner := bufio.NewScanner(iostdout)
+		scanner.Split(bufio.ScanLines)
+		for scanner.Scan() {
+			iobytes := scanner.Text()
+			chLog.Println(string(iobytes))
+			stdOutErr = append(stdOutErr, iobytes)
+		}
+		err = cmd.Wait()
+		// chLog.Printf("command exited with code: %+v", err)
+	}
 
 	func() {
 		chLog.Printf("INFO: Plugin(%s): Executing command: %s", p, pInfo.ExecStart)
@@ -504,13 +532,13 @@ func executePluginCmd(statusCh chan<- map[string]*Plugin, pInfo Plugin, failedDe
 			chLog.Printf("ERROR: Plugin(%s): Failed to execute command, err=%s", p, err.Error())
 			updateGraph(getPluginType(p), p, dStatusFail, pluginLogFile)
 		} else {
-			chLog.Printf("INFO: Plugin(%s): Stdout & Stderr: %s", p, string(stdOutErr))
+			chLog.Printf("INFO: Plugin(%s): Stdout & Stderr: %v", p, stdOutErr)
 			updateGraph(getPluginType(p), p, dStatusOk, pluginLogFile)
 		}
 	}()
 
-	logger.Debug.Println("Stdout & Stderr:", string(stdOutErr))
-	pStatus := Plugin{StdOutErr: string(stdOutErr)}
+	logger.Debug.Println("Stdout & Stderr:", stdOutErr)
+	pStatus := Plugin{StdOutErr: stdOutErr}
 	if err != nil {
 		pStatus.Status = dStatusFail
 		logger.Error.Printf("Failed to execute plugin %s. err=%s\n", p, err.Error())
@@ -760,9 +788,20 @@ func RunFromJSONStrOrFile(result *RunStatus, jsonStrOrFile string, runOptions Ru
 		result.StdOutErr = err.Error()
 		return err
 	}
-	result.Plugins = pluginsInfo.Plugins
 	result.Type = pluginsInfo.Type
-
+	result.Library = pluginsInfo.Library
+	result.Plugins = pluginsInfo.Plugins
+	// INFO: Override values of json/file with explicitly passed cmdline parameter. Else, set runOptions type from json/file.
+	if runOptions.Type != "" {
+		result.Type = runOptions.Type
+	} else {
+		runOptions.Type = pluginsInfo.Type
+	}
+	if runOptions.Library != "" {
+		result.Library = runOptions.Library
+	} else {
+		runOptions.Library = pluginsInfo.Library
+	}
 	return run(result, runOptions)
 }
 
@@ -903,7 +942,7 @@ func ScanCommandOptions(options map[string]interface{}) error {
 		//  but only extensions (i.e., they get created as hidden files).
 		config.SetPMLogFile(tLogFile)
 		myLogFile += config.GetPMLogFile()
-		if myLogFile != config.DefaultLogPath {
+		if myLogFile != logger.DefaultLogPath {
 			myLogFile := filepath.Clean(myLogFile)
 			logger.Info.Println("Logging to specified log file:", myLogFile)
 			errList := logger.DeInitLogger()
