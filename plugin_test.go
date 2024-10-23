@@ -527,7 +527,7 @@ func Test_executePlugins(t *testing.T) {
 			pluginInfo: Plugins{},
 			want: want{
 				returnStatus: true,
-				// psStatus:     Plugins{},
+				psStatus:     Plugins{},
 			},
 		},
 		{
@@ -603,15 +603,15 @@ func Test_executePlugins(t *testing.T) {
 			name: "Plugin with dependency",
 			pluginInfo: Plugins{
 				{
+					Name:        "A/a.test",
+					Description: "Applying \"A\" settings",
+					ExecStart:   `/bin/echo Running A...`,
+				},
+				{
 					Name:        "D/d.test",
 					Description: "Applying \"D\" settings",
 					Requires:    []string{"A/a.test"},
-					ExecStart:   `/bin/echo "Running D..."`,
-				},
-				{
-					Name:        "A/a.test",
-					Description: "Applying \"A\" settings",
-					ExecStart:   `/bin/echo "Running A..."`,
+					ExecStart:   `/bin/echo Running D...`,
 				},
 			},
 			want: want{
@@ -624,6 +624,7 @@ func Test_executePlugins(t *testing.T) {
 						RequiredBy:  []string{"D/d.test"},
 						Requires:    []string{},
 						Status:      "Succeeded",
+						StdOutErr:   []string{"Running A..."},
 					},
 					{
 						Description: "Applying \"D\" settings",
@@ -632,6 +633,7 @@ func Test_executePlugins(t *testing.T) {
 						RequiredBy:  []string{},
 						Requires:    []string{"A/a.test"},
 						Status:      "Succeeded",
+						StdOutErr:   []string{"Running D..."},
 					},
 				},
 			},
@@ -763,17 +765,16 @@ func Test_executePlugins(t *testing.T) {
 				returnStatus: false,
 				psStatus: Plugins{
 					{
-						Description: "Applying \"A\" settings",
 						Name:        "A/a.test",
+						Description: "Applying \"A\" settings",
 						ExecStart:   "exit 1",
-						RequiredBy:  []string{"D/d.test"},
 						Status:      "Failed",
 					},
 					{
-						Description: "Applying \"D\" settings",
-						Requires:    []string{"A/a.test"},
-						ExecStart:   "/bin/echo \"Running D...!\"",
 						Name:        "D/d.test",
+						Description: "Applying \"D\" settings",
+						ExecStart:   "/bin/echo \"Running D...!\"",
+						Requires:    []string{"A/a.test"},
 						RequiredBy:  []string{},
 						Status:      "Skipped",
 					},
@@ -788,7 +789,6 @@ func Test_executePlugins(t *testing.T) {
 		for _, tt.sequential = range []bool{false, true} {
 			t.Run(tt.name+fmt.Sprintf("(sequential=%v)", tt.sequential),
 				func(t *testing.T) {
-					// result := tt.pluginInfo
 					res := executePlugins(&tt.pluginInfo, tt.sequential, map[string]string{})
 					// t.Logf("res: %+v, expected: %v", res, tt.want.returnStatus)
 					if res != tt.want.returnStatus {
@@ -796,33 +796,21 @@ func Test_executePlugins(t *testing.T) {
 							res, tt.want.returnStatus)
 						return
 					}
-					// if len(result) != 0 {
-					t.Logf("result of all plugins: %+v", tt.pluginInfo)
+					// t.Logf("result of all plugins: %+v", tt.pluginInfo)
 					for i := range tt.pluginInfo {
-						// TODO: Currently even though the expected and
-						// 	obtained values are same, it's still failing.
-						// 	Explore more on why that's the case for below
-						// 	commented ones.
-						// if reflect.DeepEqual(result[i].Plugin,
-						// 	tt.want.psStatus[i].Plugin) == false {
-						// 	t.Errorf("Plugins Plugin: got %+v, want %+v",
-						// 		result[i].Plugin,
-						// 		tt.want.psStatus[i].Plugin)
-						// }
 						if reflect.DeepEqual(tt.pluginInfo[i].Status,
 							tt.want.psStatus[i].Status) == false {
 							t.Errorf("Plugins %s Status: got %+v, want %+v",
 								tt.pluginInfo[i].Name,
 								tt.pluginInfo[i].Status, tt.want.psStatus[i].Status)
 						}
-						// if tt.want.psStatus[i].StdOutErr != "" &&
-						// 	reflect.DeepEqual(result[i].StdOutErr,
-						// 		tt.want.psStatus[i].StdOutErr) == false {
-						// 	t.Errorf("Plugins StdOutErr: got %+v, want %+v",
-						// 		result[i].StdOutErr,
-						// 		tt.want.psStatus[i].StdOutErr)
-						// }
-						// }
+						if len(tt.want.psStatus[i].StdOutErr) != 0 &&
+							reflect.DeepEqual(tt.pluginInfo[i].StdOutErr,
+								tt.want.psStatus[i].StdOutErr) == false {
+							t.Errorf("Plugins StdOutErr: got %+v, want %+v",
+								tt.pluginInfo[i].StdOutErr,
+								tt.want.psStatus[i].StdOutErr)
+						}
 					}
 				},
 			)

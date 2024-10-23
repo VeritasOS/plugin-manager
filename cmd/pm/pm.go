@@ -5,7 +5,6 @@
 package main
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 
@@ -18,7 +17,7 @@ import (
 var (
 	buildDate string
 	// Version of the Plugin Manager (PM) command.
-	version = "4.2"
+	version = "4.4"
 	// progname is name of my binary/program/executable.
 	progname = filepath.Base(os.Args[0])
 )
@@ -28,29 +27,7 @@ func init() {
 	config.EnvConfFile = "PM_CONF_FILE"
 	// DefaultConfigPath is default path for config file used when EnvConfFile is not set.
 	config.DefaultConfigPath = "/opt/veritas/appliance/asum/pm.config.yaml"
-	// DefaultLogPath is default path for log file.
-	config.DefaultLogPath = "./pm.log"
-	// Use syslog until the config file is read.
-	// If syslog initialization fails, file logging will be used.
-	useFileLog := true
-	if logger.IsSysLogConfigPresent() {
-		err := logger.InitSysLogger("pm-main", logger.DefaultLogLevel)
-		if err != nil {
-			fmt.Printf("Failed to initialize SysLog for logging [%#v]. Proceeding with FileLog...\n", err)
-			useFileLog = false
-		}
-	}
-	if useFileLog {
-		// NOTE: while running tests, the path of binary would be in `/tmp/<go-build*>`,
-		// so, using relative logging path w.r.t. binary wouldn't be accessible on Jenkins.
-		// So, use absolute path which also has write permissions (like current source directory).
-		err := logger.InitFileLogger(config.DefaultLogPath, logger.DefaultLogLevel)
-		if err != nil {
-			fmt.Printf("Failed to initialize file logger [%#v].\n", err)
-			os.Exit(1)
-		}
-	}
-
+	logger.InitLogging()
 }
 
 func main() {

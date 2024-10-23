@@ -43,8 +43,19 @@ const (
 
 // DefaultLogLevel used in case if it's not specified in config or cmdline.
 const DefaultLogLevel = "INFO"
-const syslogConfig = "/etc/rsyslog.d/10-vxos-asum.conf"
-const syslogFacility = syslog.LOG_LOCAL0
+
+var progname = filepath.Base(os.Args[0])
+
+var defaultLogDir = "/var/log/asum/"
+var defaultLogFile = progname + ".log"
+
+// DefaultLogPath used in case if path to log file is not specified in config or cmdline.
+var DefaultLogPath = defaultLogDir + defaultLogFile
+
+const (
+	syslogConfig   = "/etc/rsyslog.d/10-vxos-asum.conf"
+	syslogFacility = syslog.LOG_LOCAL0
+)
 
 // SyslogTagPrefix defines tag name for syslog.
 const SyslogTagPrefix = "vxos-asum@"
@@ -325,6 +336,41 @@ func initSyslogHandle(syslogTag string) (err error) {
 		}
 	}
 	return nil
+}
+
+// InitLogging initializes logging to use syslog when its config exists, or to use file logging automatically. This setting might be overridden after reading config or cmdline parameters and by calling InitializeLogger().
+func InitLogging() {
+	// Use syslog until the config file is read.
+	// If syslog initialization fails, file logging will be used.
+	useFileLog := true
+	if IsSysLogConfigPresent() {
+		useFileLog = false
+		module := progname + "-" + os.Args[1]
+		err := InitSysLogger(module, DefaultLogLevel)
+		if err != nil {
+			fmt.Printf("Failed to initialize SysLog for logging [%#v]. Proceeding with FileLog...\n", err)
+			useFileLog = true
+		}
+	}
+	if useFileLog {
+		// NOTE: while running tests, the path of binary would be in `/tmp/<go-build*>`,
+		// so, using relative logging path w.r.t. binary wouldn't be accessible on Jenkins.
+		// So, use absolute path which also has write permissions (like current source directory).
+		logDir := os.Getenv("PM_LOG_DIR")
+		if logDir == "" {
+			logDir = defaultLogDir
+		}
+		logFile := os.Getenv("PM_LOG_FILE")
+		if logFile == "" {
+			logFile = defaultLogFile
+		}
+		logPath := logDir + string(os.PathSeparator) + logFile
+		err := InitFileLogger(logPath, DefaultLogLevel)
+		if err != nil {
+			fmt.Printf("Failed to initialize file logger [%#v].\n", err)
+			os.Exit(1)
+		}
+	}
 }
 
 // InitializeLogger initializes customized file logger or syslog logger with given log config
