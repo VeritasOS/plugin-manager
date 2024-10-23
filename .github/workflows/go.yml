@@ -22,7 +22,11 @@ jobs:
       run: mkdir -p /var/log/asum
 
     - name: Static analysis of code for errors
-      run: make analyze
+      env:
+        PM_LOG_DIR: ${{ github.workspace }}/test-logs
+      run: |
+        mkdir -p ${{ github.workspace }}/test-logs
+        make analyze
 
 #     - name: Build
 #       run: go build -v ./...
@@ -33,10 +37,12 @@ jobs:
     - name: Test - go test
       env:
         PM_CONF_FILE: ${{ github.workspace }}/sample/pm.config.yaml
+        PM_LOG_DIR: ${{ github.workspace }}/test-logs
         INTEGRATION_TEST: START
         INTEG_TEST_BIN: ${{ github.workspace }}
       run: |
         mkdir -p ${{ github.workspace }}/cover
+        mkdir -p ${{ github.workspace }}/test-logs
         go test -mod=vendor -v ./...
 
     # - name: Test - make test

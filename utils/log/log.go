@@ -46,8 +46,11 @@ const DefaultLogLevel = "INFO"
 
 var progname = filepath.Base(os.Args[0])
 
+var defaultLogDir = "/var/log/asum/"
+var defaultLogFile = progname + ".log"
+
 // DefaultLogPath used in case if path to log file is not specified in config or cmdline.
-var DefaultLogPath = "/var/log/asum/" + progname + ".log"
+var DefaultLogPath = defaultLogDir + defaultLogFile
 
 const (
 	syslogConfig   = "/etc/rsyslog.d/10-vxos-asum.conf"
@@ -353,7 +356,16 @@ func InitLogging() {
 		// NOTE: while running tests, the path of binary would be in `/tmp/<go-build*>`,
 		// so, using relative logging path w.r.t. binary wouldn't be accessible on Jenkins.
 		// So, use absolute path which also has write permissions (like current source directory).
-		err := InitFileLogger(DefaultLogPath, DefaultLogLevel)
+		logDir := os.Getenv("PM_LOG_DIR")
+		if logDir == "" {
+			logDir = defaultLogDir
+		}
+		logFile := os.Getenv("PM_LOG_FILE")
+		if logFile == "" {
+			logFile = defaultLogFile
+		}
+		logPath := logDir + string(os.PathSeparator) + logFile
+		err := InitFileLogger(logPath, DefaultLogLevel)
 		if err != nil {
 			fmt.Printf("Failed to initialize file logger [%#v].\n", err)
 			os.Exit(1)
