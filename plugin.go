@@ -22,6 +22,9 @@ import (
 	"time"
 
 	"github.com/VeritasOS/plugin-manager/config"
+	"github.com/VeritasOS/plugin-manager/graph"
+	"github.com/VeritasOS/plugin-manager/types"
+	"github.com/VeritasOS/plugin-manager/types/status"
 	logger "github.com/VeritasOS/plugin-manager/utils/log"
 	osutils "github.com/VeritasOS/plugin-manager/utils/os"
 	"github.com/VeritasOS/plugin-manager/utils/output"
@@ -30,40 +33,14 @@ import (
 
 var (
 	// Version of the Plugin Manager (PM).
-	version = "4.9"
+	version = "5.0"
 )
 
-// Status of plugin execution used for displaying to user on console.
-const (
-	dStatusFail  = "Failed"
-	dStatusOk    = "Succeeded"
-	dStatusSkip  = "Skipped"
-	dStatusStart = "Starting"
-)
+// Plugin is of type types.Plugin
+type Plugin = types.Plugin
 
-// Plugin is plugin's info: name, description, cmd to run, status, stdouterr.
-type Plugin struct {
-	Name        string
-	Description string
-	ExecStart   string
-	RequiredBy  []string
-	Requires    []string
-	Status      string
-	StdOutErr   []string
-}
-
-// Plugins is a list of plugins' info.
-type Plugins []Plugin
-
-// RunStatus is the pm run status.
-type RunStatus struct {
-	Type    string
-	Library string
-	// TODO: Add Percentage to get no. of pending vs. completed run of plugins.
-	Plugins   Plugins `yaml:",omitempty"`
-	Status    string
-	StdOutErr string
-}
+// Plugins is of type types.Plugins
+type Plugins = types.Plugins
 
 // getPluginFiles retrieves the plugin files under each component matching
 // the specified pluginType.
@@ -122,9 +99,9 @@ func getPluginType(file string) string {
 	return strings.Replace(path.Ext(file), ".", ``, -1)
 }
 
-func getPluginsInfoFromJSONStrOrFile(strOrFile string) (RunStatus, error) {
+func getPluginsInfoFromJSONStrOrFile(strOrFile string) (Plugin, error) {
 	var err error
-	var pluginsInfo RunStatus
+	var pluginsInfo Plugin
 	rawData := strOrFile
 	jsonFormat := true
 
@@ -160,9 +137,9 @@ func getPluginsInfoFromJSONStrOrFile(strOrFile string) (RunStatus, error) {
 			jsonFormat = false
 		}
 	}
-	// INFO: Use RunStatus to unmarshal to keep input consistent with current
+	// INFO: Use Plugin to unmarshal to keep input consistent with current
 	//  output json, so that rerun failed could be done using result json.
-	var pluginsData RunStatus
+	var pluginsData Plugin
 	if jsonFormat {
 		err = json.Unmarshal([]byte(rawData), &pluginsData)
 	} else {
@@ -198,7 +175,7 @@ func getPluginsInfoFromLibrary(pluginType, library string) (Plugins, error) {
 		}
 		logger.Info.Printf("Plugin %s info: %+v", pluginFiles[file], pInfo)
 		pInfo.Name = pluginFiles[file]
-		pluginsInfo = append(pluginsInfo, pInfo)
+		pluginsInfo = append(pluginsInfo, &pInfo)
 	}
 	return pluginsInfo, nil
 }
@@ -211,10 +188,12 @@ func normalizePluginsInfo(pluginsInfo Plugins) Plugins {
 	pluginIndexes := make(map[string]int, len(pluginsInfo))
 	for pIdx, pInfo := range pluginsInfo {
 		pluginIndexes[pInfo.Name] = pIdx
-		nPInfo[pIdx] = Plugin{
+		nPInfo[pIdx] = &Plugin{
 			Name:        pInfo.Name,
 			Description: pInfo.Description,
 			ExecStart:   pInfo.ExecStart,
+			Plugins:     pInfo.Plugins,
+			Library:     pInfo.Library,
 		}
 		nPInfo[pIdx].RequiredBy = append(nPInfo[pIdx].Requires, pInfo.RequiredBy...)
 		nPInfo[pIdx].Requires = append(nPInfo[pIdx].Requires, pInfo.Requires...)
@@ -413,8 +392,8 @@ func validateDependencies(nPInfo Plugins) ([]string, error) {
 func executePluginCmd(statusCh chan<- map[string]*Plugin, pInfo Plugin, failedDependency bool, env map[string]string) {
 	p := pInfo.Name
 	logger.Debug.Printf("Channel: Plugin %s info: \n%+v", p, pInfo)
-	updateGraph(getPluginType(p), p, dStatusStart, "")
-	logger.ConsoleInfo.Printf("%s: %s", pInfo.Description, dStatusStart)
+	graph.UpdateGraph(getPluginType(p), p, status.Start, "")
+	logger.ConsoleInfo.Printf("%s: %s", pInfo.Description, status.Start)
 	pluginLogFile := ""
 	var chLog *log.Logger
 	if !logger.IsFileLogger() {
@@ -454,16 +433,26 @@ func executePluginCmd(statusCh chan<- map[string]*Plugin, pInfo Plugin, failedDe
 	myStatusMsg := ""
 	if failedDependency {
 		myStatusMsg = "Skipping as its dependency failed."
-		myStatus = dStatusSkip
+		myStatus = status.Skip
+	} else if len(pInfo.Plugins) != 0 {
+		execStatus := executePlugins(&pInfo.Plugins, false, env)
+		if !execStatus {
+			myStatus = status.Fail
+			graph.UpdateGraph(getPluginType(p), p, myStatus, "")
+			err := fmt.Errorf("Running %s plugins: %s", p, myStatus)
+			statusCh <- map[string]*Plugin{p: {Status: myStatus, StdOutErr: []string{err.Error()}}}
+			return
+		}
+		myStatus = status.Ok
 	} else if pInfo.ExecStart == "" {
 		myStatusMsg = "Passing as ExecStart value is empty!"
-		myStatus = dStatusOk
+		myStatus = status.Ok
 	}
 
 	if myStatus != "" {
 		chLog.Println("INFO: ", myStatusMsg)
 		logger.Info.Printf("Plugin(%s): %s", p, myStatusMsg)
-		updateGraph(getPluginType(p), p, myStatus, "")
+		graph.UpdateGraph(getPluginType(p), p, myStatus, "")
 		logger.ConsoleInfo.Printf("%s: %s", pInfo.Description, myStatus)
 		statusCh <- map[string]*Plugin{p: {Status: myStatus}}
 		return
@@ -502,7 +491,7 @@ func executePluginCmd(statusCh chan<- map[string]*Plugin, pInfo Plugin, failedDe
 	cmd.Env = envList
 	iostdout, err := cmd.StdoutPipe()
 	if err != nil {
-		pInfo.Status = dStatusFail
+		pInfo.Status = status.Fail
 		logger.Error.Printf("Failed to execute plugin %s. Error: %s\n", pInfo.Name, err.Error())
 		pInfo.StdOutErr = []string{err.Error()}
 		logger.ConsoleInfo.Printf("%s: %s\n", pInfo.Description, pInfo.Status)
@@ -530,24 +519,24 @@ func executePluginCmd(statusCh chan<- map[string]*Plugin, pInfo Plugin, failedDe
 		chLog.Printf("INFO: Plugin(%s): Executing command: %s", p, pInfo.ExecStart)
 		if err != nil {
 			chLog.Printf("ERROR: Plugin(%s): Failed to execute command, err=%s", p, err.Error())
-			updateGraph(getPluginType(p), p, dStatusFail, pluginLogFile)
+			graph.UpdateGraph(getPluginType(p), p, status.Fail, pluginLogFile)
 		} else {
 			chLog.Printf("INFO: Plugin(%s): Stdout & Stderr: %v", p, stdOutErr)
-			updateGraph(getPluginType(p), p, dStatusOk, pluginLogFile)
+			graph.UpdateGraph(getPluginType(p), p, status.Ok, pluginLogFile)
 		}
 	}()
 
 	logger.Debug.Println("Stdout & Stderr:", stdOutErr)
 	pStatus := Plugin{StdOutErr: stdOutErr}
 	if err != nil {
-		pStatus.Status = dStatusFail
+		pStatus.Status = status.Fail
 		logger.Error.Printf("Failed to execute plugin %s. err=%s\n", p, err.Error())
-		logger.ConsoleError.Printf("%s: %s\n", pInfo.Description, dStatusFail)
+		logger.ConsoleError.Printf("%s: %s\n", pInfo.Description, status.Fail)
 		statusCh <- map[string]*Plugin{p: &pStatus}
 		return
 	}
-	pStatus.Status = dStatusOk
-	logger.ConsoleInfo.Printf("%s: %s\n", pInfo.Description, dStatusOk)
+	pStatus.Status = status.Ok
+	logger.ConsoleInfo.Printf("%s: %s\n", pInfo.Description, status.Ok)
 	statusCh <- map[string]*Plugin{p: &pStatus}
 }
 
@@ -591,8 +580,11 @@ func executePlugins(psStatus *Plugins, sequential bool, env map[string]string) b
 				(sequential == true && executingCnt == 0)) {
 				logger.Info.Printf("Plugin %s is ready for execution: %v.", p, pInfo)
 				waitCount[p]--
+				pIdx := pluginIndexes[p]
+				ps := *psStatus
+				ps[pIdx].RunTime.StartTime = time.Now()
 
-				go executePluginCmd(exeCh, pInfo, failedDependency[p], env)
+				go executePluginCmd(exeCh, *pInfo, failedDependency[p], env)
 				executingCnt++
 			}
 		}
@@ -603,15 +595,17 @@ func executePlugins(psStatus *Plugins, sequential bool, env map[string]string) b
 			logger.Info.Printf("%s status: %v", plugin, pStatus.Status)
 			pIdx := pluginIndexes[plugin]
 			ps := *psStatus
+			ps[pIdx].RunTime.EndTime = time.Now()
+			ps[pIdx].RunTime.Duration = ps[pIdx].RunTime.EndTime.Sub(ps[pIdx].RunTime.StartTime)
 			ps[pIdx].Status = pStatus.Status
 			ps[pIdx].StdOutErr = pStatus.StdOutErr
-			if pStatus.Status == dStatusFail {
+			if pStatus.Status == status.Fail {
 				retStatus = false
 			}
 
 			for _, rby := range nPInfo[pIdx].RequiredBy {
-				if pStatus.Status == dStatusFail ||
-					pStatus.Status == dStatusSkip {
+				if pStatus.Status == status.Fail ||
+					pStatus.Status == status.Skip {
 					// TODO: When "Wants" and "WantedBy" options are supported similar to
 					// 	"Requires" and "RequiredBy", the failedDependency flag should be
 					// 	checked in conjunction with if its required dependency is failed,
@@ -695,12 +689,12 @@ func list(pluginsInfo Plugins, listOptions ListOptions) error {
 
 	var err error
 
-	err = initGraph(pluginType, pluginsInfo)
+	err = graph.InitGraph(pluginType, pluginsInfo)
 	if err != nil {
 		return err
 	}
 
-	logger.ConsoleInfo.Printf("The list of plugins are mapped in %s", getImagePath())
+	logger.ConsoleInfo.Printf("The list of plugins are mapped in %s", graph.GetImagePath())
 	return nil
 }
 
@@ -781,21 +775,21 @@ func RegisterCommandOptions(progname string) {
 
 // RunFromJSONStrOrFile runs the plugins based on dependencies specified in a
 // json string or a json/yaml file.
-func RunFromJSONStrOrFile(result *RunStatus, jsonStrOrFile string, runOptions RunOptions) error {
+func RunFromJSONStrOrFile(result *Plugin, jsonStrOrFile string, runOptions RunOptions) error {
 	pluginsInfo, err := getPluginsInfoFromJSONStrOrFile(jsonStrOrFile)
 	if err != nil {
-		result.Status = dStatusFail
-		result.StdOutErr = err.Error()
+		result.Status = status.Fail
+		result.StdOutErr = append(result.StdOutErr, err.Error())
 		return err
 	}
-	result.Type = pluginsInfo.Type
+	result.Name = pluginsInfo.Name
 	result.Library = pluginsInfo.Library
 	result.Plugins = pluginsInfo.Plugins
 	// INFO: Override values of json/file with explicitly passed cmdline parameter. Else, set runOptions type from json/file.
 	if runOptions.Type != "" {
-		result.Type = runOptions.Type
+		result.Name = runOptions.Type
 	} else {
-		runOptions.Type = pluginsInfo.Type
+		runOptions.Type = pluginsInfo.Name
 	}
 	if runOptions.Library != "" {
 		result.Library = runOptions.Library
@@ -806,13 +800,13 @@ func RunFromJSONStrOrFile(result *RunStatus, jsonStrOrFile string, runOptions Ru
 }
 
 // RunFromLibrary runs the specified plugin type plugins from the library.
-func RunFromLibrary(result *RunStatus, pluginType string, runOptions RunOptions) error {
-	result.Type = pluginType
+func RunFromLibrary(result *Plugin, pluginType string, runOptions RunOptions) error {
+	result.Name = pluginType
 
 	var pluginsInfo, err = getPluginsInfoFromLibrary(pluginType, runOptions.Library)
 	if err != nil {
-		result.Status = dStatusFail
-		result.StdOutErr = err.Error()
+		result.Status = status.Fail
+		result.StdOutErr = append(result.StdOutErr, err.Error())
 		return err
 	}
 	result.Plugins = pluginsInfo
@@ -822,37 +816,43 @@ func RunFromLibrary(result *RunStatus, pluginType string, runOptions RunOptions)
 }
 
 // run the specified plugins.
-func run(result *RunStatus, runOptions RunOptions) error {
+func run(result *Plugin, runOptions RunOptions) error {
 	logger.Debug.Printf("Entering run(%+v, %+v)...", result, runOptions)
 	defer logger.Debug.Println("Exiting run")
 	pluginType := runOptions.Type
 	sequential := runOptions.Sequential
 
+	result.RunTime.StartTime = time.Now()
+	defer func() {
+		result.RunTime.EndTime = time.Now()
+		result.RunTime.Duration = result.RunTime.EndTime.Sub(result.RunTime.StartTime)
+	}()
+
 	if err := osutils.OsMkdirAll(config.GetPluginsLogDir(), 0755); nil != err {
 		err = logger.ConsoleError.PrintNReturnError(
 			"Failed to create the plugins logs directory: %s. "+
 				"Error: %s", config.GetPluginsLogDir(), err.Error())
-		result.Status = dStatusFail
-		result.StdOutErr = err.Error()
+		result.Status = status.Fail
+		result.StdOutErr = append(result.StdOutErr, err.Error())
 		return err
 	}
 
-	initGraph(pluginType, result.Plugins)
+	graph.InitGraph(pluginType, result.Plugins)
 
 	env := map[string]string{}
 	if runOptions.Library != "" {
 		env["PM_LIBRARY"] = runOptions.Library
 	}
-	status := executePlugins(&result.Plugins, sequential, env)
-	if status != true {
-		result.Status = dStatusFail
-		err := fmt.Errorf("Running %s plugins: %s", pluginType, dStatusFail)
-		result.StdOutErr = err.Error()
+	execStatus := executePlugins(&result.Plugins, sequential, env)
+	if execStatus != true {
+		result.Status = status.Fail
+		err := fmt.Errorf("Running %s plugins: %s", pluginType, status.Fail)
+		result.StdOutErr = append(result.StdOutErr, err.Error())
 		logger.ConsoleError.Printf("%s\n", err.Error())
 		return err
 	}
-	result.Status = dStatusOk
-	logger.ConsoleInfo.Printf("Running %s plugins: %s\n", pluginType, dStatusOk)
+	result.Status = status.Ok
+	logger.ConsoleInfo.Printf("Running %s plugins: %s\n", pluginType, status.Ok)
 	return nil
 }
 
@@ -914,7 +914,7 @@ func ScanCommandOptions(options map[string]interface{}) error {
 	if *CmdOptions.libraryPtr != "" {
 		config.SetPluginsLibrary(*CmdOptions.libraryPtr)
 	}
-	myLogFile := "./"
+	myLogFile := logger.DefaultLogDir
 	if logger.GetLogDir() != "" {
 		config.SetPMLogDir(logger.GetLogDir())
 		myLogFile = config.GetPMLogDir()
@@ -932,7 +932,7 @@ func ScanCommandOptions(options map[string]interface{}) error {
 			os.Exit(-1)
 		}
 	} else {
-		tLogFile := progname
+		tLogFile := logger.DefaultLogFile
 		if logger.GetLogFile() != "" {
 			tLogFile = logger.GetLogFile()
 		}
@@ -968,7 +968,7 @@ func ScanCommandOptions(options map[string]interface{}) error {
 				ListOptions{Type: pluginType})
 
 		case "run":
-			pmstatus := RunStatus{}
+			pmstatus := Plugin{}
 			runOptions := RunOptions{
 				Type:       pluginType,
 				Sequential: *CmdOptions.sequential,
@@ -990,7 +990,7 @@ func ScanCommandOptions(options map[string]interface{}) error {
 			err = ListFromLibrary(pluginType, config.GetPluginsLibrary())
 
 		case "run":
-			pmstatus := RunStatus{}
+			pmstatus := Plugin{}
 			err = RunFromLibrary(&pmstatus, pluginType,
 				RunOptions{Library: config.GetPluginsLibrary(),
 					Sequential: *CmdOptions.sequential})

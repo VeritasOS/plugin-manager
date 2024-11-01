@@ -1,4 +1,4 @@
-type: preupgrade
+name: preupgrade
 plugins:
     - name: A/a.preupgrade
       description: Checking for "A" settings

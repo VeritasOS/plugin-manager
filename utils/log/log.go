@@ -41,16 +41,19 @@ const (
 	SysLog
 )
 
-// DefaultLogLevel used in case if it's not specified in config or cmdline.
-const DefaultLogLevel = "INFO"
-
 var progname = filepath.Base(os.Args[0])
 
-var defaultLogDir = "/var/log/asum/"
-var defaultLogFile = progname + ".log"
+// DefaultLogDir used before reading conf file or cmdline params, and could be overridden by conf file or cmdline params.
+var DefaultLogDir = "/var/log/asum/"
+
+// DefaultLogFile used before reading conf file or cmdline params, and could be overriden by conf file or cmdline params
+var DefaultLogFile = progname + ".log"
 
 // DefaultLogPath used in case if path to log file is not specified in config or cmdline.
-var DefaultLogPath = defaultLogDir + defaultLogFile
+var DefaultLogPath = DefaultLogDir + DefaultLogFile
+
+// DefaultLogLevel used in case if it's not specified in config or cmdline.
+var DefaultLogLevel = "INFO"
 
 const (
 	syslogConfig   = "/etc/rsyslog.d/10-vxos-asum.conf"
@@ -356,16 +359,26 @@ func InitLogging() {
 		// NOTE: while running tests, the path of binary would be in `/tmp/<go-build*>`,
 		// so, using relative logging path w.r.t. binary wouldn't be accessible on Jenkins.
 		// So, use absolute path which also has write permissions (like current source directory).
+
+		// Update default values with specified env values.
 		logDir := os.Getenv("PM_LOG_DIR")
-		if logDir == "" {
-			logDir = defaultLogDir
+		if logDir != "" {
+			DefaultLogDir = filepath.Clean(logDir)
 		}
 		logFile := os.Getenv("PM_LOG_FILE")
-		if logFile == "" {
-			logFile = defaultLogFile
+		if logFile != "" {
+			DefaultLogFile = filepath.Clean(logFile)
 		}
-		logPath := logDir + string(os.PathSeparator) + logFile
-		err := InitFileLogger(logPath, DefaultLogLevel)
+		// INFO: Update DefaultLogPath in case if values are passed via env,
+		//  so that comparison at a later path succeeds.
+		DefaultLogPath = filepath.Clean(DefaultLogDir + string(os.PathSeparator) + DefaultLogFile)
+
+		logLevel := os.Getenv("PM_LOG_LEVEL")
+		if logLevel != "" {
+			DefaultLogLevel = logLevel
+		}
+
+		err := InitFileLogger(DefaultLogPath, DefaultLogLevel)
 		if err != nil {
 			fmt.Printf("Failed to initialize file logger [%#v].\n", err)
 			os.Exit(1)
@@ -484,11 +497,11 @@ func DeInitLogger() []error {
 func RegisterCommandOptions(f *flag.FlagSet, defaultParams map[string]string) {
 	defaultLogDir, ok := defaultParams["log-dir"]
 	if !ok {
-		defaultLogDir = ""
+		defaultLogDir = DefaultLogDir
 	}
 	defaultLogFile, ok := defaultParams["log-file"]
 	if !ok {
-		defaultLogFile = ""
+		defaultLogFile = DefaultLogFile
 	}
 	defaultLogLevel, ok := defaultParams["log-level"]
 	if !ok {

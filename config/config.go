@@ -92,6 +92,16 @@ func Load() error {
 	logger.Debug.Printf("config file: %s", myConfigFile)
 	var err error
 	myConfig, err = readConfigFile(myConfigFile)
+	// Set default values when it's not specified in config file.
+	if myConfig.PluginManager.LogDir == "" {
+		myConfig.PluginManager.LogDir = logger.DefaultLogDir
+	}
+	if myConfig.PluginManager.LogFile == "" {
+		myConfig.PluginManager.LogFile = logger.DefaultLogFile
+	}
+	if myConfig.PluginManager.LogLevel == "" {
+		myConfig.PluginManager.LogLevel = logger.DefaultLogLevel
+	}
 	logger.Debug.Printf("Plugin Manager Config: %+v", myConfig)
 	return err
 }
