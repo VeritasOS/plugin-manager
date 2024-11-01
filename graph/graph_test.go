@@ -1,11 +1,13 @@
 // Copyright (c) 2024 Veritas Technologies LLC. All rights reserved. IP63-2828-7171-04-15-9
-package pm
+package graph
 
 import (
 	"os"
 	"reflect"
 	"sort"
 	"testing"
+
+	"github.com/VeritasOS/plugin-manager/types/status"
 )
 
 func Test_getStatusColor(t *testing.T) {
@@ -24,22 +26,22 @@ func Test_getStatusColor(t *testing.T) {
 	}{
 		{
 			name: "Start",
-			args: args{status: dStatusStart},
+			args: args{status: status.Start},
 			want: "blue",
 		},
 		{
 			name: "Ok/Pass",
-			args: args{status: dStatusOk},
+			args: args{status: status.Ok},
 			want: "green",
 		},
 		{
 			name: "Fail",
-			args: args{status: dStatusFail},
+			args: args{status: status.Fail},
 			want: "red",
 		},
 		{
 			name: "Skip",
-			args: args{status: dStatusSkip},
+			args: args{status: status.Skip},
 			want: "yellow",
 		},
 	}
@@ -52,7 +54,7 @@ func Test_getStatusColor(t *testing.T) {
 	}
 }
 
-func Test_updateGraph(t *testing.T) {
+func Test_UpdateGraph(t *testing.T) {
 	if os.Getenv("INTEGRATION_TEST") == "RUNNING" {
 		t.Skip("Not applicable while running integration tests.")
 		return
@@ -77,7 +79,7 @@ func Test_updateGraph(t *testing.T) {
 			name: "Append a row",
 			args: args{
 				plugin: "A/a.test",
-				status: dStatusOk,
+				status: status.Ok,
 				url:    "url/A/a.test",
 			},
 			wantErr: false,
@@ -88,10 +90,10 @@ func Test_updateGraph(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := updateGraph(getPluginType(tt.args.plugin), tt.args.plugin, tt.args.status, tt.args.url); (err != nil) != tt.wantErr {
+			if err := UpdateGraph("test", tt.args.plugin, tt.args.status, tt.args.url); (err != nil) != tt.wantErr {
 				t.Errorf("updateGraph() error = %v, wantErr %v", err, tt.wantErr)
 			}
-			rowsInterface, _ := g.subgraph.Load(getPluginType(tt.args.plugin))
+			rowsInterface, _ := g.subgraph.Load("test")
 			rows := rowsInterface.([]string)
 			if !reflect.DeepEqual(rows, tt.wants.rows) {
 				t.Errorf("updateGraph() g.rows = %v, wants.rows %v", rows, tt.wants.rows)
@@ -100,7 +102,7 @@ func Test_updateGraph(t *testing.T) {
 	}
 }
 
-func Test_initGraph(t *testing.T) {
+func Test_InitGraph(t *testing.T) {
 	type args struct {
 		pluginType  string
 		pluginsInfo Plugins
@@ -200,7 +202,7 @@ func Test_initGraph(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := initGraph(tt.args.pluginType, tt.args.pluginsInfo); (err != nil) != tt.wantErr {
+			if err := InitGraph(tt.args.pluginType, tt.args.pluginsInfo); (err != nil) != tt.wantErr {
 				t.Errorf("initGraph() error = %v, wantErr %v", err, tt.wantErr)
 			}
 			rowsI, _ := g.subgraph.Load(tt.args.pluginType)

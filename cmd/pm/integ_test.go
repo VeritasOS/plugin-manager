@@ -14,6 +14,7 @@ import (
 	"testing"
 
 	"github.com/VeritasOS/plugin-manager/config"
+	"github.com/VeritasOS/plugin-manager/types/status"
 	logger "github.com/VeritasOS/plugin-manager/utils/log"
 
 	yaml "gopkg.in/yaml.v3"
@@ -29,14 +30,6 @@ type Config struct {
 		LogFile string `yaml:"log file"`
 	}
 }
-
-// Status of plugin execution used for displaying to user on console.
-const (
-	dStatusFail  = "Failed"
-	dStatusOk    = "Succeeded"
-	dStatusSkip  = "Skipped"
-	dStatusStart = "Starting"
-)
 
 func saveConfig(newConfig Config, configFile string) error {
 	logger.Info.Println("Entering saveConfig")
@@ -144,11 +137,11 @@ func integTest(t *testing.T, pmBinary, tDir string) {
 				pluginType: "preupgrade",
 			},
 			want: []string{
-				"Checking for \"D\" settings...: " + dStatusStart,
-				"Checking for \"D\" settings...: " + dStatusOk,
-				"Checking for \"A\" settings: " + dStatusStart,
-				"Checking for \"A\" settings: " + dStatusOk,
-				"Running preupgrade plugins: " + dStatusOk,
+				"Checking for \"D\" settings...: " + status.Start,
+				"Checking for \"D\" settings...: " + status.Ok,
+				"Checking for \"A\" settings: " + status.Start,
+				"Checking for \"A\" settings: " + status.Ok,
+				"Running preupgrade plugins: " + status.Ok,
 			},
 			wantErr: false,
 		},
@@ -159,11 +152,11 @@ func integTest(t *testing.T, pmBinary, tDir string) {
 				testPluginExitStatus: 1,
 			},
 			want: []string{
-				"Checking for \"D\" settings...: " + dStatusStart,
-				"Checking for \"D\" settings...: " + dStatusFail,
-				"Checking for \"A\" settings: " + dStatusStart,
-				"Checking for \"A\" settings: " + dStatusSkip,
-				"Running preupgrade plugins: " + dStatusFail,
+				"Checking for \"D\" settings...: " + status.Start,
+				"Checking for \"D\" settings...: " + status.Fail,
+				"Checking for \"A\" settings: " + status.Start,
+				"Checking for \"A\" settings: " + status.Skip,
+				"Running preupgrade plugins: " + status.Fail,
 				"",
 			},
 			wantErr: true,

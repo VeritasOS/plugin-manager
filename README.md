@@ -399,19 +399,49 @@ $
 ```
 
 ```yaml
-$ cat a.yaml 
-type: preupgrade
+# cat a.yaml
+name: preupgrade
+description: ""
+requiredby: []
+requires: []
+execstart: ""
 plugins:
-- description: Checking for "D" settings...
-  name: D/d.preupgrade
-  execstart: $PM_LIBRARY/D/preupgrade.sh
-  requiredby:
-  - A/a.preupgrade
-  requires: []
-  status: Failed
-  stdouterr: "Running preupgrade.sh (path: sample/library//D/preupgrade.sh) with
-    status(1)...\nDisplaying Plugin Manager (PM) Config file path: \nFail(1)\n"
+    - name: A/a.preupgrade
+      description: Checking for "A" settings
+      requiredby: []
+      requires:
+        - D/d.preupgrade
+      execstart: /bin/echo "Checking A..."
+      plugins: []
+      library: ""
+      runtime:
+        starttime: 2024-10-28T18:21:17.289968946-05:00
+        endtime: 2024-10-28T18:21:17.337773824-05:00
+        duration: 47.804888ms
+      status: Skipped
+      stdouterr: []
+    - name: D/d.preupgrade
+      description: Checking for "D" settings...
+      requiredby: []
+      requires: []
+      execstart: $PM_LIBRARY/D/preupgrade.sh
+      plugins: []
+      library: ""
+      runtime:
+        starttime: 2024-10-28T18:21:17.220368224-05:00
+        endtime: 2024-10-28T18:21:17.289945583-05:00
+        duration: 69.577293ms
+      status: Failed
+      stdouterr:
+        - 'Running preupgrade.sh (path: sample/library//D/preupgrade.sh) with status(1)...'
+        - 'Displaying Plugin Manager (PM) Config file path: '
+        - Fail(1)
+library: ""
+runtime:
+    starttime: 2024-10-28T18:21:17.185365352-05:00
+    endtime: 2024-10-28T18:21:17.337805574-05:00
+    duration: 152.440222ms
 status: Failed
-stdouterr: 'Running preupgrade plugins: Failed'
-$
+stdouterr:
+    - 'Running preupgrade plugins: Failed'
 ```

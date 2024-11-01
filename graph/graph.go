@@ -1,18 +1,19 @@
 // Copyright (c) 2024 Veritas Technologies LLC. All rights reserved. IP63-2828-7171-04-15-9
 
-// Package pm graph is used for generating the graph image.
-package pm
+// Package graph is used for generating the graph image.
+package graph
 
 import (
 	"os"
 	"path/filepath"
-	"sort"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/VeritasOS/plugin-manager/config"
+	"github.com/VeritasOS/plugin-manager/types"
+	"github.com/VeritasOS/plugin-manager/types/status"
 	logger "github.com/VeritasOS/plugin-manager/utils/log"
 	osutils "github.com/VeritasOS/plugin-manager/utils/os"
 )
@@ -32,7 +33,14 @@ type graph struct {
 var g graph
 var dotCmdPresent = true
 
-func initGraphConfig(imgNamePrefix string) {
+// Plugin is of type types.Plugin
+type Plugin = types.Plugin
+
+// Plugins is of type types.Plugins
+type Plugins = types.Plugins
+
+// InitGraphConfig initliazes output file names.
+func InitGraphConfig(imgNamePrefix string) {
 	// Initialization should be done only once.
 	if g.fileNoExt == "" {
 		// Remove imgNamePrefix if it's end with ".log"
@@ -41,39 +49,28 @@ func initGraphConfig(imgNamePrefix string) {
 	}
 }
 
-func getImagePath() string {
+// GetImagePath gets the path of the image file.
+func GetImagePath() string {
 	return config.GetPMLogDir() + g.fileNoExt + ".svg"
 }
 
-func getDotFilePath() string {
+// GetDotFilePath gets the path of the dot file.
+func GetDotFilePath() string {
 	return config.GetPMLogDir() + g.fileNoExt + ".dot"
 }
 
-// initGraph initliazes the graph data structure and invokes generateGraph.
-func initGraph(pluginType string, pluginsInfo Plugins) error {
-	initGraphConfig(config.GetPMLogFile())
+// InitGraph initliazes the graph data structure and invokes generateGraph.
+func InitGraph(pluginType string, pluginsInfo Plugins) error {
+	InitGraphConfig(config.GetPMLogFile())
 
 	// DOT guide: https://graphviz.gitlab.io/_pages/pdf/dotguide.pdf
 
-	// INFO: Sort the plugins so that list of dependencies generated
-	// (used by documentation) doesn't change.
-	// NOTE: If not sorted, then even without addition of any new plugin,
-	//  the dependency file generated will keep changing and appears in
-	// 	git staged list.
-	orderedPluginsList := []string{}
-	pluginsIdx := map[string]int{}
 	for pIdx, p := range pluginsInfo {
-		orderedPluginsList = append(orderedPluginsList, p.Name)
-		pluginsIdx[p.Name] = pIdx
-	}
-	sort.Strings(orderedPluginsList)
-	for _, pName := range orderedPluginsList {
-		pIdx := pluginsIdx[pName]
-		pFileString := "\"" + pName + "\""
+		pFileString := "\"" + p.Name + "\""
 		absLogPath, _ := filepath.Abs(config.GetPMLogDir())
 		absLibraryPath, _ := filepath.Abs(config.GetPluginsLibrary())
 		relPath, _ := filepath.Rel(absLogPath, absLibraryPath)
-		pURL := "\"" + filepath.FromSlash(relPath+string(os.PathSeparator)+pName) + "\""
+		pURL := "\"" + filepath.FromSlash(relPath+string(os.PathSeparator)+p.Name) + "\""
 		rows := []string{}
 		rowsInterface, ok := g.subgraph.Load(pluginType)
 		if ok {
@@ -82,10 +79,10 @@ func initGraph(pluginType string, pluginsInfo Plugins) error {
 		rows = append(rows, pFileString+" [label=\""+
 			strings.Replace(pluginsInfo[pIdx].Description, "\"", `\"`, -1)+
 			"\",style=filled,fillcolor=lightgrey,URL="+pURL+"]")
-		rows = append(rows, "\""+pName+"\"")
+		rows = append(rows, "\""+p.Name+"\"")
 		rbyLen := len(pluginsInfo[pIdx].RequiredBy)
 		if rbyLen != 0 {
-			graphRow := "\"" + pName + "\" -> "
+			graphRow := "\"" + p.Name + "\" -> "
 			for rby := range pluginsInfo[pIdx].RequiredBy {
 				graphRow += "\"" + pluginsInfo[pIdx].RequiredBy[rby] + "\""
 				if rby != rbyLen-1 {
@@ -103,7 +100,7 @@ func initGraph(pluginType string, pluginsInfo Plugins) error {
 					graphRow += ", "
 				}
 			}
-			graphRow += " -> \"" + pName + "\""
+			graphRow += " -> \"" + p.Name + "\""
 			rows = append(rows, graphRow)
 		}
 		g.subgraph.Store(pluginType, rows)
@@ -115,8 +112,8 @@ func initGraph(pluginType string, pluginsInfo Plugins) error {
 // generateGraph generates an input `.dot` file based on the fileNoExt name,
 // and then generates an `.svg` image output file as fileNoExt.svg.
 func generateGraph() error {
-	dotFile := getDotFilePath()
-	svgFile := getImagePath()
+	dotFile := GetDotFilePath()
+	svgFile := GetImagePath()
 
 	fhDigraph, openerr := osutils.OsOpenFile(dotFile, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0666)
 	if openerr != nil {
@@ -168,20 +165,21 @@ func generateGraph() error {
 }
 
 // getStatusColor returns the color for a given result status.
-func getStatusColor(status string) string {
+func getStatusColor(myStatus string) string {
 	// Node color
-	ncolor := "blue" // dStatusStart by default
-	if status == dStatusFail {
+	ncolor := "blue" // status.Start by default
+	if myStatus == status.Fail {
 		ncolor = "red"
-	} else if status == dStatusOk {
+	} else if myStatus == status.Ok {
 		ncolor = "green"
-	} else if status == dStatusSkip {
+	} else if myStatus == status.Skip {
 		ncolor = "yellow"
 	}
 	return ncolor
 }
 
-func updateGraph(subgraphName, plugin, status, url string) error {
+// UpdateGraph updates the plugin node with the status and url.
+func UpdateGraph(subgraphName, plugin, status, url string) error {
 	ncolor := getStatusColor(status)
 	gContents := []string{}
 	gContentsInterface, ok := g.subgraph.Load(subgraphName)

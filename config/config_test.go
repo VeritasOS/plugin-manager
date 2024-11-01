@@ -85,7 +85,18 @@ func Test_Load(t *testing.T) {
 			args: args{
 				EnvConfFile: "non-existing/pm.config.yaml",
 			},
-			want: Config{},
+			want: Config{
+				PluginManager: struct {
+					Library  string "yaml:\"library\""
+					LogDir   string "yaml:\"log dir\""
+					LogFile  string "yaml:\"log file\""
+					LogLevel string "yaml:\"log level\""
+				}{
+					LogDir:   logger.DefaultLogDir,
+					LogFile:  logger.DefaultLogFile,
+					LogLevel: logger.DefaultLogLevel,
+				},
+			},
 		},
 	}
 

@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/VeritasOS/plugin-manager/config"
+	"github.com/VeritasOS/plugin-manager/graph"
 	logger "github.com/VeritasOS/plugin-manager/utils/log"
 )
 
@@ -783,7 +784,7 @@ func Test_executePlugins(t *testing.T) {
 		},
 	}
 
-	initGraphConfig(config.GetPMLogFile())
+	graph.InitGraphConfig(config.GetPMLogFile())
 	for _, tt := range tests {
 		// Test Sequential as well as sequential execution
 		for _, tt.sequential = range []bool{false, true} {
@@ -830,7 +831,7 @@ func Test_getPluginsInfoFromJSONStrOrFile(t *testing.T) {
 	tests := []struct {
 		name    string
 		args    args
-		want    RunStatus
+		want    Plugin
 		wantErr bool
 	}{
 		{
@@ -860,7 +861,7 @@ func Test_getPluginsInfoFromJSONStrOrFile(t *testing.T) {
 					]
 				}`,
 			},
-			want: RunStatus{
+			want: Plugin{
 				Plugins: Plugins{
 					{
 						Name:        "plugin1",
@@ -885,7 +886,7 @@ func Test_getPluginsInfoFromJSONStrOrFile(t *testing.T) {
 		{
 			name: "Plugins in JSON file",
 			args: args{jsonStrOrFile: "./sample/plugins-prereboot.json"},
-			want: RunStatus{
+			want: Plugin{
 				Plugins: Plugins{
 					{
 						Name:        "A/a.prereboot",
