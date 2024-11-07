@@ -14,7 +14,7 @@ import (
 	"testing"
 
 	"github.com/VeritasOS/plugin-manager/config"
-	"github.com/VeritasOS/plugin-manager/utils/status"
+	"github.com/VeritasOS/plugin-manager/types/status"
 
 	yaml "gopkg.in/yaml.v3"
 )

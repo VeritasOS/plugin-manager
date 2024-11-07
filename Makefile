@@ -4,7 +4,7 @@
 .DEFAULT_GOAL := help
 .PHONY: help
 help:	## Display this help message.
-	@grep -E '^[a-zA-Z0-9_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
+	@grep -Eh '^[a-zA-Z0-9_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
 
 TOP=$(CURDIR)
 include $(TOP)/Makefile.conf
@@ -126,7 +126,7 @@ update-go-tools:
 	go get -u golang.org/x/lint/golint;
 
 .PHONY: install-go
-install-go:
+install-go:	## Install golang compiler
 	wget -c https://go.dev/dl/go1.23.1.linux-amd64.tar.gz -P /tmp
 	ret=$$?; \
 	if [ $${ret} -ne 0 ]; then \
@@ -137,7 +137,7 @@ install-go:
 	export PATH=/usr/local/go/bin:$PATH
 
 .PHONY: install-proto-deps
-install-proto-deps:
+install-proto-deps:	## Install proto dependencies
 	wget -c https://github.com/protocolbuffers/protobuf/releases/download/v28.0/protoc-28.0-linux-x86_64.zip -P $(PROTOBUF_PATH)
 	ret=$$?; \
 	if [ $${ret} -ne 0 ]; then \
@@ -165,9 +165,9 @@ install-proto-deps:
 	fi ;
 
 .PHONY: compile-proto
-compile-proto:
+compile-proto:	## Compile proto
 	export PATH=$(PROTOBUF_PATH)/bin/:$(PATH); \
-	protoc -I ./proto -I $(PROTOBUF_PATH)/include/google/protobuf/ --go_out=. --go_opt=module=github.com/VeritasOS/plugin-manager --go-grpc_out=./pluginmanager --go-grpc_opt=paths=source_relative proto/*.proto
+	protoc -I ./proto -I $(PROTOBUF_PATH)/include/google/protobuf/ --go_out=. --go_opt=module=github.com/VeritasOS/plugin-manager --go-grpc_out=./types --go-grpc_opt=paths=source_relative proto/*.proto
 	ret=$$?; \
 	if [ $${ret} -ne 0 ]; then \
 		echo "Failed to compile proto files. Return: $${d}."; \
@@ -176,4 +176,4 @@ compile-proto:
 
 .PHONY: clean-proto
 clean-proto:
-	-@rm -rf pluginmanager/*.pb.go;
+	-@rm -rf types/*.pb.go;

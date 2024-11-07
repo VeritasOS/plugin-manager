@@ -5,7 +5,7 @@ package plugin;
 import "runtime.proto";
 import "status.proto";
 
-option go_package = "github.com/VeritasOS/plugin-manager/pluginmanager";
+option go_package = "github.com/VeritasOS/plugin-manager/types";
 
 // PluginAttributes that are supported in a plugin file.
 message PluginAttributes {

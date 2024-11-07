@@ -10,9 +10,9 @@ import (
 	"sort"
 
 	"github.com/VeritasOS/plugin-manager/config"
-	"github.com/VeritasOS/plugin-manager/pluginmanager"
+	pluginmanager "github.com/VeritasOS/plugin-manager/types"
+	"github.com/VeritasOS/plugin-manager/types/status"
 	logutil "github.com/VeritasOS/plugin-manager/utils/log"
-	"github.com/VeritasOS/plugin-manager/utils/status"
 	graphviz "github.com/goccy/go-graphviz"
 	"github.com/goccy/go-graphviz/cgraph"
 )

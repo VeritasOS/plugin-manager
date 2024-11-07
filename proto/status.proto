@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package status;
 
-option go_package = "github.com/VeritasOS/plugin-manager/utils/status";
+option go_package = "github.com/VeritasOS/plugin-manager/types/status";
 
 // Status is the state of the plugin execution.
 enum Status {

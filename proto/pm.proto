@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package pluginmanager;
 
-option go_package = "github.com/VeritasOS/plugin-manager/pluginmanager";
+option go_package = "github.com/VeritasOS/plugin-manager/types";
 
 import "plugin.proto";
 import "runtime.proto";

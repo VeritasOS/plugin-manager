@@ -11,8 +11,8 @@ import (
 
 	"github.com/VeritasOS/plugin-manager/config"
 	"github.com/VeritasOS/plugin-manager/graph"
-	"github.com/VeritasOS/plugin-manager/pluginmanager"
-	"github.com/VeritasOS/plugin-manager/utils/status"
+	pluginmanager "github.com/VeritasOS/plugin-manager/types"
+	"github.com/VeritasOS/plugin-manager/types/status"
 )
 
 func Test_getPluginFiles(t *testing.T) {
