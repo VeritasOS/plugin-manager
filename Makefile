@@ -127,7 +127,7 @@ update-go-tools:
 
 .PHONY: install-go
 install-go:
-	wget -c https://go.dev/dl/go1.23.1.linux-amd64.tar.gz -P /tmp
+	wget -c https://go.dev/dl/go$(GO_VERSION).linux-amd64.tar.gz -P /tmp
 	ret=$$?; \
 	if [ $${ret} -ne 0 ]; then \
 		echo "Failed to download go install files. Return: $${d}."; \
@@ -138,7 +138,9 @@ install-go:
 
 .PHONY: install-proto-deps
 install-proto-deps:
-	wget -c https://github.com/protocolbuffers/protobuf/releases/download/v28.0/protoc-28.0-linux-x86_64.zip -P $(PROTOBUF_PATH)
+	# Remove any previously download zip files.
+	rm -f $(PROTOBUF_PATH)/protoc-*-linux-x86_64.zip
+	wget -c https://github.com/protocolbuffers/protobuf/releases/download/v$(PROTOC_VERSION)/protoc-$(PROTOC_VERSION)-linux-x86_64.zip -P $(PROTOBUF_PATH)
 	ret=$$?; \
 	if [ $${ret} -ne 0 ]; then \
 		echo "Failed to download protobuf protoc. Return: $${d}."; \
@@ -154,13 +156,13 @@ install-proto-deps:
 	go install google.golang.org/protobuf/cmd/protoc-gen-go@latest; \
 	ret=$$?; \
 	if [ $${ret} -ne 0 ]; then \
-		echo "Failed to install protoc-gen-go@v1.28. Return: $${d}."; \
+		echo "Failed to install protoc-gen-go@vlatest. Return: $${d}."; \
 		exit 1; \
 	fi ; \
 	go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest; \
 	ret=$$?; \
 	if [ $${ret} -ne 0 ]; then \
-		echo "Failed to install protoc-gen-go-grpc@v1.3. Return: $${d}."; \
+		echo "Failed to install protoc-gen-go-grpc@vlatest. Return: $${d}."; \
 		exit 1; \
 	fi ;
 
